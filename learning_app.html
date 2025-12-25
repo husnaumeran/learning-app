@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aliza's Learning App</title>
+    <style>
+        body { font-family: Comic Sans MS, cursive; margin: 0; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; }
+        .container { max-width: 500px; margin: 0 auto; }
+        h1 { text-align: center; color: white; }
+        .btn { display: block; width: 100%; padding: 20px; margin: 10px 0; font-size: 20px; border: none; border-radius: 15px; background: white; cursor: pointer; }
+        .card { background: white; border-radius: 15px; padding: 20px; margin-top: 15px; }
+        .title { font-size: 28px; color: #FF6B35; text-align: center; margin-bottom: 15px; text-shadow: 1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black; }
+        .inst { text-align: center; color: #666; margin-bottom: 15px; }
+        .problem { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px; font-size: 32px; font-weight: bold; border-bottom: 1px solid #eee; }
+        .problem.active { background: #fffbeb; border-radius: 10px; }
+        .problem.solved { opacity: 0.5; }
+        .answer-box { min-width: 50px; height: 50px; background: #f0f0f0; border: 3px solid #999; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; }
+        .key { height: 55px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; background: #4169E1; color: white; cursor: pointer; }
+        .key.red { background: #ef4444; }
+        .key.green { background: #22c55e; }
+        .key.big { width: 70px; height: 70px; font-size: 32px; }
+        .score { text-align: center; font-size: 24px; margin-top: 15px; }
+        .back { background: #ff6b6b; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-size: 18px; margin-bottom: 15px; cursor: pointer; }
+        .celeb { text-align: center; font-size: 36px; color: #22c55e; margin-top: 20px; }
+        .hidden { display: none; }
+        .row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; border-bottom: 1px solid #ddd; }
+        .circle { width: 45px; height: 45px; border-radius: 50%; }
+        .drop { width: 45px; height: 45px; border-radius: 50%; border: 3px dashed #999; }
+        .drop.correct { border: 3px solid #22c55e; }
+        .palette { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .pal { width: 55px; height: 55px; border-radius: 50%; cursor: pointer; }
+        .prob { border: 2px solid black; padding: 15px; margin: 8px 0; border-radius: 10px; background: white; display: flex; justify-content: space-between; align-items: center; }
+        .ansbox { display: inline-block; width: 50px; height: 50px; border: 3px solid #333; border-radius: 10px; background: #f0f0f0; text-align: center; line-height: 50px; font-size: 32px; font-weight: bold; cursor: pointer; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; }
+        .popup { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border-radius: 15px; z-index: 101; }
+        .bigword { font-size: 120px; font-weight: bold; text-align: center; padding: 40px; color: #333; background: white; border-radius: 20px; margin: 20px; font-family: 'Arial Rounded MT Bold', Arial, sans-serif; }
+        .btn.green { background: #22c55e; color: white; }
+        .trace-container { position: relative; height: 300px; background: white; border-radius: 15px; }
+        .trace-letter { position: absolute; width: 100%; text-align: center; font-size: 250px; color: #ddd; line-height: 300px; pointer-events: none; font-family: 'Arial Rounded MT Bold', Arial, sans-serif; }
+        .trace-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 15px; touch-action: none; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+    </style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+// ============ CONFIGURATION ============
+const CONFIG = {
+    focusNumber: parseInt(localStorage.getItem('focusNumber')) || 7,
+    colors: {pink:'#FF1493', orange:'#FF6600', green:'#00CC66', blue:'#0099FF'},
+    categories: {
+        animals: ['🐱','🐶','🐰','🐻','🐸','🐷','🐮','🦁','🐯','🐨'],
+        fruits: ['🍎','🍊','🍇','🍓','🍌','🍉','🍑','🍒','🥝','🍋'],
+        vegetables: ['🥕','🥦','🌽','🥒','🍆','🥬','🧅','🧄','🥔','🍅'],
+        vehicles: ['🚗','🚌','🚁','🚂','🚀','🚲','🛵','🚒','✈️','🚢'],
+        electronics: ['📱','💻','🖥️','📺','🎮','⌚','📷','🎧','🖨️','💡'],
+        furniture: ['🛋️','🪑','🛏️','🚪','🪞','🖼️','🧸','🛁','🚿','🪴'],
+        shoes: ['👟','👠','👢','👡','🥾','👞','🩴','⛸️','🛼','🎿'],
+        clothes: ['👕','👖','👗','👔','🧥','👙','🩳','🧦','🧣','👒'],
+        food: ['🍕','🍔','🍦','🍩','🧁','🍪','🌮','🍟','🥤','🍿'],
+        dessert: ['🍰','🎂','🧁','🍫','🍬','🍭','🍡','🥧','🍮','🍨'],
+        sky: ['⭐','🌙','☀️','🌈','☁️','⚡','🌟','💫','🌤️','🌸'],
+        school: ['✏️','📚','🖍️','📏','✂️','🎒','📝','🖊️','📐','🎨'],
+        sports: ['⚽','🏀','🎾','🏈','⚾','🏐','🎱','🏓','🥊','🏋️'],
+        weather: ['🌧️','❄️','🌪️','🌊','🔥','💨','🌡️','☔','⛄','🌻'],
+        insects: ['🦋','🐝','🐞','🐛','🦗','🐜','🪲','🦟','🪳','🕷️'],
+        ocean: ['🐟','🐠','🦈','🐙','🦑','🦀','🐚','🐳','🦭','🪸'],
+        birds: ['🐦','🦅','🦆','🦉','🐧','🦜','🕊️','🦢','🦩','🐔'],
+        flowers: ['🌸','🌷','🌹','🌺','🌻','💐','🌼','🪻','🪷','🌱'],
+        tools: ['🔨','🪛','🔧','🪚','🛠️','⚙️','🔩','📎','🧲','🪜'],
+        music: ['🎵','🎸','🎹','🥁','🎺','🎷','🎻','🪘','🎤','🎼'],
+        kitchen: ['🍳','🥄','🍴','🔪','🥣','🫖','☕','🍶','🧂','🥡'],
+        space: ['🚀','🛸','👽','🌍','🪐','☄️','🌕','👨‍🚀','🛰️','🔭'],
+        farm: ['🐄','🐖','🐑','🐓','🐴','🦃','🥚','🌾','🚜','🐐'],
+        faces: ['😀','😂','😍','😎','🥳','😴','🤔','😱','🤗','🥰'],
+        hands: ['👍','👏','🙌','👋','✌️','🤞','👊','🤝','💪','🖐️']},
+    twoLetterWords: ['IN','AT','ON','OF','SO','TO','GO','UP','ME','IT'],
+    threeLetterWords: ['CAT','DOG','SUN','BIG','RED','RUN','SIT','HAT','PEN','CUP'],
+    traceUppercase: ['A','B','C','D','E'],
+    traceLowercase: ['a','b','c','d','e'],
+    traceNumbers: ['1','2','3','4','5','6','7']
+};
+
+let currentAnswers = [];
+
+// ============ HELPER FUNCTIONS ============
+function generateAdditionProblems(target) {
+    const problems = [];
+    for (let a = 0; a <= target; a++) {
+        problems.push([a, target - a, target]);
+    }
+    return problems;
+}
+
+function generateCountingProblems(maxNum) {
+    const catNames = Object.keys(CONFIG.categories);
+    const problems = [];
+    for (let i = 0; i < 5; i++) {
+        const cat = catNames[Math.floor(Math.random() * catNames.length)];
+        const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
+        const count = Math.floor(Math.random() * maxNum) + 1;
+        problems.push([count, emoji.repeat(count)]);
+    }
+    return problems;
+}
+
+
+function generateMatchPairs(maxNum) {
+    const catNames = Object.keys(CONFIG.categories);
+    const pairs = [];
+    for (let i = 1; i <= CONFIG.focusNumber && i <= 5; i++) {
+        const cat = catNames[Math.floor(Math.random() * catNames.length)];
+        const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
+        pairs.push([i, emoji.repeat(i)]);
+    }
+    return pairs;
+}
+
+
+function generateMoreLessProblems(focusNum) {
+    const problems = [];
+    const catNames = Object.keys(CONFIG.categories);
+    const cat = catNames[Math.floor(Math.random() * catNames.length)];
+    const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
+
+    const otherNums = [1, 2, 3, 4, 5].filter(n => n !== focusNum);
+    otherNums.forEach(n => {
+        const askMore = Math.random() > 0.5;
+        const focusEmojis = emoji.repeat(focusNum);
+        const otherEmojis = emoji.repeat(n);
+        if (Math.random() > 0.5) {
+            const ans = focusNum > n ? 'left' : 'right';
+            problems.push([focusEmojis, otherEmojis, askMore ? 'MORE' : 'LESS', askMore ? ans : (ans === 'left' ? 'right' : 'left')]);
+        } else {
+            const ans = n > focusNum ? 'left' : 'right';
+            problems.push([otherEmojis, focusEmojis, askMore ? 'MORE' : 'LESS', askMore ? ans : (ans === 'left' ? 'right' : 'left')]);
+        }
+    });
+    return problems.sort(() => Math.random() - 0.5);
+}
+
+function generateColorPatterns() {
+    const colorNames = Object.keys(CONFIG.colors);
+    const patterns = [
+        [[colorNames[0], colorNames[1], colorNames[0], colorNames[1], colorNames[0]], colorNames[1]],
+        [[colorNames[2], colorNames[2], colorNames[3], colorNames[2], colorNames[2]], colorNames[3]],
+        [[colorNames[0], colorNames[1], colorNames[2], colorNames[0], colorNames[1]], colorNames[2]],
+        [[colorNames[1], colorNames[0], colorNames[0], colorNames[1], colorNames[0]], colorNames[0]]
+    ];
+    return patterns;
+}
+
+function setupCanvas(onSave) {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    ctx.strokeStyle = '#4169E1';
+    ctx.lineWidth = 15;
+    ctx.lineCap = 'round';
+    let drawing = false;
+
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; ctx.beginPath(); const t = e.touches[0]; const r = canvas.getBoundingClientRect(); ctx.moveTo(t.clientX - r.left, t.clientY - r.top); });
+    canvas.addEventListener('touchmove', e => { if (!drawing) return; const t = e.touches[0]; const r = canvas.getBoundingClientRect(); ctx.lineTo(t.clientX - r.left, t.clientY - r.top); ctx.stroke(); });
+    canvas.addEventListener('touchend', () => { drawing = false; });
+    canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); const r = canvas.getBoundingClientRect(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top); });
+    canvas.addEventListener('mousemove', e => { if (!drawing) return; const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); });
+    canvas.addEventListener('mouseup', () => { drawing = false; });
+}
+
+function showFeedback(correct, callback) {
+    const title = document.querySelector('.title');
+    if (correct) {
+        title.innerHTML = '⭐ Correct! ⭐';
+        title.style.color = '#22c55e';
+    } else {
+        title.innerHTML = '❌ Try again next time!';
+        title.style.color = '#ef4444';
+        document.querySelector('.card').style.animation = 'shake 0.5s';
+    }
+    setTimeout(callback, correct ? 800 : 1000);
+}
+
+function speak(text) {
+    return new Promise(resolve => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.8;
+        const voices = speechSynthesis.getVoices();
+        const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen'));
+        if (femaleVoice) utterance.voice = femaleVoice;
+        utterance.onend = resolve;
+        speechSynthesis.speak(utterance);
+    });
+}
+
+function completeWorksheet(type, score, total) {
+    const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    todayProgress.push({type: type, score: score+'/'+total, answers: currentAnswers, time: new Date().toISOString()});
+    localStorage.setItem('daily_'+today, JSON.stringify(todayProgress));
+    currentAnswers = [];
+
+    const current = parseInt(localStorage.getItem('currentWorksheet') || '0');
+    localStorage.setItem('currentWorksheet', String(current + 1));
+
+    setTimeout(nextWorksheet, 1500);
+}
+
+
+// ============ MENU ============
+function showMenu() {
+    const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+
+    if (todayProgress.length >= 5) {
+        document.getElementById('app').innerHTML = '<h1>🎨 Aliza\'s Learning</h1><div class="card"><div class="celebration">🌟 Amazing job today! 🌟<br><br>You finished all 5 worksheets!<br><br>🎉 Come back tomorrow! 🎉</div><button class="btn" onclick="showExport()">📊 View Progress</button></div>';
+        speak('Amazing job today! Come back tomorrow!');
+        return;
+    }
+
+    let html = '<h1>🎨 Aliza\'s Learning</h1>';
+    html += '<div class="btn"><label>Focus Number: <input type="number" id="focusInput" value="'+CONFIG.focusNumber+'" min="1" max="20" style="width:60px;font-size:24px;text-align:center" onchange="updateFocus(this.value)"></label></div>';
+    html += '<p style="color:white;text-align:center">Done today: '+todayProgress.length+' / 5</p>';
+    html += '<button class="btn green" style="font-size:24px;padding:30px" onclick="startDaily()">Let\'s Start! 🚀</button>';
+    html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
+    html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
+    document.getElementById('app').innerHTML = html;
+}
+
+function getToday() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function startDaily() {
+    const math = ['showAddition','showCounting','showMatchNumbers','showMoreLess','showBiggerSmaller','showWhatNext'];
+    const english = ['showTwoLetter','showThreeLetter','showTraceABC','showTraceLower','showTraceNumbers'];
+    const thinking = ['showColors','showDoesntBelong','showJora','showConnectDots'];
+
+    const todayMix = [];
+    // 2 math
+    const shuffledMath = math.sort(() => Math.random() - 0.5);
+    todayMix.push(shuffledMath[0], shuffledMath[1]);
+    // 2 english
+    const shuffledEng = english.sort(() => Math.random() - 0.5);
+    todayMix.push(shuffledEng[0], shuffledEng[1]);
+    // 1 thinking
+    const shuffledThink = thinking.sort(() => Math.random() - 0.5);
+    todayMix.push(shuffledThink[0]);
+
+    // Shuffle the 5
+    todayMix.sort(() => Math.random() - 0.5);
+
+    localStorage.setItem('todayMix', JSON.stringify(todayMix));
+    localStorage.setItem('currentWorksheet', '0');
+
+    nextWorksheet();
+}
+
+function nextWorksheet() {
+    const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    const todayMix = JSON.parse(localStorage.getItem('todayMix') || '[]');
+    const current = parseInt(localStorage.getItem('currentWorksheet') || '0');
+
+    if (current >= 5 || current >= todayMix.length) {
+        showMenu();
+        return;
+    }
+
+    window[todayMix[current]]();
+}
+
+function updateFocus(n) {
+    CONFIG.focusNumber = parseInt(n);
+    localStorage.setItem('focusNumber', n);
+}
+
+function resetProgress() {
+    if (confirm('Delete all progress?')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+// ============ ADDITION ============
+function showAddition() {
+    const problems = generateAdditionProblems(CONFIG.focusNumber);
+    let current = 0, score = 0;
+    const solved = new Set();
+    const answers = {};
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+CONFIG.focusNumber+'!</div>';
+        problems.forEach(([a, b, ans], i) => {
+            const cls = solved.has(i) ? 'problem solved' : (i === current ? 'problem active' : 'problem');
+            html += '<div class="'+cls+'" onclick="setCurrent('+i+')"><span>'+a+'</span><span style="color:#FF6B35">+</span><span>'+b+'</span><span style="color:#FF6B35">=</span><span class="answer-box" id="ans'+i+'">'+(answers[i] || '?')+'</span><span>'+(solved.has(i)?'✅':'')+'</span></div>';
+        });
+        html += '</div><div class="keypad">';
+        for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey('+n+')">'+n+'</button>';
+        html += '<button class="key red" onclick="clearKey()">✕</button><button class="key green" onclick="checkKey()">✓</button></div>';
+        html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.setCurrent = (i) => { if (!solved.has(i)) { current = i; render(); } };
+    window.pressKey = (n) => { if (!solved.has(current)) { answers[current] = n;
+    document.getElementById('ans'+current).textContent = n; } };
+    window.clearKey = () => { document.getElementById('ans'+current).textContent = '?'; };
+    window.checkKey = () => {
+        const ans = document.getElementById('ans'+current).textContent;
+        if (ans === '?' || solved.has(current)) return;
+        const correct = parseInt(ans) === problems[current][2];
+        currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], a: ans, correct: correct});
+        showFeedback(correct, () => {
+            if (correct) {
+                solved.add(current);
+                score++;
+                if (score === problems.length) { completeWorksheet('Addition', score, problems.length); return; }
+                else { for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; } }
+                render();
+            } else {
+                document.querySelector('.title').innerHTML = 'Ways to Make '+CONFIG.focusNumber+'!';
+                document.querySelector('.title').style.color = '#FF6B35';
+            }
+        });
+    };
+    render();
+}
+
+// ============ COLOR PATTERNS ============
+function showColors() {
+    const patterns = generateColorPatterns();
+    let score = 0, dragging = null;
+    const solved = new Set();
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Color Patterns!</div><div class="inst">Drag a color to the empty circle</div>';
+        patterns.forEach(([seq, ans], i) => {
+            html += '<div class="row">';
+            seq.forEach(c => { html += '<div class="circle" style="background:'+CONFIG.colors[c]+'"></div>'; });
+            const done = solved.has(i);
+            html += '<div class="drop'+(done?' correct':'')+'" id="drop'+i+'" data-ans="'+ans+'" style="'+(done?'background:'+CONFIG.colors[ans]:'')+'"></div></div>';
+        });
+        html += '<div class="palette">';
+        Object.entries(CONFIG.colors).forEach(([name, hex]) => {
+            html += '<div class="pal" draggable="true" data-color="'+name+'" style="background:'+hex+'"></div>';
+        });
+        html += '</div><div class="score">⭐ '+score+' / '+patterns.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+        setupColorDrag();
+    }
+
+    function setupColorDrag() {
+        document.querySelectorAll('.pal').forEach(p => {
+            p.addEventListener('touchstart', e => { dragging = p.dataset.color; p.style.opacity='0.5'; });
+            p.addEventListener('touchend', e => {
+                p.style.opacity='1';
+                const touch = e.changedTouches[0];
+                const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (el && el.classList.contains('drop')) handleDrop(el);
+                dragging = null;
+            });
+            p.addEventListener('dragstart', e => { dragging = p.dataset.color; });
+        });
+        document.querySelectorAll('.drop').forEach(d => {
+            d.addEventListener('dragover', e => e.preventDefault());
+            d.addEventListener('drop', e => { e.preventDefault(); handleDrop(d); });
+        });
+    }
+
+    function handleDrop(el) {
+        const i = parseInt(el.id.replace('drop',''));
+        if (solved.has(i) || !dragging) return;
+        const correct = dragging === el.dataset.ans;
+        currentAnswers.push({q: 'Pattern '+i, a: dragging, correct: correct});
+        if (correct) { solved.add(i); score++; }
+        showFeedback(correct, () => {
+            if (score === patterns.length) { completeWorksheet('Color Patterns', score, patterns.length); }
+            else { render(); }
+        });
+    }
+    render();
+}
+
+// ============ COUNTING ============
+function showCounting() {
+    const problems = generateCountingProblems(CONFIG.focusNumber);
+    let current = -1, score = 0;
+    const solved = new Set();
+    const answers = {};
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Count Them!</div>';
+        problems.forEach(([ans, emoji], i) => {
+            const cls = solved.has(i) ? 'prob done' : 'prob';
+            html += '<div class="'+cls+'"><span style="font-size:40px">'+emoji+'</span><span class="ansbox" id="ans'+i+'" onclick="openKeypad('+i+')">'+(answers[i] || '')+'</span>'+(solved.has(i)?'✅':'')+'</div>';
+        });
+        html += '</div><div class="score">⭐ '+score+' / '+problems.length+'</div>';
+        html += '<div class="overlay" id="overlay" onclick="closeKeypad()"></div>';
+        html += '<div class="popup" id="popup" onclick="event.stopPropagation()"><div class="keypad">';
+        for (let n = 0; n <= 9; n++) html += '<button class="key big" onclick="submitAnswer('+n+')">'+n+'</button>';
+        html += '</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.openKeypad = (i) => { if (!solved.has(i)) { current = i; document.getElementById('overlay').style.display='block'; document.getElementById('popup').style.display='block'; } };
+    window.closeKeypad = () => { document.getElementById('overlay').style.display='none'; document.getElementById('popup').style.display='none'; };
+    window.submitAnswer = (n) => {
+        if (current < 0) return;
+        answers[current] = n;
+        const correct = n === problems[current][0];
+        currentAnswers.push({q: problems[current][1], a: n, correct: correct});
+        closeKeypad();
+        showFeedback(correct, () => {
+            if (correct) { solved.add(current); score++; }
+            current = -1;
+            if (score === problems.length) { completeWorksheet('Counting', score, problems.length); return; }
+            render();
+        });
+    };
+    render();
+}
+
+// ============ MATCH NUMBERS ============
+function showMatchNumbers() {
+    const pairs = generateMatchPairs(CONFIG.focusNumber);
+    let score = 0, selected = null;
+    const solved = new Set();
+    const nums = pairs.map(p => p[0]).sort(() => Math.random() - 0.5);
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Match Numbers!</div><div class="inst">Tap a number, then tap the matching objects</div>';
+        pairs.forEach(([n, emoji], i) => {
+            const numCls = solved.has(nums[i]) ? 'opacity:0.3' : (selected === nums[i] ? 'background:#fffbeb;border:3px solid #FF6B35' : '');
+            const emojiCls = solved.has(n) ? 'opacity:0.3' : '';
+            html += '<div style="display:flex;gap:20px;align-items:center;margin:10px 0">';
+            html += '<button style="padding:15px 30px;font-size:32px;border-radius:10px;min-width:80px;'+numCls+'" onclick="selectNum('+nums[i]+')">'+nums[i]+'</button>';
+            html += '<div class="prob" style="flex:1;font-size:28px;text-align:right;padding-right:20px;margin-left:30px;'+emojiCls+'" onclick="selectEmoji('+n+')">'+emoji+'</div>';
+            html += '</div>';
+        });
+        html += '<div class="score">⭐ '+score+' / '+pairs.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.selectNum = (n) => { if (!solved.has(n)) { selected = n; render(); } };
+    window.selectEmoji = (n) => {
+        if (!selected || solved.has(n)) return;
+        const correct = selected === n;
+        currentAnswers.push({q: 'Match '+selected, a: n, correct: correct});
+        showFeedback(correct, () => {
+            if (correct) { solved.add(n); score++; }
+            selected = null;
+            if (score === pairs.length) { completeWorksheet('Match Numbers', score, pairs.length); return; }
+            render();
+        });
+    };
+
+    render();
+}
+
+// ============ MORE/LESS ============
+function showMoreLess() {
+    const questions = generateMoreLessProblems(CONFIG.focusNumber);
+    let current = 0, score = 0;
+
+    function render() {
+        if (current >= questions.length) { completeWorksheet('More/Less', score, questions.length); return; }
+        const [a, b, type, ans] = questions[current];
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Which has '+type+'?</div>';
+        html += '<div style="display:flex;justify-content:center;gap:20px;margin:30px 0">';
+        html += '<div class="prob" style="font-size:32px;padding:20px;cursor:pointer" onclick="pickMore(\'left\')">'+a+'</div>';
+        html += '<div class="prob" style="font-size:32px;padding:20px;cursor:pointer" onclick="pickMore(\'right\')">'+b+'</div>';
+        html += '</div><div class="score">'+(current+1)+' / '+questions.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.pickMore = (choice) => {
+        const correct = choice === questions[current][3];
+        const correctSide = questions[current][3];
+        currentAnswers.push({q: questions[current][2]+': '+questions[current][0]+' vs '+questions[current][1], a: choice, correct: correct});
+        const leftEl = document.querySelectorAll('.prob')[0];
+        const rightEl = document.querySelectorAll('.prob')[1];
+
+        if (correctSide === 'left') { leftEl.style.background = '#22c55e'; rightEl.style.background = '#ef4444'; }
+        else { rightEl.style.background = '#22c55e'; leftEl.style.background = '#ef4444'; }
+
+        showFeedback(correct, () => {
+            if (correct) score++;
+            current++;
+            render();
+        });
+    };
+    render();
+}
+
+// ============ 2-LETTER WORDS ============
+function showTwoLetter() {
+    const words = CONFIG.twoLetterWords.slice(0, CONFIG.focusNumber);
+    let current = 0;
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Read the Word!</div>';
+        html += '<div class="bigword">'+words[current]+'</div>';
+        html += '<button class="btn green" onclick="nextWord2()">Next →</button>';
+        html += '<div class="score">'+(current+1)+' / '+words.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.nextWord2 = () => { current++; if (current >= words.length) { completeWorksheet('2-Letter Words', words.length, words.length); return; } render(); };
+    render();
+}
+
+// ============ 3-LETTER WORDS ============
+function showThreeLetter() {
+    const words = CONFIG.threeLetterWords.slice(0, CONFIG.focusNumber);
+    let current = 0;
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Read the Word!</div>';
+        html += '<div class="bigword">'+words[current]+'</div>';
+        html += '<button class="btn green" onclick="nextWord3()">Next →</button>';
+        html += '<div class="score">'+(current+1)+' / '+words.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.nextWord3 = () => { current++; if (current >= words.length) { completeWorksheet('3-Letter Words', words.length, words.length); return; } render(); };
+    render();
+}
+
+// ============ TRACE ABC ============
+function showTraceABC() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0, CONFIG.focusNumber).split('');
+    let current = 0;
+    const saved = {};
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Trace the Letter!</div>';
+        html += '<div class="trace-container"><div class="trace-letter">'+letters[current]+'</div><canvas id="canvas" class="trace-canvas"></canvas></div>';
+        html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key red" onclick="clearCanvas()">Clear</button><button class="key" onclick="prevTrace()">← Prev</button><span class="score">'+(current+1)+' / '+letters.length+'</span><button class="key green" onclick="nextTrace()">Next →</button></div></div>';
+        document.getElementById('app').innerHTML = html;
+        setupCanvas();
+        if (saved[current]) { const img = new Image(); img.onload = () => { document.getElementById('canvas').getContext('2d').drawImage(img,0,0); }; img.src = saved[current]; }
+    }
+
+    function saveCanvas() { saved[current] = document.getElementById('canvas').toDataURL(); }
+    window.clearCanvas = () => { const c = document.getElementById('canvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); };
+    window.prevTrace = () => { if (current > 0) { saveCanvas(); current--; render(); } };
+    window.nextTrace = () => { saveCanvas(); current++; if (current >= letters.length) { completeWorksheet('Trace ABC', letters.length, letters.length); return; } render(); };
+    render();
+}
+
+// ============ TRACE LOWERCASE ============
+function showTraceLower() {
+    const letters = 'abcdefghijklmnopqrstuvwxyz'.slice(0, CONFIG.focusNumber).split('');
+    let current = 0;
+    const saved = {};
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Trace the Letter!</div>';
+        html += '<div class="trace-container"><div class="trace-letter">'+letters[current]+'</div><canvas id="canvas" class="trace-canvas"></canvas></div>';
+        html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key red" onclick="clearCanvas()">Clear</button><button class="key" onclick="prevLow()">← Prev</button><span class="score">'+(current+1)+' / '+letters.length+'</span><button class="key green" onclick="nextLow()">Next →</button></div></div>';
+        document.getElementById('app').innerHTML = html;
+        setupCanvas();
+        if (saved[current]) { const img = new Image(); img.onload = () => { document.getElementById('canvas').getContext('2d').drawImage(img,0,0); }; img.src = saved[current]; }
+    }
+
+    function saveCanvas() { saved[current] = document.getElementById('canvas').toDataURL(); }
+    window.clearCanvas = () => { const c = document.getElementById('canvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); };
+    window.prevLow = () => { if (current > 0) { saveCanvas(); current--; if (current >= letters.length) { completeWorksheet('Trace abc', letters.length, letters.length); return; } render(); } };
+    window.nextLow = () => { saveCanvas(); current++; if (current >= letters.length) { completeWorksheet('Trace abc', letters.length, letters.length); return; } render(); };
+    render();
+}
+
+// ============ TRACE NUMBERS ============
+function showTraceNumbers() {
+    const numbers = [];
+    for (let i = 1; i <= CONFIG.focusNumber; i++) numbers.push(String(i));
+    let current = 0;
+    const saved = {};
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Trace the Number!</div>';
+        html += '<div class="trace-container"><div class="trace-letter">'+numbers[current]+'</div><canvas id="canvas" class="trace-canvas"></canvas></div>';
+        html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key red" onclick="clearCanvas()">Clear</button><button class="key" onclick="prevNum()">← Prev</button><span class="score">'+(current+1)+' / '+numbers.length+'</span><button class="key green" onclick="nextNum()">Next →</button></div></div>';
+        document.getElementById('app').innerHTML = html;
+        setupCanvas();
+        if (saved[current]) { const img = new Image(); img.onload = () => { document.getElementById('canvas').getContext('2d').drawImage(img,0,0); }; img.src = saved[current]; }
+    }
+
+    function saveCanvas() { saved[current] = document.getElementById('canvas').toDataURL(); }
+    window.clearCanvas = () => { const c = document.getElementById('canvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); };
+    window.prevNum = () => { if (current > 0) { saveCanvas(); current--; render(); } };
+    window.nextNum = () => { saveCanvas(); current++; if (current >= numbers.length) { completeWorksheet('Trace Numbers', numbers.length, numbers.length); return; } render(); };
+    render();
+}
+
+// ============ Bigger/Smaller ============
+function showBiggerSmaller() {
+    const focus = CONFIG.focusNumber;
+    const problems = [];
+    for (let i = 0; i < 5; i++) {
+        let other;
+        do { other = Math.floor(Math.random() * focus) + 1; } while (other === focus);
+        const askBigger = Math.random() > 0.5;
+        problems.push([focus, other, askBigger ? 'BIGGER' : 'SMALLER']);
+    }
+    problems.sort(() => Math.random() - 0.5);
+    let current = 0, score = 0;
+
+    function render() {
+        if (current >= problems.length) { completeWorksheet('More/Less', score, problems.length); return; }
+        const [a, b, type] = problems[current];
+        const swapped = Math.random() > 0.5;
+        const left = swapped ? b : a;
+        const right = swapped ? a : b;
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Which is '+type+'?</div>';
+        html += '<div style="display:flex;justify-content:center;gap:30px;margin:30px 0">';
+        html += '<button style="padding:30px 50px;font-size:48px;border-radius:15px;background:#4169E1;color:white;border:none" onclick="pickSize(\'left\','+left+','+right+',\''+type+'\')">'+left+'</button>';
+        html += '<button style="padding:30px 50px;font-size:48px;border-radius:15px;background:#FF6B35;color:white;border:none" onclick="pickSize(\'right\','+left+','+right+',\''+type+'\')">'+right+'</button>';
+        html += '</div><div class="score">'+(current+1)+' / '+problems.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.pickSize = (choice, left, right, type) => {
+        const correct = type === 'BIGGER' ? (choice === 'left' ? left > right : right > left) : (choice === 'left' ? left < right : right < left);
+        currentAnswers.push({q: type+': '+left+' vs '+right, a: choice, correct: correct});
+        showFeedback(correct, () => { if(correct) score++; current++; render(); });
+    };
+    render();
+}
+
+// ============  What Comes Next ============
+function showWhatNext() {
+    const focus = CONFIG.focusNumber;
+    const problems = [
+        [[1,2,3,4], 5],
+        [[2,4,6,8], 10],
+        [['A','B','C','D'], 'E'],
+        [[focus-4,focus-3,focus-2,focus-1], focus],
+        [[focus,focus-1,focus-2,focus-3], focus-4]
+    ];
+    let current = 0, score = 0;
+
+    function render() {
+        if (current >= problems.length) { completeWorksheet('Bigger/Smaller', score, problems.length); return; }
+        const [seq, ans] = problems[current];
+        const options = [ans, ans+1, ans-1, ans+2].filter(x => x !== ans).slice(0,3).concat(ans).sort(() => Math.random()-0.5);
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">What Comes Next?</div>';
+        html += '<div class="prob" style="justify-content:center;font-size:32px;gap:10px">'+seq.join(' → ')+' → <span style="color:#FF6B35;font-weight:bold">?</span></div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px">';
+        options.forEach(o => html += '<div class="prob" style="justify-content:center;font-size:32px;cursor:pointer" onclick="pickNext(\''+o+'\')">'+o+'</div>');
+        html += '</div><div class="score">'+(current+1)+' / '+problems.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.pickNext = (choice) => {
+        const correct = String(choice) === String(problems[current][1]);
+        currentAnswers.push({q: problems[current][0].join('→')+'→?', a: choice, correct: correct});
+        const boxes = document.querySelectorAll('.card .prob');
+        boxes.forEach(b => {
+            if (b.textContent == problems[current][1]) b.style.background = '#22c55e';
+            else if (b.textContent == choice && !correct) b.style.background = '#ef4444';
+        });
+        showFeedback(correct, () => { if (correct) score++; current++; render(); });
+    };
+    render();
+}
+
+// ============  Which Doesn't Belong ============
+function showDoesntBelong() {
+    const catNames = Object.keys(CONFIG.categories);
+    const problems = [];
+    for (let i = 0; i < 5; i++) {
+        const cat1 = catNames[Math.floor(Math.random() * catNames.length)];
+        let cat2;
+        do { cat2 = catNames[Math.floor(Math.random() * catNames.length)]; } while (cat2 === cat1);
+        const items1 = CONFIG.categories[cat1].sort(() => Math.random() - 0.5).slice(0, 3);
+        const oddOne = CONFIG.categories[cat2][Math.floor(Math.random() * CONFIG.categories[cat2].length)];
+        problems.push([[...items1, oddOne], oddOne, cat1]);
+    }
+    let current = 0, score = 0;
+
+    function render() {
+        if (current >= problems.length) { completeWorksheet('What Comes Next', score, problems.length); return; }
+        const [items, ans, category] = problems[current];
+        const shuffled = [...items].sort(() => Math.random() - 0.5);
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Which Doesn\'t Belong?</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:20px 0">';
+        shuffled.forEach(item => html += '<div class="prob" style="justify-content:center;font-size:48px;padding:25px;cursor:pointer" onclick="pickOdd(\''+item+'\')">'+item+'</div>');
+        html += '</div><div class="score">'+(current+1)+' / '+problems.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.pickOdd = async (choice) => {
+        const [items, ans, category] = problems[current];
+        const correct = choice === ans;
+        currentAnswers.push({q: 'Odd one out', a: choice, correct: correct});
+        const wrongCat = Object.keys(CONFIG.categories).find(cat => CONFIG.categories[cat].includes(ans));
+        const explanation = ans + ' is ' + wrongCat.toUpperCase() + ', not ' + category.toUpperCase();
+
+        const boxes = document.querySelectorAll('.card .prob');
+        boxes.forEach(b => {
+            if (b.textContent === ans) b.style.background = '#22c55e';
+            else if (b.textContent === choice && !correct) b.style.background = '#ef4444';
+        });
+
+        document.querySelector('.title').innerHTML = explanation;
+        await speak(explanation);
+
+        showFeedback(correct, () => { if (correct) score++; current++; render(); });
+    };
+
+    render();
+}
+
+// ============  Connect Dots ============
+function showConnectDots() {
+    const shapes = [
+        {name:'Star', dots:[[150,30],[180,100],[250,100],[195,145],[215,220],[150,175],[85,220],[105,145],[50,100],[120,100]], emoji:'⭐'},
+        {name:'House', dots:[[100,200],[100,100],[150,50],[200,100],[200,200],[150,200],[150,150],[120,150],[120,200]], emoji:'🏠'},
+        {name:'Heart', dots:[[150,180],[100,130],[80,90],[100,60],[130,60],[150,90],[170,60],[200,60],[220,90],[200,130]], emoji:'❤️'}
+    ];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    let current = 0;
+    const connected = [];
+
+    function render() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Connect the Dots!</div>';
+        html += '<canvas id="dotCanvas" width="300" height="250" style="background:white;border-radius:10px;display:block;margin:0 auto"></canvas>';
+        html += '<div class="score">Tap '+((current < shape.dots.length) ? (current+1) : 'Done!')+' / '+shape.dots.length+'</div></div>';
+        document.getElementById('app').innerHTML = html;
+        drawCanvas();
+    }
+
+    function drawCanvas() {
+        const canvas = document.getElementById('dotCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0,300,250);
+
+        // Draw connected lines
+        ctx.strokeStyle = '#4169E1';
+        ctx.lineWidth = 3;
+        for (let i = 1; i < connected.length; i++) {
+            ctx.beginPath();
+            ctx.moveTo(shape.dots[connected[i-1]][0], shape.dots[connected[i-1]][1]);
+            ctx.lineTo(shape.dots[connected[i]][0], shape.dots[connected[i]][1]);
+            ctx.stroke();
+        }
+
+        // Draw dots
+        shape.dots.forEach(([x,y], i) => {
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI * 2);
+            ctx.fillStyle = connected.includes(i) ? '#22c55e' : '#4169E1';
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i+1, x, y);
+        });
+
+        // Done?
+        if (current >= shape.dots.length) {
+            ctx.font = 'bold 48px Arial';
+            ctx.fillStyle = '#22c55e';
+            ctx.fillText(shape.emoji, 150, 125);
+            completeWorksheet('Connect Dots', shape.dots.length, shape.dots.length);
+            return;
+        }
+
+
+        canvas.onclick = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const [dotX, dotY] = shape.dots[current];
+            if (Math.abs(x - dotX) < 20 && Math.abs(y - dotY) < 20) {
+                connected.push(current);
+                current++;
+                render();
+            }
+        };
+    }
+    render();
+}
+
+// ============Memory game — cards face down, flip to find matches============
+
+function showJora() {
+    const catNames = Object.keys(CONFIG.categories);
+    const cat = catNames[Math.floor(Math.random() * catNames.length)];
+    const emojis = CONFIG.categories[cat].sort(() => Math.random() - 0.5).slice(0, 4);
+    const cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+    let flipped = [], matched = [], score = 0;
+
+    function render() {
+        if (matched.length === cards.length) { completeWorksheet('Find Jora', score, 4); return; }
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Find the Jora!</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0">';
+        cards.forEach((emoji, i) => {
+            const isFlipped = flipped.includes(i) || matched.includes(i);
+            html += '<div class="prob" style="justify-content:center;font-size:32px;padding:20px;cursor:pointer;min-height:60px" onclick="flipCard('+i+')">'+(isFlipped ? emoji : '❓')+'</div>';
+        });
+        html += '</div><div class="score">Pairs: '+score+' / 4</div></div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.flipCard = (i) => {
+        if (flipped.length >= 2 || flipped.includes(i) || matched.includes(i)) return;
+        flipped.push(i);
+        render();
+        if (flipped.length === 2) {
+            setTimeout(() => {
+                if (cards[flipped[0]] === cards[flipped[1]]) {
+                    matched.push(flipped[0], flipped[1]);
+                    score++;
+                    speak('Jora!');
+                    currentAnswers.push({q: 'Found pair', a: cards[flipped[0]], correct: true});
+                }
+
+                flipped = [];
+                render();
+            }, 800);
+        }
+    };
+    render();
+}
+
+// ============ Show Progress ============
+function showExport() {
+    const allProgress = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('daily_')) {
+            allProgress[key.replace('daily_', '')] = JSON.parse(localStorage.getItem(key));
+        }
+    }
+    let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">📊 Progress</div>';
+    html += '<div style="background:#333;color:#0f0;padding:15px;border-radius:10px;font-family:monospace;font-size:12px;max-height:300px;overflow:auto;white-space:pre-wrap">'+JSON.stringify(allProgress, null, 2)+'</div>';
+    html += '<button class="btn green" onclick="copyProgress()">📋 Copy to Clipboard</button></div>';
+    document.getElementById('app').innerHTML = html;
+
+    window.copyProgress = () => {
+        navigator.clipboard.writeText(JSON.stringify(allProgress)).then(() => alert('Copied!'));
+    };
+}
+
+
+
+// Start the app
+showMenu();
+</script>
+</body>
+</html>
