@@ -43,7 +43,7 @@ function showMenu() {
     // Thinking worksheets
     html += '<div style="margin:15px 0"><h2 style="color:#0099FF;text-align:center;margin:5px"> Thinking</h2>';
     const thinking = [
-        ['showColors','Color Patterns 🎨'],['showDoesntBelong','Doesn\'t Belong 🤔'],
+        ['showColors','Color Patterns 🎨'],['showColorsL2','Color Patterns L2 🎨'],['showDoesntBelong','Doesn\'t Belong 🤔'],
         ['showJora','Find Jora 🧩'],['showConnectDots','Connect Dots ✍️']
     ];
     thinking.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
