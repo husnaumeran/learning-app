@@ -10,7 +10,17 @@ function showMenu() {
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
         html += '<p style="color:white;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
         html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
-        html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
+    
+    // Urdu worksheets
+    html += '<div style="margin:15px 0"><h2 style="color:#E91E63;text-align:center;margin:5px">🇵🇰 Urdu</h2>';
+    const urdu = [
+        ['showUrduReading','Urdu Reading 📖'],['showUrduTrace','Urdu Trace ✏️'],
+        ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️']
+    ];
+    urdu.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
+    html += '</div>';
+
+    html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
         html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
         document.getElementById('app').innerHTML = html;
         return;
@@ -47,6 +57,16 @@ function showMenu() {
         ['showJora','Find Jora 🧩'],['showConnectDots','Connect Dots ✍️']
     ];
     thinking.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
+    html += '</div>';
+
+
+    // Urdu worksheets
+    html += '<div style="margin:15px 0"><h2 style="color:#E91E63;text-align:center;margin:5px">🇵🇰 Urdu</h2>';
+    const urdu = [
+        ['showUrduReading','Urdu Reading 📖'],['showUrduTrace','Urdu Trace ✏️'],
+        ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️']
+    ];
+    urdu.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
     html += '</div>';
 
     html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
