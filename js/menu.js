@@ -12,7 +12,7 @@ function showMenu() {
         html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
     
     // Urdu worksheets
-    html += '<div style="margin:15px 0"><h2 style="color:#E91E63;text-align:center;margin:5px">🇵🇰 Urdu</h2>';
+    html += '<div style="margin:15px 0"><h2 style="color:#FFD700;text-align:center;margin:5px">اردو Urdu</h2>';
     const urdu = [
         ['showUrduReading','Urdu Reading 📖'],['showUrduTrace','Urdu Trace ✏️'],
         ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️']
@@ -61,7 +61,7 @@ function showMenu() {
 
 
     // Urdu worksheets
-    html += '<div style="margin:15px 0"><h2 style="color:#E91E63;text-align:center;margin:5px">🇵🇰 Urdu</h2>';
+    html += '<div style="margin:15px 0"><h2 style="color:#FFD700;text-align:center;margin:5px">اردو Urdu</h2>';
     const urdu = [
         ['showUrduReading','Urdu Reading 📖'],['showUrduTrace','Urdu Trace ✏️'],
         ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️']
