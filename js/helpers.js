@@ -160,6 +160,20 @@ function showFeedback(correct, callback) {
     setTimeout(callback, correct ? 800 : 1000);
 }
 
+
+function speakUrdu(text) {
+    return new Promise(resolve => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ur-PK';
+        utterance.rate = 0.7;
+        const voices = speechSynthesis.getVoices();
+        const urduVoice = voices.find(v => v.lang.startsWith('ur'));
+        if (urduVoice) utterance.voice = urduVoice;
+        utterance.onend = resolve;
+        speechSynthesis.speak(utterance);
+    });
+}
+
 function speak(text) {
     return new Promise(resolve => {
         const utterance = new SpeechSynthesisUtterance(text);
