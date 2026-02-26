@@ -37,3 +37,68 @@ const CONFIG = {
 };
 
 let currentAnswers = [];
+
+// Urdu Letters (isolated forms with harakat)
+const URDU_LETTERS = [
+    {letter:'ا', name:'alif', fatha:'اَ', kasra:'اِ', damma:'اُ', sf:'a', sk:'i', sd:'u'},
+    {letter:'ب', name:'bay', fatha:'بَ', kasra:'بِ', damma:'بُ', sf:'ba', sk:'bi', sd:'bu'},
+    {letter:'پ', name:'pay', fatha:'پَ', kasra:'پِ', damma:'پُ', sf:'pa', sk:'pi', sd:'pu'},
+    {letter:'ت', name:'tay', fatha:'تَ', kasra:'تِ', damma:'تُ', sf:'ta', sk:'ti', sd:'tu'},
+    {letter:'ٹ', name:'ttay', fatha:'ٹَ', kasra:'ٹِ', damma:'ٹُ', sf:'tta', sk:'tti', sd:'ttu'},
+    {letter:'ث', name:'say', fatha:'ثَ', kasra:'ثِ', damma:'ثُ', sf:'sa', sk:'si', sd:'su'},
+    {letter:'ج', name:'jeem', fatha:'جَ', kasra:'جِ', damma:'جُ', sf:'ja', sk:'ji', sd:'ju'},
+    {letter:'چ', name:'chay', fatha:'چَ', kasra:'چِ', damma:'چُ', sf:'cha', sk:'chi', sd:'chu'},
+    {letter:'ح', name:'hey', fatha:'حَ', kasra:'حِ', damma:'حُ', sf:'ha', sk:'hi', sd:'hu'},
+    {letter:'خ', name:'khay', fatha:'خَ', kasra:'خِ', damma:'خُ', sf:'kha', sk:'khi', sd:'khu'},
+    {letter:'د', name:'daal', fatha:'دَ', kasra:'دِ', damma:'دُ', sf:'da', sk:'di', sd:'du'},
+    {letter:'ڈ', name:'ddaal', fatha:'ڈَ', kasra:'ڈِ', damma:'ڈُ', sf:'dda', sk:'ddi', sd:'ddu'},
+    {letter:'ذ', name:'zaal', fatha:'ذَ', kasra:'ذِ', damma:'ذُ', sf:'za', sk:'zi', sd:'zu'},
+    {letter:'ر', name:'ray', fatha:'رَ', kasra:'رِ', damma:'رُ', sf:'ra', sk:'ri', sd:'ru'},
+    {letter:'ڑ', name:'rray', fatha:'ڑَ', kasra:'ڑِ', damma:'ڑُ', sf:'rra', sk:'rri', sd:'rru'},
+    {letter:'ز', name:'zay', fatha:'زَ', kasra:'زِ', damma:'زُ', sf:'za', sk:'zi', sd:'zu'},
+    {letter:'ژ', name:'zhay', fatha:'ژَ', kasra:'ژِ', damma:'ژُ', sf:'zha', sk:'zhi', sd:'zhu'},
+    {letter:'س', name:'seen', fatha:'سَ', kasra:'سِ', damma:'سُ', sf:'sa', sk:'si', sd:'su'},
+    {letter:'ش', name:'sheen', fatha:'شَ', kasra:'شِ', damma:'شُ', sf:'sha', sk:'shi', sd:'shu'},
+    {letter:'ص', name:'suad', fatha:'صَ', kasra:'صِ', damma:'صُ', sf:'sa', sk:'si', sd:'su'},
+    {letter:'ض', name:'zuad', fatha:'ضَ', kasra:'ضِ', damma:'ضُ', sf:'za', sk:'zi', sd:'zu'},
+    {letter:'ط', name:'toy', fatha:'طَ', kasra:'طِ', damma:'طُ', sf:'ta', sk:'ti', sd:'tu'},
+    {letter:'ظ', name:'zoy', fatha:'ظَ', kasra:'ظِ', damma:'ظُ', sf:'za', sk:'zi', sd:'zu'},
+    {letter:'ع', name:'ain', fatha:'عَ', kasra:'عِ', damma:'عُ', sf:'a', sk:'i', sd:'u'},
+    {letter:'غ', name:'ghain', fatha:'غَ', kasra:'غِ', damma:'غُ', sf:'gha', sk:'ghi', sd:'ghu'},
+    {letter:'ف', name:'fay', fatha:'فَ', kasra:'فِ', damma:'فُ', sf:'fa', sk:'fi', sd:'fu'},
+    {letter:'ق', name:'qaaf', fatha:'قَ', kasra:'قِ', damma:'قُ', sf:'qa', sk:'qi', sd:'qu'},
+    {letter:'ک', name:'kaaf', fatha:'کَ', kasra:'کِ', damma:'کُ', sf:'ka', sk:'ki', sd:'ku'},
+    {letter:'گ', name:'gaaf', fatha:'گَ', kasra:'گِ', damma:'گُ', sf:'ga', sk:'gi', sd:'gu'},
+    {letter:'ل', name:'laam', fatha:'لَ', kasra:'لِ', damma:'لُ', sf:'la', sk:'li', sd:'lu'},
+    {letter:'م', name:'meem', fatha:'مَ', kasra:'مِ', damma:'مُ', sf:'ma', sk:'mi', sd:'mu'},
+    {letter:'ن', name:'noon', fatha:'نَ', kasra:'نِ', damma:'نُ', sf:'na', sk:'ni', sd:'nu'},
+    {letter:'ں', name:'noon ghunna', fatha:'ں', kasra:'ں', damma:'ں', sf:'n', sk:'n', sd:'n'},
+    {letter:'و', name:'wao', fatha:'وَ', kasra:'وِ', damma:'وُ', sf:'wa', sk:'wi', sd:'wu'},
+    {letter:'ہ', name:'hey', fatha:'ہَ', kasra:'ہِ', damma:'ہُ', sf:'ha', sk:'hi', sd:'hu'},
+    {letter:'ھ', name:'dochashmee hey', fatha:'ھ', kasra:'ھ', damma:'ھ', sf:'h', sk:'h', sd:'h'},
+    {letter:'ی', name:'yay', fatha:'یَ', kasra:'یِ', damma:'یُ', sf:'ya', sk:'yi', sd:'yu'},
+    {letter:'ے', name:'bari yay', fatha:'ے', kasra:'ے', damma:'ے', sf:'ay', sk:'ay', sd:'ay'}
+];
+
+const URDU_WORDS = [
+    {word:'اَب', sound:'ab', meaning:'now'},
+    {word:'اِس', sound:'is', meaning:'this'},
+    {word:'جَب', sound:'jab', meaning:'when'},
+    {word:'سَب', sound:'sab', meaning:'all'},
+    {word:'دِل', sound:'dil', meaning:'heart'},
+    {word:'گُل', sound:'gul', meaning:'flower'},
+    {word:'نَل', sound:'nal', meaning:'tap'},
+    {word:'کَل', sound:'kal', meaning:'tomorrow'},
+    {word:'پَر', sound:'par', meaning:'on/wing'},
+    {word:'دو', sound:'do', meaning:'two'},
+    {word:'تُو', sound:'tu', meaning:'you'},
+    {word:'جو', sound:'jo', meaning:'who'},
+    {word:'نَو', sound:'nau', meaning:'nine'},
+    {word:'بَس', sound:'bas', meaning:'enough'},
+    {word:'دَس', sound:'das', meaning:'ten'},
+    {word:'مِل', sound:'mil', meaning:'meet'},
+    {word:'ہَم', sound:'hum', meaning:'we'},
+    {word:'تُم', sound:'tum', meaning:'you (plural)'},
+    {word:'دَم', sound:'dam', meaning:'breath'},
+    {word:'رَب', sound:'rab', meaning:'lord'}
+];
