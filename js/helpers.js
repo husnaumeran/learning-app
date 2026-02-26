@@ -163,14 +163,23 @@ function showFeedback(correct, callback) {
 
 function speakUrdu(text) {
     return new Promise(resolve => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ur-PK';
-        utterance.rate = 0.7;
-        const voices = speechSynthesis.getVoices();
-        const urduVoice = voices.find(v => v.lang.startsWith('ur'));
-        if (urduVoice) utterance.voice = urduVoice;
-        utterance.onend = resolve;
-        speechSynthesis.speak(utterance);
+        const audio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ur&q='+encodeURIComponent(text));
+        audio.onended = resolve;
+        audio.onerror = () => {
+            // Fallback to Web Speech API
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ur-PK';
+            u.rate = 0.7;
+            u.onend = resolve;
+            speechSynthesis.speak(u);
+        };
+        audio.play().catch(() => {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ur-PK';
+            u.rate = 0.7;
+            u.onend = resolve;
+            speechSynthesis.speak(u);
+        });
     });
 }
 
