@@ -7,6 +7,39 @@ function generateAdditionProblems(target) {
     return problems;
 }
 
+
+function generateSubtractionProblems(focusNum) {
+    const problems = [];
+    const numProblems = focusNum;
+    const numFocusAnswer = Math.max(1, Math.ceil(numProblems / 3));
+    const catNames = Object.keys(CONFIG.categories);
+
+    function pickEmoji() {
+        const cat = catNames[Math.floor(Math.random() * catNames.length)];
+        return CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
+    }
+
+    // Some problems where answer = focusNumber
+    for (let i = 0; i < numFocusAnswer; i++) {
+        const b = Math.floor(Math.random() * focusNum) + 1;
+        problems.push({a: focusNum + b, b: b, ans: focusNum, mode: i % 2 === 0 ? 'visual' : 'equation', emoji: pickEmoji()});
+    }
+
+    // Rest are random easier subtractions
+    for (let i = numFocusAnswer; i < numProblems; i++) {
+        const ans = Math.floor(Math.random() * focusNum);
+        const b = Math.floor(Math.random() * focusNum) + 1;
+        problems.push({a: ans + b, b: b, ans: ans, mode: i % 2 === 0 ? 'visual' : 'equation', emoji: pickEmoji()});
+    }
+
+    // Shuffle
+    for (let i = problems.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [problems[i], problems[j]] = [problems[j], problems[i]];
+    }
+    return problems;
+}
+
 function generateCountingProblems(maxNum) {
     const catNames = Object.keys(CONFIG.categories);
     const problems = [];
