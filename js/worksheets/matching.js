@@ -4,10 +4,19 @@ function showMatchNumbers() {
     let score = 0, selected = null;
     const solved = new Set();
     const nums = pairs.map(p => p[0]).sort(() => Math.random() - 0.5);
+    const emojiOrder = pairs.map((_, i) => i).sort(() => Math.random() - 0.5);
+    // Ensure no number is next to its matching emoji
+    for (let i = 0; i < nums.length; i++) {
+        if (nums[i] === pairs[emojiOrder[i]][0]) {
+            const swapWith = (i + 1) % nums.length;
+            [emojiOrder[i], emojiOrder[swapWith]] = [emojiOrder[swapWith], emojiOrder[i]];
+        }
+    }
 
     function render() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Match Numbers!</div><div class="inst">Tap a number, then tap the matching objects</div>';
-        pairs.forEach(([n, emoji], i) => {
+        pairs.forEach((_, i) => {
+            const [n, emoji] = pairs[emojiOrder[i]];
             const numCls = solved.has(nums[i]) ? 'opacity:0.3' : (selected === nums[i] ? 'background:#fffbeb;border:3px solid #FF6B35' : '');
             const emojiCls = solved.has(n) ? 'opacity:0.3' : '';
             html += '<div style="display:flex;gap:20px;align-items:center;margin:10px 0">';
