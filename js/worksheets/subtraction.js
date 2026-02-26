@@ -18,6 +18,9 @@ function showSubtraction() {
         html += '</div>';
 
         if (p.mode === 'visual') {
+            // Show equation above emojis
+            html += '<div style="text-align:center;font-size:36px;margin:10px;color:#333">';
+            html += p.a+' <span style="color:#FF6B35">−</span> '+p.b+' <span style="color:#FF6B35">=</span> <span style="color:#FF6B35">?</span></div>';
             // Visual: show emojis, cross out some
             html += '<div style="text-align:center;font-size:32px;line-height:1.8;margin:15px 5px">';
             for (let i = 0; i < p.a; i++) {
@@ -31,14 +34,14 @@ function showSubtraction() {
             html += '<div style="text-align:center;font-size:22px;color:white;margin:5px">How many are left?</div>';
         } else {
             // Equation mode
-            html += '<div style="text-align:center;font-size:48px;margin:20px;color:white">';
+            html += '<div style="text-align:center;font-size:48px;margin:20px;color:#333">';
             html += p.a+' <span style="color:#FF6B35">−</span> '+p.b+' <span style="color:#FF6B35">=</span> ';
             html += '<span class="answer-box" id="ansBox">'+(answers[current]!=null ? answers[current] : '?')+'</span></div>';
         }
 
         // Answer box for visual mode
         if (p.mode === 'visual') {
-            html += '<div style="text-align:center;font-size:48px;margin:5px;color:white">';
+            html += '<div style="text-align:center;font-size:48px;margin:5px;color:#333">';
             html += '<span class="answer-box" id="ansBox">'+(answers[current]!=null ? answers[current] : '?')+'</span></div>';
         }
 
