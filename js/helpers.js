@@ -85,6 +85,39 @@ function generateMoreLessProblems(focusNum) {
     return problems.sort(() => Math.random() - 0.5);
 }
 
+
+function generateColorPatternsL2() {
+    const c = Object.keys(CONFIG.colors);
+    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+    const pick2 = () => { const s = shuffle([...c]); return [s[0], s[1]]; };
+    const pick3 = () => { const s = shuffle([...c]); return [s[0], s[1], s[2]]; };
+    const problems = [];
+
+    // ABB patterns
+    let [a, b] = pick2();
+    problems.push({seq: [a,b,b,a,b,b,a], ans: b, type: 'next', label: 'ABB'});
+    [a, b] = pick2();
+    problems.push({seq: [a,b,b,a,b,b], ans: a, type: 'next', label: 'ABB'});
+
+    // AABB patterns
+    [a, b] = pick2();
+    problems.push({seq: [a,a,b,b,a,a,b], ans: b, type: 'next', label: 'AABB'});
+
+    // ABBC patterns
+    let [x, y, z] = pick3();
+    problems.push({seq: [x,y,y,z,x,y,y], ans: z, type: 'next', label: 'ABBC'});
+
+    // Fill-the-blank versions
+    [a, b] = pick2();
+    problems.push({seq: [a,b,b,null,b,b,a], ans: a, type: 'blank', label: 'ABB'});
+    [a, b] = pick2();
+    problems.push({seq: [a,a,b,b,null,a,b,b], ans: a, type: 'blank', label: 'AABB'});
+    [x, y, z] = pick3();
+    problems.push({seq: [x,y,y,z,x,null,y,z], ans: y, type: 'blank', label: 'ABBC'});
+
+    return shuffle(problems);
+}
+
 function generateColorPatterns() {
     const colorNames = Object.keys(CONFIG.colors);
     const patterns = [
