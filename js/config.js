@@ -102,3 +102,61 @@ const URDU_WORDS = [
     {word:'دَم', sound:'dam', meaning:'breath'},
     {word:'رَب', sound:'rab', meaning:'lord'}
 ];
+
+// Arabic Letters (28 letters with harakat and connection forms)
+const ARABIC_LETTERS = [
+    {letter:'ا', name:'alif', fatha:'أَ', kasra:'إِ', damma:'أُ', sf:'a', sk:'i', sd:'u', initial:'ا', medial:'ـا', final:'ـا'},
+    {letter:'ب', name:'baa', fatha:'بَ', kasra:'بِ', damma:'بُ', sf:'ba', sk:'bi', sd:'bu', initial:'بـ', medial:'ـبـ', final:'ـب'},
+    {letter:'ت', name:'taa', fatha:'تَ', kasra:'تِ', damma:'تُ', sf:'ta', sk:'ti', sd:'tu', initial:'تـ', medial:'ـتـ', final:'ـت'},
+    {letter:'ث', name:'thaa', fatha:'ثَ', kasra:'ثِ', damma:'ثُ', sf:'tha', sk:'thi', sd:'thu', initial:'ثـ', medial:'ـثـ', final:'ـث'},
+    {letter:'ج', name:'jeem', fatha:'جَ', kasra:'جِ', damma:'جُ', sf:'ja', sk:'ji', sd:'ju', initial:'جـ', medial:'ـجـ', final:'ـج'},
+    {letter:'ح', name:'haa', fatha:'حَ', kasra:'حِ', damma:'حُ', sf:'ha', sk:'hi', sd:'hu', initial:'حـ', medial:'ـحـ', final:'ـح'},
+    {letter:'خ', name:'khaa', fatha:'خَ', kasra:'خِ', damma:'خُ', sf:'kha', sk:'khi', sd:'khu', initial:'خـ', medial:'ـخـ', final:'ـخ'},
+    {letter:'د', name:'daal', fatha:'دَ', kasra:'دِ', damma:'دُ', sf:'da', sk:'di', sd:'du', initial:'د', medial:'ـد', final:'ـد'},
+    {letter:'ذ', name:'dhaal', fatha:'ذَ', kasra:'ذِ', damma:'ذُ', sf:'dha', sk:'dhi', sd:'dhu', initial:'ذ', medial:'ـذ', final:'ـذ'},
+    {letter:'ر', name:'raa', fatha:'رَ', kasra:'رِ', damma:'رُ', sf:'ra', sk:'ri', sd:'ru', initial:'ر', medial:'ـر', final:'ـر'},
+    {letter:'ز', name:'zaay', fatha:'زَ', kasra:'زِ', damma:'زُ', sf:'za', sk:'zi', sd:'zu', initial:'ز', medial:'ـز', final:'ـز'},
+    {letter:'س', name:'seen', fatha:'سَ', kasra:'سِ', damma:'سُ', sf:'sa', sk:'si', sd:'su', initial:'سـ', medial:'ـسـ', final:'ـس'},
+    {letter:'ش', name:'sheen', fatha:'شَ', kasra:'شِ', damma:'شُ', sf:'sha', sk:'shi', sd:'shu', initial:'شـ', medial:'ـشـ', final:'ـش'},
+    {letter:'ص', name:'saad', fatha:'صَ', kasra:'صِ', damma:'صُ', sf:'sa', sk:'si', sd:'su', initial:'صـ', medial:'ـصـ', final:'ـص'},
+    {letter:'ض', name:'daad', fatha:'ضَ', kasra:'ضِ', damma:'ضُ', sf:'da', sk:'di', sd:'du', initial:'ضـ', medial:'ـضـ', final:'ـض'},
+    {letter:'ط', name:'taa', fatha:'طَ', kasra:'طِ', damma:'طُ', sf:'ta', sk:'ti', sd:'tu', initial:'طـ', medial:'ـطـ', final:'ـط'},
+    {letter:'ظ', name:'dhaa', fatha:'ظَ', kasra:'ظِ', damma:'ظُ', sf:'dha', sk:'dhi', sd:'dhu', initial:'ظـ', medial:'ـظـ', final:'ـظ'},
+    {letter:'ع', name:'ain', fatha:'عَ', kasra:'عِ', damma:'عُ', sf:'a', sk:'i', sd:'u', initial:'عـ', medial:'ـعـ', final:'ـع'},
+    {letter:'غ', name:'ghain', fatha:'غَ', kasra:'غِ', damma:'غُ', sf:'gha', sk:'ghi', sd:'ghu', initial:'غـ', medial:'ـغـ', final:'ـغ'},
+    {letter:'ف', name:'faa', fatha:'فَ', kasra:'فِ', damma:'فُ', sf:'fa', sk:'fi', sd:'fu', initial:'فـ', medial:'ـفـ', final:'ـف'},
+    {letter:'ق', name:'qaaf', fatha:'قَ', kasra:'قِ', damma:'قُ', sf:'qa', sk:'qi', sd:'qu', initial:'قـ', medial:'ـقـ', final:'ـق'},
+    {letter:'ك', name:'kaaf', fatha:'كَ', kasra:'كِ', damma:'كُ', sf:'ka', sk:'ki', sd:'ku', initial:'كـ', medial:'ـكـ', final:'ـك'},
+    {letter:'ل', name:'laam', fatha:'لَ', kasra:'لِ', damma:'لُ', sf:'la', sk:'li', sd:'lu', initial:'لـ', medial:'ـلـ', final:'ـل'},
+    {letter:'م', name:'meem', fatha:'مَ', kasra:'مِ', damma:'مُ', sf:'ma', sk:'mi', sd:'mu', initial:'مـ', medial:'ـمـ', final:'ـم'},
+    {letter:'ن', name:'noon', fatha:'نَ', kasra:'نِ', damma:'نُ', sf:'na', sk:'ni', sd:'nu', initial:'نـ', medial:'ـنـ', final:'ـن'},
+    {letter:'ه', name:'haa', fatha:'هَ', kasra:'هِ', damma:'هُ', sf:'ha', sk:'hi', sd:'hu', initial:'هـ', medial:'ـهـ', final:'ـه'},
+    {letter:'و', name:'waaw', fatha:'وَ', kasra:'وِ', damma:'وُ', sf:'wa', sk:'wi', sd:'wu', initial:'و', medial:'ـو', final:'ـو'},
+    {letter:'ي', name:'yaa', fatha:'يَ', kasra:'يِ', damma:'يُ', sf:'ya', sk:'yi', sd:'yu', initial:'يـ', medial:'ـيـ', final:'ـي'}
+];
+
+const ARABIC_2LETTER = [
+    {word:'أَبْ', sound:'ab', meaning:'father'},
+    {word:'أُمْ', sound:'um', meaning:'mother'},
+    {word:'يَدْ', sound:'yad', meaning:'hand'},
+    {word:'فَمْ', sound:'fam', meaning:'mouth'},
+    {word:'مَنْ', sound:'man', meaning:'who'},
+    {word:'عَنْ', sound:'an', meaning:'about'},
+    {word:'إِنْ', sound:'in', meaning:'if'},
+    {word:'بَلْ', sound:'bal', meaning:'rather'},
+    {word:'قَدْ', sound:'qad', meaning:'already'},
+    {word:'هَلْ', sound:'hal', meaning:'is it?'}
+];
+
+const ARABIC_3LETTER = [
+    {word:'كَتَبَ', sound:'kataba', meaning:'he wrote'},
+    {word:'عَلِمَ', sound:'alima', meaning:'he knew'},
+    {word:'فَتَحَ', sound:'fataha', meaning:'he opened'},
+    {word:'جَلَسَ', sound:'jalasa', meaning:'he sat'},
+    {word:'ذَهَبَ', sound:'dhahaba', meaning:'he went'},
+    {word:'نَظَرَ', sound:'nadhara', meaning:'he looked'},
+    {word:'سَمِعَ', sound:'samia', meaning:'he heard'},
+    {word:'قَرَأَ', sound:'qaraa', meaning:'he read'},
+    {word:'وَلَدْ', sound:'walad', meaning:'boy'},
+    {word:'بِنْتْ', sound:'bint', meaning:'girl'}
+];
