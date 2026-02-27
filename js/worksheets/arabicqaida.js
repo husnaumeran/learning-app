@@ -73,9 +73,9 @@ function showArabicQaida() {
             const l = letters[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
             html += '<div class="title" style="color:#22c55e;direction:rtl">Level 1: Letters 🔤</div>';
-            html += '<div style="text-align:center;font-size:100px;margin:15px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+l.name+'\')">'+l.letter+'</div>';
+            html += '<div style="text-align:center;font-size:100px;margin:15px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+l.letter+'\')">'+l.letter+'</div>';
             html += '<div style="text-align:center;color:white;font-size:24px">'+l.name+'</div>';
-            html += '<button class="btn green" style="font-size:20px;padding:12px 25px;margin:10px auto;display:block" onclick="speakArabic(\''+l.name+'\')">🔊 Listen</button>';
+            html += '<button class="btn green" style="font-size:20px;padding:12px 25px;margin:10px auto;display:block" onclick="speakArabic(\''+l.letter+'\')">🔊 Listen</button>';
             html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key" onclick="prevQL()">← Prev</button><span class="score">'+(current+1)+' / '+letters.length+'</span><button class="key green" onclick="nextQL()">Next →</button></div></div>';
             document.getElementById('app').innerHTML = html;
         }
@@ -127,7 +127,7 @@ function showArabicQaida() {
             const l = letters[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
             html += '<div class="title" style="color:#22c55e;direction:rtl">Level 3: Connections 🔗</div>';
-            html += '<div style="text-align:center;font-size:60px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+l.name+'\')">'+l.letter+'</div>';
+            html += '<div style="text-align:center;font-size:60px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+l.letter+'\')">'+l.letter+'</div>';
             html += '<div style="display:flex;justify-content:center;gap:20px;margin:15px 0;direction:rtl">';
             [{form:'initial',label:'Beginning'},{form:'medial',label:'Middle'},{form:'final',label:'End'}].forEach(f => {
                 html += '<div style="text-align:center;padding:12px 15px;background:#333;border-radius:10px"><div style="font-size:40px;font-family:serif;color:white">'+l[f.form]+'</div><div style="color:#22c55e;font-size:13px;margin-top:5px">'+f.label+'</div></div>';
