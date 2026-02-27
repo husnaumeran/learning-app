@@ -53,7 +53,7 @@ function showMenu() {
     html += '<div style="margin:15px 0"><h2 style="color:#FFD700;text-align:center;margin:5px">اردو Urdu</h2>';
     const urdu = [
         ['showUrduReading','Urdu Reading 📖'],['showUrduTrace','Urdu Trace ✏️'],
-        ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️'],['showUrduVideos','Urdu Videos 📺']
+        ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️'],['showUrduVideos','Urdu Videos 📺'],['showUrduQaida','Urdu Qaida 📖']
     ];
     urdu.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
     html += '</div>';
