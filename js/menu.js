@@ -10,17 +10,7 @@ function showMenu() {
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
         html += '<p style="color:white;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
         html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
-    
-    // Urdu worksheets
-    html += '<div style="margin:15px 0"><h2 style="color:#FFD700;text-align:center;margin:5px">اردو Urdu</h2>';
-    const urdu = [
-        ['showUrduReading','Urdu Reading 📖'],['showUrduTrace','Urdu Trace ✏️'],
-        ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️'],['showUrduVideos','Urdu Videos 📺']
-    ];
-    urdu.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
-    html += '</div>';
-
-    html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
+        html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
         html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
         document.getElementById('app').innerHTML = html;
         return;
@@ -51,14 +41,13 @@ function showMenu() {
     html += '</div>';
 
     // Thinking worksheets
-    html += '<div style="margin:15px 0"><h2 style="color:#0099FF;text-align:center;margin:5px"> Thinking</h2>';
+    html += '<div style="margin:15px 0"><h2 style="color:#0099FF;text-align:center;margin:5px">🧠 Thinking</h2>';
     const thinking = [
         ['showColors','Color Patterns 🎨'],['showColorsL2','Color Patterns L2 🎨'],['showDoesntBelong','Doesn\'t Belong 🤔'],
         ['showJora','Find Jora 🧩'],['showConnectDots','Connect Dots ✍️']
     ];
     thinking.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
     html += '</div>';
-
 
     // Urdu worksheets
     html += '<div style="margin:15px 0"><h2 style="color:#FFD700;text-align:center;margin:5px">اردو Urdu</h2>';
@@ -67,6 +56,14 @@ function showMenu() {
         ['showUrdu2Letter','Urdu 2-Letter Words 📚'],['showUrduWhatNext','Urdu What Next ➡️'],['showUrduVideos','Urdu Videos 📺']
     ];
     urdu.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
+    html += '</div>';
+
+    // Arabic worksheets
+    html += '<div style="margin:15px 0"><h2 style="color:#22c55e;text-align:center;margin:5px">📖 Arabic Qaida</h2>';
+    const arabic = [
+        ['showArabicQaida','Arabic Qaida 📖']
+    ];
+    arabic.forEach(([fn,label]) => { html += '<button class="btn" onclick="launchWorksheet(\''+fn+'\')">'+label+'</button>'; });
     html += '</div>';
 
     html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
