@@ -161,6 +161,28 @@ function showFeedback(correct, callback) {
 }
 
 
+
+function speakArabic(text) {
+    return new Promise(resolve => {
+        const audio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q='+encodeURIComponent(text));
+        audio.onended = resolve;
+        audio.onerror = () => {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ar-SA';
+            u.rate = 0.7;
+            u.onend = resolve;
+            speechSynthesis.speak(u);
+        };
+        audio.play().catch(() => {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ar-SA';
+            u.rate = 0.7;
+            u.onend = resolve;
+            speechSynthesis.speak(u);
+        });
+    });
+}
+
 function speakUrdu(text) {
     return new Promise(resolve => {
         const audio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ur&q='+encodeURIComponent(text));
