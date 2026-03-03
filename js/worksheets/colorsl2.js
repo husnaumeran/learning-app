@@ -60,7 +60,7 @@ function showColorsL2() {
             solved.add(current);
             score++;
             showFeedback(true, () => {
-                speak('Great job!');
+                
                 if (score === problems.length) { completeWorksheet('Color Patterns L2', score, problems.length); return; }
                 for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; }
                 selectedColor = null;
@@ -68,7 +68,7 @@ function showColorsL2() {
             });
         } else {
             showFeedback(false, () => {
-                speak('Try again!');
+                
                 selectedColor = null;
                 render();
             });
