@@ -54,11 +54,14 @@ function generateCountingProblems(maxNum) {
 
 function generateMatchPairs(maxNum) {
     const catNames = Object.keys(CONFIG.categories);
+    const nums = [];
+    for (let i = 1; i <= maxNum; i++) nums.push(i);
+    const shuffled = nums.sort(() => Math.random() - 0.5).slice(0, CONFIG.focusNumber);
     const pairs = [];
-    for (let i = 1; i <= CONFIG.focusNumber && i <= 5; i++) {
+    for (const n of shuffled) {
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
         const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
-        pairs.push([i, emoji.repeat(i)]);
+        pairs.push([n, emoji.repeat(n)]);
     }
     return pairs;
 }
