@@ -26,7 +26,7 @@ function showJora() {
                 if (cards[flipped[0]] === cards[flipped[1]]) {
                     matched.push(flipped[0], flipped[1]);
                     score++;
-                    speak('Jora!');
+                    
                     currentAnswers.push({q: 'Found pair', a: cards[flipped[0]], correct: true});
                 }
 
