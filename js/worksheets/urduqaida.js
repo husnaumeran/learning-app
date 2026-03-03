@@ -54,7 +54,7 @@ function showUrduQaida() {
 
     window.forceUnlockUrdu = (level) => {
         const current = parseInt(localStorage.getItem('urdu_qaida_unlocked') || '0');
-        if (level > current) { localStorage.setItem('urdu_qaida_unlocked', level); showLevelPicker(); speak('Level unlocked!'); }
+        if (level > current) { localStorage.setItem('urdu_qaida_unlocked', level); showLevelPicker();  }
     };
 
     window.startUrduLevel = (level) => {
