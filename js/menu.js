@@ -106,7 +106,7 @@ function nextWorksheet() {
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
     if (todayProgress.length >= wsLimit || queueIndex >= worksheetQueue.length) {
-        speak('All done! Great job!');
+        
         showMenu();
         return;
     }
