@@ -4,7 +4,7 @@ function generateAdditionProblems(target) {
     for (let a = 0; a <= target; a++) {
         problems.push([a, target - a, target]);
     }
-    return problems;
+    return problems.sort(() => Math.random() - 0.5);
 }
 
 
