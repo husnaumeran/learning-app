@@ -91,8 +91,10 @@ function startDaily() {
         worksheetQueue.push(...shuffled.slice(0, 2));
     });
 
-    // Shuffle the final queue
+    // Shuffle and cap at limit
     worksheetQueue = worksheetQueue.sort(() => Math.random() - 0.5);
+    const remaining = wsLimit - todayProgress.length;
+    worksheetQueue = worksheetQueue.slice(0, remaining);
     queueIndex = 0;
 
     if (worksheetQueue.length === 0) { showMenu(); return; }
@@ -100,7 +102,10 @@ function startDaily() {
 }
 
 function nextWorksheet() {
-    if (queueIndex >= worksheetQueue.length) {
+    const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
+    if (todayProgress.length >= wsLimit || queueIndex >= worksheetQueue.length) {
         speak('All done! Great job!');
         showMenu();
         return;
