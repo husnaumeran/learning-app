@@ -54,7 +54,7 @@ function showArabicQaida() {
 
     window.forceUnlock = (level) => {
         const current = parseInt(localStorage.getItem('qaida_unlocked') || '0');
-        if (level > current) { localStorage.setItem('qaida_unlocked', level); showLevelPicker(); speak('Level unlocked!'); }
+        if (level > current) { localStorage.setItem('qaida_unlocked', level); showLevelPicker();  }
     };
 
     window.startLevel = (level) => {
