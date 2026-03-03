@@ -153,7 +153,7 @@ function showUrduQaida() {
 
     // ===== LEVEL 4: 2-Letter Words =====
     function uq2Letter() {
-        const words = URDU_WORDS.slice(0, CONFIG.focusNumber);
+        const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, CONFIG.focusNumber);
         let current = 0;
         function render() {
             const w = words[current];
