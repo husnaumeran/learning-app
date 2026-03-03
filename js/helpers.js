@@ -119,14 +119,16 @@ function generateColorPatternsL2() {
 }
 
 function generateColorPatterns() {
-    const colorNames = Object.keys(CONFIG.colors);
-    const patterns = [
-        [[colorNames[0], colorNames[1], colorNames[0], colorNames[1], colorNames[0]], colorNames[1]],
-        [[colorNames[2], colorNames[2], colorNames[3], colorNames[2], colorNames[2]], colorNames[3]],
-        [[colorNames[0], colorNames[1], colorNames[2], colorNames[0], colorNames[1]], colorNames[2]],
-        [[colorNames[1], colorNames[0], colorNames[0], colorNames[1], colorNames[0]], colorNames[0]]
-    ];
-    return patterns;
+    const c = Object.keys(CONFIG.colors);
+    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+    const pick = () => shuffle([...c]);
+    const patterns = [];
+    let s;
+    s = pick(); patterns.push([[s[0],s[1],s[0],s[1],s[0]], s[1]]);
+    s = pick(); patterns.push([[s[0],s[0],s[1],s[0],s[0]], s[1]]);
+    s = pick(); patterns.push([[s[0],s[1],s[2],s[0],s[1]], s[2]]);
+    s = pick(); patterns.push([[s[0],s[1],s[0],s[1],s[0],s[1]], s[0]]);
+    return shuffle(patterns);
 }
 
 function setupCanvas() {
