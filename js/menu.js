@@ -75,6 +75,7 @@ function showMenu() {
 function startDaily() {
     const today = getToday();
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
     const doneTypes = todayProgress.map(p => p.type);
 
     const sections = [
