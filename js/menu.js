@@ -42,7 +42,8 @@ function showMenu() {
             ['showColors','Color Patterns 🎨','Color Patterns'],['showColorsL2','Color Patterns L2 🎨','Color Patterns L2'],
             ['showDoesntBelong','Doesn\'t Belong 🤔','Doesn\'t Belong'],
             ['showJora','Find Jora 🧩','Find Jora'],['showConnectDots','Connect Dots ✍️','Connect Dots'],
-            ['showFigureMatrices','Figure Matrices 🧩','Figure Matrices']
+            ['showFigureMatrices','Figure Matrices 🧩','Figure Matrices'],
+            ['showVerbalAnalogies','Verbal Analogies 🗣️','Verbal Analogies']
         ]},
         {title:'اردو Urdu', color:'#FFD700', items:[
             ['showUrduReading','Urdu Reading 📖','Urdu Reading'],['showUrduTrace','Urdu Trace ✏️','Urdu Trace'],
@@ -82,7 +83,7 @@ function startDaily() {
     const sections = [
         [['showAddition','Addition'],['showSubtraction','Subtraction'],['showCounting','Counting'],['showMatchNumbers','Match Numbers'],['showMoreLess','More/Less'],['showBiggerSmaller','Bigger/Smaller'],['showWhatNext','What Comes Next']],
         [['showTwoLetter','2-Letter Words'],['showThreeLetter','3-Letter Words'],['showTraceABC','Trace ABC'],['showTraceLower','Trace abc'],['showTraceNumbers','Trace Numbers']],
-        [['showColors','Color Patterns'],['showColorsL2','Color Patterns L2'],['showDoesntBelong','Doesn\'t Belong'],['showJora','Find Jora'],['showConnectDots','Connect Dots'],['showFigureMatrices','Figure Matrices']],
+        [['showColors','Color Patterns'],['showColorsL2','Color Patterns L2'],['showDoesntBelong','Doesn\'t Belong'],['showJora','Find Jora'],['showConnectDots','Connect Dots'],['showFigureMatrices','Figure Matrices'],['showVerbalAnalogies','Verbal Analogies']],
         [['showUrduReading','Urdu Reading'],['showUrduTrace','Urdu Trace'],['showUrdu2Letter','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next']],
         [['showArabicQaida','Arabic Qaida']]
     ];
