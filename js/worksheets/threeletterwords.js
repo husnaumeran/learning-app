@@ -1,6 +1,6 @@
 // ============ 3-LETTER WORDS ============
 function showThreeLetter() {
-    const words = CONFIG.threeLetterWords.slice(0, CONFIG.focusNumber);
+    const words = [...CONFIG.threeLetterWords].sort(() => Math.random()-0.5).slice(0, CONFIG.focusNumber);
     let current = 0;
 
     function render() {
