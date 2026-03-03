@@ -115,7 +115,7 @@ function generateColorPatternsL2() {
     [x, y, z] = pick3();
     problems.push({seq: [x,y,y,z,x,null,y,z], ans: y, type: 'blank', label: 'ABBC'});
 
-    return shuffle(problems);
+    return shuffle(problems).slice(0, CONFIG.focusNumber);
 }
 
 function generateColorPatterns() {
@@ -128,7 +128,7 @@ function generateColorPatterns() {
     s = pick(); patterns.push([[s[0],s[0],s[1],s[0],s[0]], s[1]]);
     s = pick(); patterns.push([[s[0],s[1],s[2],s[0],s[1]], s[2]]);
     s = pick(); patterns.push([[s[0],s[1],s[0],s[1],s[0],s[1]], s[0]]);
-    return shuffle(patterns);
+    return shuffle(patterns).slice(0, CONFIG.focusNumber);
 }
 
 function setupCanvas() {
