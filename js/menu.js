@@ -66,6 +66,7 @@ function showMenu() {
         html += '</div>';
     });
 
+    html += '<button class="btn" onclick="showHowToUse()">📋 How to Use</button>';
     html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
     html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
     document.getElementById('app').innerHTML = html;
@@ -133,6 +134,30 @@ function resetProgress() {
         localStorage.clear();
         location.reload();
     }
+}
+
+function showHowToUse() {
+    let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
+    html += '<div class="title">📋 How to Use</div>';
+    html += '<div style="color:white;font-size:16px;line-height:1.8;text-align:left;padding:10px">';
+    html += '<p style="color:#FF6B35;font-size:18px;font-weight:bold;text-align:center;margin-bottom:15px">⚠️ This is NOT a "give the kid and forget" app.<br>This is a "do it WITH your kid" app! ⚠️</p>';
+    html += '<ul style="padding-left:20px">';
+    html += '<li><b>Sit with your child</b> — Guide them through each worksheet, talk about what they see</li>';
+    html += '<li><b>Focus Number</b> — Controls difficulty across ALL worksheets. Start low (3-5), increase as they improve</li>';
+    html += '<li><b>Worksheet Limit</b> — Set how many worksheets per day to avoid screen fatigue</li>';
+    html += '<li><b>Let\'s Start 🚀</b> — Picks 2 random worksheets per section. Best for daily practice</li>';
+    html += '<li><b>Locked worksheets 🔒</b> — Kids can\'t open individual worksheets. Parents hold 3 seconds to unlock</li>';
+    html += '<li><b>Urdu & Arabic Qaida</b> — Levels unlock after 5 days of practice. Parents can hold 3s on 🔒 to override</li>';
+    html += '<li><b>Sound buttons 🔊</b> — Tap letters/words to hear pronunciation. Repeat together!</li>';
+    html += '<li><b>Tracing ✏️</b> — Let them trace with their finger. Clear and try again. No wrong answers here!</li>';
+    html += '<li><b>Color Patterns</b> — Tap a color, then tap the empty circle. Talk about the pattern together</li>';
+    html += '<li><b>Repetition is key</b> — The same worksheets appear in different order each day. This is intentional!</li>';
+    html += '<li><b>Celebrate effort</b> — Stars ⭐ are for trying, not just correct answers</li>';
+    html += '<li><b>Keep sessions short</b> — 10-15 minutes is plenty for ages 3-5</li>';
+    html += '</ul>';
+    html += '<p style="color:#00CC66;text-align:center;margin-top:15px;font-size:14px">Made with ❤️ for Aliza</p>';
+    html += '</div></div>';
+    document.getElementById('app').innerHTML = html;
 }
 
 function showExport() {
