@@ -144,7 +144,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 4: 2-Letter Combos =====
     function level2Letter() {
-        const words = ARABIC_2LETTER.slice(0, CONFIG.focusNumber);
+        const words = [...ARABIC_2LETTER].sort(() => Math.random()-0.5).slice(0, CONFIG.focusNumber);
         let current = 0;
         function render() {
             const w = words[current];
@@ -163,7 +163,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 5: 3-Letter Words =====
     function level3Letter() {
-        const words = ARABIC_3LETTER.slice(0, CONFIG.focusNumber);
+        const words = [...ARABIC_3LETTER].sort(() => Math.random()-0.5).slice(0, CONFIG.focusNumber);
         let current = 0;
         function render() {
             const w = words[current];
