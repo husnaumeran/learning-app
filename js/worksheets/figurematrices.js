@@ -5,7 +5,7 @@ function showFigureMatrices() {
     const CNAMES = ['red','blue','green','yellow','orange','pink'];
     const SIZES = [80, 40]; // big, small
     const SNAMES = ['big','small'];
-    const QUESTIONS = 5;
+    const QUESTIONS = CONFIG.focusNumber;
     const LEVEL_NAMES = ['Color','Size','Shape','Direction','Color+Size','Color+Shape','Size+Shape','All Three'];
 
     let level = parseInt(localStorage.getItem('fm_level') || '1');
@@ -117,7 +117,15 @@ function showFigureMatrices() {
 
     function startLevel(l) {
         level=l;
-        problems=Array.from({length:QUESTIONS},()=>makeProblem(level));
+        problems=[];
+        const seen=new Set();
+        let attempts=0;
+        while(problems.length<QUESTIONS && attempts<200){
+            const p=makeProblem(level);
+            const key=JSON.stringify(p.grid);
+            if(!seen.has(key)){seen.add(key);problems.push(p);}
+            attempts++;
+        }
         current=0; score=0; tried=false;
         renderGame();
     }
@@ -138,7 +146,7 @@ function showFigureMatrices() {
             if(unlocked) html+='onclick="fmStart('+l+')"';
             html+='><div style="font-size:18px;font-weight:bold">'+(unlocked?'Level '+l:'🔒 Level '+l)+'</div>';
             html+='<div style="font-size:11px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
-            if(unlocked && h.length) html+='<div style="font-size:11px;margin-top:2px">Best: '+best+'/5 (×'+h.length+')</div>';
+            if(unlocked && h.length) html+='<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
             html+='</div>';
         }
         html+='</div></div>';
@@ -158,7 +166,8 @@ function showFigureMatrices() {
             localStorage.setItem('fm_history',JSON.stringify(history));
             const maxLevel=parseInt(localStorage.getItem('fm_level')||'1');
             const recent=h.slice(-3);
-            if(recent.length>=3 && recent.every(s=>s>=4) && level>=maxLevel && level<8){
+            const threshold=Math.ceil(QUESTIONS*0.8);
+            if(recent.length>=3 && recent.every(s=>s>=threshold) && level>=maxLevel && level<8){
                 localStorage.setItem('fm_level',String(level+1));
             }
             completeWorksheet('Figure Matrices',score,QUESTIONS);
