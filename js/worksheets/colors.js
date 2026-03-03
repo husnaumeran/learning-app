@@ -35,14 +35,14 @@ function showColors() {
             solved.add(i);
             score++;
             showFeedback(true, () => {
-                speak('Great job!');
+                
                 if (score === patterns.length) { completeWorksheet('Color Patterns', score, patterns.length); return; }
                 selectedColor = null;
                 render();
             });
         } else {
             showFeedback(false, () => {
-                speak('Try again!');
+                
                 selectedColor = null;
                 render();
             });
