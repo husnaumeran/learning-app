@@ -72,12 +72,12 @@ function showSubtraction() {
             if (correct) {
                 solved.add(current);
                 score++;
-                speak(p.ans + '! Great job!');
+                
                 if (score === problems.length) { completeWorksheet('Subtraction', score, problems.length); return; }
                 for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; }
                 render();
             } else {
-                speak('Try again!');
+                
                 render();
             }
         });
