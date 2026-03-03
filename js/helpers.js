@@ -119,16 +119,79 @@ function generateColorPatternsL2() {
 }
 
 function generateColorPatterns() {
-    const c = Object.keys(CONFIG.colors);
-    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
-    const pick = () => shuffle([...c]);
-    const patterns = [];
-    let s;
-    s = pick(); patterns.push([[s[0],s[1],s[0],s[1],s[0]], s[1]]);
-    s = pick(); patterns.push([[s[0],s[0],s[1],s[0],s[0]], s[1]]);
-    s = pick(); patterns.push([[s[0],s[1],s[2],s[0],s[1]], s[2]]);
-    s = pick(); patterns.push([[s[0],s[1],s[0],s[1],s[0],s[1]], s[0]]);
-    return shuffle(patterns).slice(0, CONFIG.focusNumber);
+    const n = CONFIG.focusNumber;
+    const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    // Pattern templates: indices into element array, answer is always last needed
+    const templates = [
+        {seq:[0,1,0,1,0], ans:1},
+        {seq:[0,0,1,0,0], ans:1},
+        {seq:[0,1,2,0,1], ans:2},
+        {seq:[0,1,0,1,0,1], ans:0},
+        {seq:[0,1,1,0,1,1], ans:0},
+        {seq:[0,0,1,1,0,0], ans:1},
+        {seq:[0,1,1,0,0,1], ans:1},
+        {seq:[0,1,0,2,0,1,0], ans:2},
+        {seq:[0,1,2,0,1,2], ans:0},
+        {seq:[0,0,1,0,0,1,0], ans:0},
+        {seq:[1,0,1,0,1], ans:0},
+        {seq:[0,1,2,1,0,1], ans:2},
+    ];
+
+    const colorKeys = Object.keys(CONFIG.colors);
+    const emojiCats = Object.keys(CONFIG.categories);
+    const letters = 'ABCDEFGHJKLMNPRSTUVWXYZ'.split('');
+    const nums = [1,2,3,4,5,6,7,8,9];
+    const types = ['color','emoji','number','letter'];
+
+    function makeElems(type, count) {
+        switch(type) {
+            case 'color': return shuffle([...colorKeys]).slice(0, count);
+            case 'emoji': { const cat=pick(emojiCats); const items=CONFIG.categories[cat]; return items.length>=count ? shuffle([...items]).slice(0,count) : null; }
+            case 'number': return shuffle([...nums]).slice(0, count);
+            case 'letter': return shuffle([...letters]).slice(0, count);
+        }
+    }
+
+    function makeChoices(ans, type, elems) {
+        let pool;
+        switch(type) {
+            case 'color': pool=colorKeys; break;
+            case 'emoji': { pool=[]; for(const cat of emojiCats) pool.push(...CONFIG.categories[cat]); break; }
+            case 'number': pool=nums; break;
+            case 'letter': pool=letters; break;
+        }
+        // Priority: other elements from pattern, then from pool
+        const patternOthers = elems.filter(e => e !== ans);
+        const rest = shuffle(pool.filter(e => e !== ans && !elems.includes(e)));
+        const allWrong = [...new Set([...patternOthers, ...rest])];
+        const wrong = allWrong.slice(0, 3);
+        return shuffle([ans, ...wrong]);
+    }
+
+    const problems = [];
+    const used = new Set();
+    let attempts = 0;
+
+    while (problems.length < n && attempts < 200) {
+        const type = pick(types);
+        const tmpl = pick(templates);
+        const maxIdx = Math.max(...tmpl.seq, tmpl.ans);
+        const elems = makeElems(type, maxIdx + 1);
+        if (!elems) { attempts++; continue; }
+
+        const seq = tmpl.seq.map(i => elems[i]);
+        const ans = elems[tmpl.ans];
+        const key = type + ':' + seq.join(',');
+        if (used.has(key)) { attempts++; continue; }
+        used.add(key);
+
+        problems.push({seq, ans, type, choices: makeChoices(ans, type, elems)});
+        attempts++;
+    }
+
+    return shuffle(problems);
 }
 
 function setupCanvas() {
