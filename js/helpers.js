@@ -43,7 +43,7 @@ function generateSubtractionProblems(focusNum) {
 function generateCountingProblems(maxNum) {
     const catNames = Object.keys(CONFIG.categories);
     const problems = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < CONFIG.focusNumber; i++) {
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
         const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
         const count = Math.floor(Math.random() * maxNum) + 1;
