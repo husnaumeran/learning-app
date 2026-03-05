@@ -92,16 +92,25 @@ function startDaily() {
     ];
 
     worksheetQueue = [];
+    const remaining = wsLimit - todayProgress.length;
+
+    // First pass: 2 per section
+    const leftovers = [];
     sections.forEach(section => {
         const available = section.filter(([fn, type]) => !doneTypes.includes(type));
         const shuffled = available.sort(() => Math.random() - 0.5);
         worksheetQueue.push(...shuffled.slice(0, 2));
+        leftovers.push(...shuffled.slice(2));
     });
 
+    // Fill up to limit from leftovers
+    if (worksheetQueue.length < remaining && leftovers.length > 0) {
+        const extra = leftovers.sort(() => Math.random() - 0.5).slice(0, remaining - worksheetQueue.length);
+        worksheetQueue.push(...extra);
+    }
+
     // Shuffle and cap at limit
-    worksheetQueue = worksheetQueue.sort(() => Math.random() - 0.5);
-    const remaining = wsLimit - todayProgress.length;
-    worksheetQueue = worksheetQueue.slice(0, remaining);
+    worksheetQueue = worksheetQueue.sort(() => Math.random() - 0.5).slice(0, remaining);
     queueIndex = 0;
 
     if (worksheetQueue.length === 0) { showMenu(); return; }
