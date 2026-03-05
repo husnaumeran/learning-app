@@ -1,36 +1,96 @@
-body { font-family: Comic Sans MS, cursive; margin: 0; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; }
-.container { max-width: 500px; margin: 0 auto; }
-h1 { text-align: center; color: white; }
-.btn { display: block; width: 100%; padding: 20px; margin: 10px 0; font-size: 20px; border: none; border-radius: 15px; background: white; cursor: pointer; }
+/* === BASE === */
+* { box-sizing: border-box; }
+body { font-family: Comic Sans MS, cursive; margin: 0; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; }
+.container { width: 100%; max-width: 500px; margin: 0 auto; padding: 0 5px; }
+h1 { text-align: center; color: white; font-size: clamp(22px, 5vw, 32px); }
+
+/* === BUTTONS === */
+.btn { display: block; width: 100%; padding: 16px; margin: 8px 0; font-size: clamp(16px, 4vw, 20px); border: none; border-radius: 15px; background: white; cursor: pointer; }
 .btn.green { background: #22c55e; color: white; }
-.card { background: white; border-radius: 15px; padding: 20px; margin-top: 15px; }
-.title { font-size: 28px; color: #FF6B35; text-align: center; margin-bottom: 15px; text-shadow: 1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black; }
-.inst { text-align: center; color: #666; margin-bottom: 15px; }
-.problem { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px; font-size: 32px; font-weight: bold; border-bottom: 1px solid #eee; }
+.back { background: #ff6b6b; color: white; padding: 8px 16px; border: none; border-radius: 10px; font-size: clamp(14px, 3.5vw, 18px); margin-bottom: 10px; cursor: pointer; }
+
+/* === CARD === */
+.card { background: white; border-radius: 15px; padding: 15px; margin-top: 10px; overflow: hidden; word-wrap: break-word; }
+.title { font-size: clamp(20px, 5vw, 28px); color: #FF6B35; text-align: center; margin-bottom: 12px; text-shadow: 1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black; }
+.inst { text-align: center; color: #666; margin-bottom: 12px; font-size: clamp(13px, 3.5vw, 16px); }
+
+/* === PROBLEMS (math) === */
+.problem { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-size: clamp(22px, 6vw, 32px); font-weight: bold; border-bottom: 1px solid #eee; flex-wrap: wrap; }
 .problem.active { background: #fffbeb; border-radius: 10px; }
 .problem.solved { opacity: 0.5; }
-.answer-box { min-width: 50px; height: 50px; background: #f0f0f0; border: 3px solid #999; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; }
-.key { height: 55px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px; background: #4169E1; color: white; cursor: pointer; }
+.answer-box { min-width: 45px; height: 45px; background: #f0f0f0; border: 3px solid #999; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.ansbox { display: inline-block; width: 45px; height: 45px; border: 3px solid #333; border-radius: 10px; background: #f0f0f0; text-align: center; line-height: 45px; font-size: clamp(22px, 6vw, 32px); font-weight: bold; cursor: pointer; }
+
+/* === KEYPAD === */
+.keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 15px; }
+.key { height: 48px; font-size: clamp(18px, 4.5vw, 24px); font-weight: bold; border: none; border-radius: 10px; background: #4169E1; color: white; cursor: pointer; }
 .key.red { background: #ef4444; }
 .key.green { background: #22c55e; }
-.key.big { width: 70px; height: 70px; font-size: 32px; }
-.score { text-align: center; font-size: 24px; margin-top: 15px; }
-.back { background: #ff6b6b; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-size: 18px; margin-bottom: 15px; cursor: pointer; }
-.celeb { text-align: center; font-size: 36px; color: #22c55e; margin-top: 20px; }
-.hidden { display: none; }
-.row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; border-bottom: 1px solid #ddd; }
-.circle { width: 45px; height: 45px; border-radius: 50%; }
-.drop { width: 45px; height: 45px; border-radius: 50%; border: 3px dashed #999; }
+.key.big { width: 60px; height: 60px; font-size: clamp(24px, 5vw, 32px); }
+
+/* === SCORE === */
+.score { text-align: center; font-size: clamp(18px, 4vw, 24px); margin-top: 12px; }
+
+/* === CELEBRATION === */
+.celeb { text-align: center; font-size: clamp(28px, 6vw, 36px); color: #22c55e; margin-top: 15px; }
+
+/* === LAYOUT HELPERS === */
+.row { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border-bottom: 1px solid #ddd; flex-wrap: wrap; }
+.circle { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.drop { width: 40px; height: 40px; border-radius: 50%; border: 3px dashed #999; flex-shrink: 0; }
 .drop.correct { border: 3px solid #22c55e; }
-.palette { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
-.pal { width: 55px; height: 55px; border-radius: 50%; cursor: pointer; }
-.prob { border: 2px solid black; padding: 15px; margin: 8px 0; border-radius: 10px; background: white; display: flex; justify-content: space-between; align-items: center; }
-.ansbox { display: inline-block; width: 50px; height: 50px; border: 3px solid #333; border-radius: 10px; background: #f0f0f0; text-align: center; line-height: 50px; font-size: 32px; font-weight: bold; cursor: pointer; }
+.palette { display: flex; justify-content: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.pal { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; flex-shrink: 0; }
+.prob { border: 2px solid black; padding: 12px; margin: 6px 0; border-radius: 10px; background: white; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+/* === OVERLAY/POPUP === */
 .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; }
-.popup { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border-radius: 15px; z-index: 101; }
-.bigword { font-size: 120px; font-weight: bold; text-align: center; padding: 40px; color: #333; background: white; border-radius: 20px; margin: 20px; font-family: 'Arial Rounded MT Bold', Arial, sans-serif; }
-.trace-container { position: relative; height: 300px; background: white; border-radius: 15px; }
-.trace-letter { position: absolute; width: 100%; text-align: center; font-size: 250px; color: #ddd; line-height: 300px; pointer-events: none; font-family: 'Arial Rounded MT Bold', Arial, sans-serif; }
+.popup { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border-radius: 15px; z-index: 101; width: 90%; max-width: 450px; }
+
+/* === WORD DISPLAY === */
+.bigword { font-size: clamp(60px, 20vw, 120px); font-weight: bold; text-align: center; padding: 25px 15px; color: #333; background: white; border-radius: 20px; margin: 15px 5px; font-family: 'Arial Rounded MT Bold', Arial, sans-serif; word-break: break-word; }
+
+/* === TRACING === */
+.trace-container { position: relative; height: 300px; background: white; border-radius: 15px; overflow: hidden; }
+.trace-letter { position: absolute; width: 100%; text-align: center; font-size: clamp(180px, 50vw, 250px); color: #ddd; line-height: 300px; pointer-events: none; font-family: 'Arial Rounded MT Bold', Arial, sans-serif; }
 .trace-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 15px; touch-action: none; }
+.hidden { display: none; }
+
+/* === ANIMATIONS === */
 @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+/* === TABLET (600px+) === */
+@media (min-width: 600px) {
+    body { padding: 20px; }
+    .container { max-width: 600px; padding: 0 10px; }
+    .card { padding: 20px; }
+    .circle, .drop { width: 50px; height: 50px; }
+    .pal { width: 60px; height: 60px; }
+    .key { height: 55px; }
+    .trace-container { height: 350px; }
+}
+
+/* === LAPTOP/DESKTOP (900px+) === */
+@media (min-width: 900px) {
+    .container { max-width: 700px; }
+    .card { padding: 25px; }
+    .trace-container { height: 400px; }
+}
+
+/* === TV/LARGE (1200px+) === */
+@media (min-width: 1200px) {
+    .container { max-width: 800px; }
+}
+
+/* === SMALL PHONE (<380px) === */
+@media (max-width: 380px) {
+    body { padding: 5px; }
+    .container { padding: 0 2px; }
+    .card { padding: 10px; }
+    .btn { padding: 12px; }
+    .circle, .drop { width: 35px; height: 35px; }
+    .pal { width: 40px; height: 40px; }
+    .key { height: 42px; }
+    .keypad { gap: 4px; }
+    .ansbox { width: 38px; height: 38px; line-height: 38px; }
+}
