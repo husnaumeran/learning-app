@@ -2,7 +2,7 @@
 function showBiggerSmaller() {
     const focus = CONFIG.focusNumber;
     const problems = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < focus; i++) {
         let other;
         do { other = Math.floor(Math.random() * focus) + 1; } while (other === focus);
         const askBigger = Math.random() > 0.5;
