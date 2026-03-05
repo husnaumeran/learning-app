@@ -187,21 +187,130 @@ function showHowToUse() {
 }
 
 function showExport() {
-    const allProgress = {};
+    // Gather all days
+    const days = [];
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith('daily_')) {
-            allProgress[key.replace('daily_', '')] = JSON.parse(localStorage.getItem(key));
-        }
+        if (key.startsWith('daily_')) days.push(key.replace('daily_', ''));
     }
-    let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">📊 Progress</div>';
-    html += '<div style="background:#333;color:#0f0;padding:15px;border-radius:10px;font-family:monospace;font-size:12px;max-height:300px;overflow:auto;white-space:pre-wrap">'+JSON.stringify(allProgress, null, 2)+'</div>';
-    html += '<button class="btn green" onclick="copyProgress()">📋 Copy to Clipboard</button></div>';
-    document.getElementById('app').innerHTML = html;
+    days.sort().reverse();
+    const today = getToday();
 
-    window.copyProgress = () => {
-        navigator.clipboard.writeText(JSON.stringify(allProgress)).then(() => alert('Copied!'));
+    let activeDay = today;
+
+    function renderProgress() {
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">📊 Progress</div>';
+
+        // Day tabs
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px">';
+        days.forEach(d => {
+            const isActive = d === activeDay;
+            const label = d === today ? '📅 Today' : d;
+            html += '<div onclick="switchDay(\''+d+'\')" style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;background:'+(isActive?'#22c55e':'#e5e7eb')+';color:'+(isActive?'white':'#333')+'">'+label+'</div>';
+        });
+        html += '</div>';
+
+        // Day content
+        const data = JSON.parse(localStorage.getItem('daily_'+activeDay) || '[]');
+        if (data.length === 0) {
+            html += '<p style="text-align:center;color:#999">No worksheets completed this day.</p>';
+        } else {
+            const firstTryTotal = data.reduce((sum, ws) => sum + (ws.answers||[]).filter(a => a.firstTry).length, 0);
+            const totalQs = data.reduce((sum, ws) => sum + (ws.answers||[]).length, 0);
+            html += '<div style="background:#f0f4f8;padding:10px;border-radius:8px;margin-bottom:12px;text-align:center">';
+            html += '<b>'+data.length+'</b> worksheets · <b>'+totalQs+'</b> questions · <b>'+firstTryTotal+'</b> first-try ⭐';
+            html += '</div>';
+
+            data.forEach((ws, wi) => {
+                const t = ws.time ? new Date(ws.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+                const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
+                const total = (ws.answers||[]).length;
+
+                html += '<div style="border:1px solid #ddd;border-radius:10px;margin-bottom:10px;overflow:hidden">';
+                // Header
+                html += '<div onclick="toggleWS('+wi+')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8f9fa;cursor:pointer">';
+                html += '<div><b>'+ws.type+'</b> <span style="color:#666;font-size:13px">'+t+'</span></div>';
+                html += '<div style="font-size:14px">'+ws.score+' · ⭐'+firstTry+'/'+total+' <span id="arrow'+wi+'">▶</span></div>';
+                html += '</div>';
+
+                // Detail (hidden by default)
+                html += '<div id="wsDetail'+wi+'" style="display:none;padding:10px 12px;background:white">';
+                if (ws.answers && ws.answers.length > 0) {
+                    ws.answers.forEach((a, qi) => {
+                        const icon = a.correct ? '✅' : (a.answer === 'skip' || a.answer === 'skipped' ? '⏭️' : '❌');
+                        const ftIcon = a.firstTry ? '⭐' : '';
+                        html += '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px">';
+                        html += '<div>'+icon+' ' +ftIcon+' <b>Q'+(qi+1)+':</b> ';
+
+                        // Show question
+                        if (a.q) html += '<span style="color:#555">'+a.q+'</span>';
+                        html += '</div>';
+
+                        // Show details
+                        html += '<div style="margin-left:24px;color:#888;font-size:12px">';
+                        if (a.choices) html += 'Choices: '+a.choices.join(', ')+' · ';
+                        if (a.type) html += 'Type: '+a.type+' · ';
+                        if (a.level) html += 'Level: '+a.level+' · ';
+                        html += 'Picked: <b style="color:'+(a.correct?'#22c55e':'#ef4444')+'">'+a.answer+'</b>';
+                        if (a.correctAnswer) html += ' · Answer: <b style="color:#22c55e">'+a.correctAnswer+'</b>';
+                        html += '</div></div>';
+                    });
+                } else {
+                    html += '<p style="color:#999;font-size:13px">No detailed answer data.</p>';
+                }
+                html += '</div></div>';
+            });
+        }
+
+        html += '<button class="btn green" onclick="copyDayProgress()">📋 Copy This Day</button>';
+        html += '<button class="btn" onclick="copyAllProgress()">📋 Copy All Days</button>';
+        html += '</div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.switchDay = (d) => { activeDay = d; renderProgress(); };
+
+    window.toggleWS = (i) => {
+        const el = document.getElementById('wsDetail'+i);
+        const arrow = document.getElementById('arrow'+i);
+        if (el.style.display === 'none') { el.style.display = 'block'; arrow.textContent = '▼'; }
+        else { el.style.display = 'none'; arrow.textContent = '▶'; }
     };
+
+    window.copyDayProgress = () => {
+        const data = JSON.parse(localStorage.getItem('daily_'+activeDay) || '[]');
+        let text = '📅 '+activeDay+'\n\n';
+        data.forEach((ws, wi) => {
+            const t = ws.time ? new Date(ws.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+            const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
+            text += '📝 '+ws.type+' — '+ws.score+' (⭐'+firstTry+' first-try) '+t+'\n';
+            (ws.answers||[]).forEach((a, qi) => {
+                const icon = a.correct ? '✅' : (a.answer === 'skip' || a.answer === 'skipped' ? '⏭️' : '❌');
+                const ft = a.firstTry ? '⭐' : '  ';
+                text += '  '+icon+ft+' Q'+(qi+1)+': '+(a.q||'')+ ' → Picked: '+a.answer;
+                if (a.correctAnswer) text += ' (Answer: '+a.correctAnswer+')';
+                text += '\n';
+            });
+            text += '\n';
+        });
+        navigator.clipboard.writeText(text).then(() => alert('Copied '+activeDay+'!'));
+    };
+
+    window.copyAllProgress = () => {
+        let text = '';
+        days.forEach(d => {
+            const data = JSON.parse(localStorage.getItem('daily_'+d) || '[]');
+            text += '📅 '+d+'\n';
+            data.forEach(ws => {
+                const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
+                text += '  📝 '+ws.type+' — '+ws.score+' (⭐'+firstTry+' first-try)\n';
+            });
+            text += '\n';
+        });
+        navigator.clipboard.writeText(text).then(() => alert('Copied all days!'));
+    };
+
+    renderProgress();
 }
 
 showMenu();
