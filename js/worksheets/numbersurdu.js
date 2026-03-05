@@ -1,4 +1,4 @@
-<TRUNCATED>…===== NUMBERS URDU ============
+// ============ NUMBERS URDU ============
 function showNumbersUrdu() {
     const QUESTIONS = CONFIG.focusNumber;
     const MIN_FOR_UNLOCK = 5;
