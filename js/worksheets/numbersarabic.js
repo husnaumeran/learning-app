@@ -1,4 +1,4 @@
-<TRUNCATED>…===== NUMBERS ARABIC ============
+// ============ NUMBERS ARABIC ============
 function showNumbersArabic() {
     const QUESTIONS = CONFIG.focusNumber;
     const MIN_FOR_UNLOCK = 5;
