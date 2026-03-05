@@ -28,7 +28,7 @@ function showUrduWhatNext() {
         const options = [p.ans, ...wrongLetters].sort(() => Math.random()-0.5);
 
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
-        html += '<div class="title" style="direction:rtl">What Comes Next?</div>';
+        html += '<div class="title" style="direction:rtl">اردو Urdu — What Comes Next?</div>';
         html += '<div style="display:flex;justify-content:center;gap:12px;margin:20px;direction:rtl;flex-wrap:wrap">';
         p.seq.forEach(l => { html += '<div style="font-size:40px;font-family:serif;padding:10px 15px;background:#333;border-radius:10px;color:white">'+l+'</div>'; });
         html += '<div style="font-size:40px;padding:10px 15px;background:#444;border-radius:10px;color:#FF6B35;font-weight:bold">?</div>';
