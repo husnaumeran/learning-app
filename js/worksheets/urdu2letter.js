@@ -6,7 +6,7 @@ function showUrdu2Letter() {
     function render() {
         const w = words[current];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
-        html += '<div class="title" style="direction:rtl">Read the Urdu Word!</div>';
+        html += '<div class="title" style="direction:rtl">اردو Urdu — Read the Word!</div>';
         html += '<div style="text-align:center;font-size:72px;margin:20px;font-family:serif;direction:rtl;cursor:pointer" onclick="speak(\''+w.sound+'\')">'+w.word+'</div>';
         html += '<div style="text-align:center;margin:10px">';
         html += '<button class="btn green" style="font-size:24px;padding:15px 30px;display:inline-block" onclick="speak(\''+w.sound+'\')">🔊 '+w.sound+'</button>';
