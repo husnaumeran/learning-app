@@ -31,7 +31,8 @@ function showMenu() {
             ['showAddition','Addition ➕','Addition'],['showSubtraction','Subtraction ➖','Subtraction'],
             ['showCounting','Counting 🔢','Counting'],['showMatchNumbers','Match Numbers 🎯','Match Numbers'],
             ['showMoreLess','More / Less ⚖️','More/Less'],['showBiggerSmaller','Bigger / Smaller 📏','Bigger/Smaller'],
-            ['showWhatNext','What Next ➡️','What Comes Next']
+            ['showWhatNext','What Next ➡️','What Comes Next'],
+            ['showNumbersEnglish','Numbers 🔊','Numbers English']
         ]},
         {title:'📖 English', color:'#00CC66', items:[
             ['showTwoLetter','2-Letter Words 📖','2-Letter Words'],['showThreeLetter','3-Letter Words 📚','3-Letter Words'],
@@ -48,10 +49,12 @@ function showMenu() {
         {title:'اردو Urdu', color:'#FFD700', items:[
             ['showUrduReading','Urdu Reading 📖','Urdu Reading'],['showUrduTrace','Urdu Trace ✏️','Urdu Trace'],
             ['showUrdu2Letter','Urdu 2-Letter 📚','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next ➡️','Urdu What Next'],
-            ['showUrduVideos','Urdu Videos 📺','Urdu Videos'],['showUrduQaida','Urdu Qaida 📖','Urdu Qaida']
+            ['showUrduVideos','Urdu Videos 📺','Urdu Videos'],['showUrduQaida','Urdu Qaida 📖','Urdu Qaida'],
+            ['showNumbersUrdu','Urdu Numbers 🔊','Numbers Urdu']
         ]},
         {title:'📖 Arabic Qaida', color:'#22c55e', items:[
-            ['showArabicQaida','Arabic Qaida 📖','Arabic Qaida']
+            ['showArabicQaida','Arabic Qaida 📖','Arabic Qaida'],
+            ['showNumbersArabic','Arabic Numbers 🔊','Numbers Arabic']
         ]}
     ];
 
@@ -81,11 +84,11 @@ function startDaily() {
     const doneTypes = todayProgress.map(p => p.type);
 
     const sections = [
-        [['showAddition','Addition'],['showSubtraction','Subtraction'],['showCounting','Counting'],['showMatchNumbers','Match Numbers'],['showMoreLess','More/Less'],['showBiggerSmaller','Bigger/Smaller'],['showWhatNext','What Comes Next']],
+        [['showAddition','Addition'],['showSubtraction','Subtraction'],['showCounting','Counting'],['showMatchNumbers','Match Numbers'],['showMoreLess','More/Less'],['showBiggerSmaller','Bigger/Smaller'],['showWhatNext','What Comes Next'],['showNumbersEnglish','Numbers English']],
         [['showTwoLetter','2-Letter Words'],['showThreeLetter','3-Letter Words'],['showTraceABC','Trace ABC'],['showTraceLower','Trace abc'],['showTraceNumbers','Trace Numbers']],
         [['showColors','Color Patterns'],['showColorsL2','Color Patterns L2'],['showDoesntBelong','Doesn\'t Belong'],['showJora','Find Pairs'],['showConnectDots','Connect Dots'],['showFigureMatrices','Figure Matrices'],['showVerbalAnalogies','Verbal Analogies']],
-        [['showUrduReading','Urdu Reading'],['showUrduTrace','Urdu Trace'],['showUrdu2Letter','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next']],
-        [['showArabicQaida','Arabic Qaida']]
+        [['showUrduReading','Urdu Reading'],['showUrduTrace','Urdu Trace'],['showUrdu2Letter','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next'],['showNumbersUrdu','Numbers Urdu']],
+        [['showArabicQaida','Arabic Qaida'],['showNumbersArabic','Numbers Arabic']]
     ];
 
     worksheetQueue = [];
