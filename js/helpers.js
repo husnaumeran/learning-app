@@ -21,14 +21,15 @@ function generateSubtractionProblems(focusNum) {
 
     // Some problems where answer = focusNumber
     for (let i = 0; i < numFocusAnswer; i++) {
-        const b = Math.floor(Math.random() * focusNum) + 1;
+        const b = Math.floor(Math.random() * Math.min(focusNum, 3)) + 1;
         problems.push({a: focusNum + b, b: b, ans: focusNum, mode: i % 2 === 0 ? 'visual' : 'equation', emoji: pickEmoji()});
     }
 
-    // Rest are random easier subtractions
+    // Rest are random easier subtractions (a <= focusNum)
     for (let i = numFocusAnswer; i < numProblems; i++) {
-        const ans = Math.floor(Math.random() * focusNum);
-        const b = Math.floor(Math.random() * focusNum) + 1;
+        const a = Math.floor(Math.random() * (focusNum - 1)) + 2;
+        const b = Math.floor(Math.random() * (a - 1)) + 1;
+        const ans = a - b;
         problems.push({a: ans + b, b: b, ans: ans, mode: i % 2 === 0 ? 'visual' : 'equation', emoji: pickEmoji()});
     }
 
