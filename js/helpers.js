@@ -72,8 +72,9 @@ function generateMoreLessProblems(focusNum) {
     const cat = catNames[Math.floor(Math.random() * catNames.length)];
     const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
 
-    const otherNums = [1, 2, 3, 4, 5].filter(n => n !== focusNum);
-    otherNums.forEach(n => {
+    for (let i = 0; i < CONFIG.focusNumber; i++) {
+        let n;
+        do { n = Math.floor(Math.random() * focusNum) + 1; } while (n === focusNum);
         const askMore = Math.random() > 0.5;
         const focusEmojis = emoji.repeat(focusNum);
         const otherEmojis = emoji.repeat(n);
@@ -84,7 +85,7 @@ function generateMoreLessProblems(focusNum) {
             const ans = n > focusNum ? 'left' : 'right';
             problems.push([otherEmojis, focusEmojis, askMore ? 'MORE' : 'LESS', askMore ? ans : (ans === 'left' ? 'right' : 'left')]);
         }
-    });
+    }
     return problems.sort(() => Math.random() - 0.5);
 }
 
