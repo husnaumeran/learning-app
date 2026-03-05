@@ -72,7 +72,7 @@ function showArabicQaida() {
         function render() {
             const l = letters[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
-            html += '<div class="title" style="color:#22c55e;direction:rtl">Level 1: Letters 🔤</div>';
+            html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — Letters 🔤</div>';
             html += '<div style="text-align:center;font-size:100px;margin:15px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+l.aname+'\')">'+l.letter+'</div>';
             html += '<div style="text-align:center;color:white;font-size:24px">'+l.name+'</div>';
             html += '<button class="btn green" style="font-size:20px;padding:12px 25px;margin:10px auto;display:block" onclick="speakArabic(\''+l.aname+'\')">🔊 Listen</button>';
@@ -96,7 +96,7 @@ function showArabicQaida() {
             const display = l[harakatKeys[harakatMode]];
             const sound = l[soundKeys[harakatMode]];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
-            html += '<div class="title" style="color:#22c55e;direction:rtl">Level 2: Harakat 🔊</div>';
+            html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — Harakat 🔊</div>';
             html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+sound+'\')">'+display+'</div>';
             html += '<div style="text-align:center;color:white;font-size:22px;margin:5px">'+sound+'</div>';
             html += '<div style="display:flex;justify-content:center;gap:8px;margin:10px 0">';
@@ -126,7 +126,7 @@ function showArabicQaida() {
         function render() {
             const l = letters[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
-            html += '<div class="title" style="color:#22c55e;direction:rtl">Level 3: Connections 🔗</div>';
+            html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — Connections 🔗</div>';
             html += '<div style="text-align:center;font-size:60px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+l.aname+'\')">'+l.letter+'</div>';
             html += '<div style="display:flex;justify-content:center;gap:20px;margin:15px 0;direction:rtl">';
             [{form:'initial',label:'Beginning'},{form:'medial',label:'Middle'},{form:'final',label:'End'}].forEach(f => {
@@ -149,7 +149,7 @@ function showArabicQaida() {
         function render() {
             const w = words[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
-            html += '<div class="title" style="color:#22c55e;direction:rtl">Level 4: 2-Letter 📖</div>';
+            html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — 2-Letter 📖</div>';
             html += '<div style="text-align:center;font-size:72px;margin:20px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+w.sound+'\')">'+w.word+'</div>';
             html += '<button class="btn green" style="font-size:22px;padding:12px 25px;margin:10px auto;display:block" onclick="speakArabic(\''+w.sound+'\')">🔊 '+w.sound+'</button>';
             html += '<div style="text-align:center;color:#aaa;font-size:18px;margin:10px">'+w.meaning+'</div>';
@@ -168,7 +168,7 @@ function showArabicQaida() {
         function render() {
             const w = words[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
-            html += '<div class="title" style="color:#22c55e;direction:rtl">Level 5: 3-Letter Words 📚</div>';
+            html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — 3-Letter Words 📚</div>';
             html += '<div style="text-align:center;font-size:72px;margin:20px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakArabic(\''+w.sound+'\')">'+w.word+'</div>';
             html += '<button class="btn green" style="font-size:22px;padding:12px 25px;margin:10px auto;display:block" onclick="speakArabic(\''+w.sound+'\')">🔊 '+w.sound+'</button>';
             html += '<div style="text-align:center;color:#aaa;font-size:18px;margin:10px">'+w.meaning+'</div>';
