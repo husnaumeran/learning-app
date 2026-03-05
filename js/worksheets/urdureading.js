@@ -6,7 +6,7 @@ function showUrduReading() {
     function render() {
         const l = letters[current];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
-        html += '<div class="title" style="direction:rtl">Read: '+l.name+'</div>';
+        html += '<div class="title" style="direction:rtl">اردو Urdu — Read: '+l.name+'</div>';
         html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakUrdu(\''+l.letter+'\')">'+l.letter+'</div>';
         html += '<div style="display:flex;justify-content:center;gap:15px;margin:15px 0;flex-wrap:wrap">';
         // Show all 3 harakat versions
