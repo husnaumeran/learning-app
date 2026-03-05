@@ -94,22 +94,33 @@ function startDaily() {
     worksheetQueue = [];
     const remaining = wsLimit - todayProgress.length;
 
-    // First pass: 2 per section
+    // First pass: 1 per section (guarantees coverage)
     const leftovers = [];
     sections.forEach(section => {
-        const available = section.filter(([fn, type]) => !doneTypes.includes(type));
-        const shuffled = available.sort(() => Math.random() - 0.5);
-        worksheetQueue.push(...shuffled.slice(0, 2));
-        leftovers.push(...shuffled.slice(2));
+        const available = section.filter(([fn, type]) => !doneTypes.includes(type)).sort(() => Math.random() - 0.5);
+        if (available.length > 0) worksheetQueue.push(available[0]);
+        leftovers.push(...available.slice(1));
     });
 
-    // Fill up to limit from leftovers
+    // Second pass: 1 more per section if room
     if (worksheetQueue.length < remaining && leftovers.length > 0) {
-        const extra = leftovers.sort(() => Math.random() - 0.5).slice(0, remaining - worksheetQueue.length);
+        const bySection = [];
+        let idx = 0;
+        sections.forEach(section => {
+            const available = section.filter(([fn, type]) => !doneTypes.includes(type) && !worksheetQueue.some(q => q[0] === fn)).sort(() => Math.random() - 0.5);
+            if (available.length > 0) bySection.push(available[0]);
+        });
+        worksheetQueue.push(...bySection.sort(() => Math.random() - 0.5).slice(0, remaining - worksheetQueue.length));
+    }
+
+    // Third pass: fill from all remaining if still short
+    if (worksheetQueue.length < remaining) {
+        const usedFns = new Set(worksheetQueue.map(q => q[0]));
+        const extra = leftovers.filter(w => !usedFns.has(w[0])).sort(() => Math.random() - 0.5).slice(0, remaining - worksheetQueue.length);
         worksheetQueue.push(...extra);
     }
 
-    // Shuffle and cap at limit
+    // Shuffle and cap
     worksheetQueue = worksheetQueue.sort(() => Math.random() - 0.5).slice(0, remaining);
     queueIndex = 0;
 
