@@ -12,7 +12,7 @@ function showUrduTrace() {
         const displayLetter = l[harakatKeys[harakatMode]];
         const sound = l[soundKeys[harakatMode]];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
-        html += '<div class="title" style="direction:rtl">Trace: '+l.name+' — '+harakatNames[harakatMode]+'</div>';
+        html += '<div class="title" style="direction:rtl">اردو Urdu — Trace: '+l.name+' — '+harakatNames[harakatMode]+'</div>';
         html += '<div style="text-align:center;margin:5px"><button class="btn" style="font-size:16px;padding:8px 15px;display:inline-block" onclick="speakUrdu(\''+displayLetter+'\')">🔊 '+sound+'</button></div>';
         html += '<div style="display:flex;justify-content:center;gap:5px;margin:5px 0">';
         harakatNames.forEach((h, i) => {
