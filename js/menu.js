@@ -10,7 +10,7 @@ function showMenu() {
 
     // Check if limit reached
     if (todayProgress.length >= wsLimit) {
-        let html = '<h1>🎨 Aliza\'s Learning</h1>';
+        let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
         html += '<p style="color:white;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
         html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
@@ -20,7 +20,7 @@ function showMenu() {
         return;
     }
 
-    let html = '<h1>🎨 Aliza\'s Learning</h1>';
+    let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
     html += '<div class="btn"><label>Focus Number: <input type="number" id="focusInput" value="'+CONFIG.focusNumber+'" min="1" max="20" style="width:60px;font-size:24px;text-align:center" onchange="updateFocus(this.value)"></label></div>';
     html += '<div class="btn"><label>Worksheet Limit: <input type="number" id="limitInput" value="'+wsLimit+'" min="1" max="50" style="width:60px;font-size:24px;text-align:center" onchange="updateLimit(this.value)"></label></div>';
     html += '<p style="color:white;text-align:center">Done today: '+todayProgress.length+' / '+wsLimit+'</p>';
@@ -181,7 +181,7 @@ function showHowToUse() {
     html += '<li style="margin:10px 0;color:#333;font-size:15px">⭐ <b>Celebrate effort</b> — Stars are for trying, not just correct answers</li>';
     html += '<li style="margin:10px 0;color:#333;font-size:15px">⏱️ <b>Keep sessions short</b> — 10-15 minutes is plenty for ages 3-5</li>';
     html += '</ul>';
-    html += '<p style="color:#00CC66;text-align:center;margin-top:15px;font-size:14px">Made with ❤️ for Aliza</p>';
+    html += '<p style="color:#00CC66;text-align:center;margin-top:15px;font-size:14px">Made with ❤️ for ' + (CONFIG.childName||'Aliza') + '</p>';
     html += '</div></div>';
     document.getElementById('app').innerHTML = html;
 }
