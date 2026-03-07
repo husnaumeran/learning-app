@@ -313,4 +313,4 @@ function showExport() {
     renderProgress();
 }
 
-showMenu();
+checkAuth();
