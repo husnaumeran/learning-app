@@ -1,3 +1,7 @@
+const SUPABASE_URL = 'https://qwcigjclpxnwtfjhjggr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3Y2lnamNscHhud3RmamhqcWdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDYyOTMsImV4cCI6MjA4ODM4MjI5M30.f1O-M128j8UD28Ts0QSRe6phkMLc_LlNdJHDbGbyvr4';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ============ CONFIGURATION ============
 const CONFIG = {
     focusNumber: parseInt(localStorage.getItem('focusNumber')) || 7,
