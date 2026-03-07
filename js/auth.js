@@ -97,7 +97,7 @@ function showAuthScreen() {
 }
 
 async function upsertParent(userId, displayName) {
-    const { data } = await sb.from('parents').select('id').eq('id', userId).single();
+    const { data } = await sb.from('parents').select('id').eq('id', userId).maybeSingle();
     if (!data) {
         await sb.from('parents').insert({
             id: userId,
