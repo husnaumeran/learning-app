@@ -16,7 +16,7 @@ function showAuthScreen() {
 
     function render() {
         app.innerHTML = `
-            <h1 style="text-align:center;margin-top:40px">🎨 Aliza's Learning</h1>
+            <h1 style="text-align:center;margin-top:40px">🧠 Tiny Thinkers</h1>
             <div style="max-width:320px;margin:30px auto;padding:20px">
                 <div style="display:flex;gap:10px;margin-bottom:20px">
                     <button id="btn-signin" onclick="toggleAuthMode(false)"
