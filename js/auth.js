@@ -39,7 +39,7 @@ function showAuthScreen() {
                     style="width:100%;padding:14px;border-radius:12px;border:2px solid #ddd;
                     font-family:Nunito;font-size:1rem;margin-bottom:10px;box-sizing:border-box">
                 ${isSignUp ? `
-                <input id="auth-name" type="text" placeholder="Your Name"
+                <input id="auth-name" type="text" placeholder="Parent Name"
                     style="width:100%;padding:14px;border-radius:12px;border:2px solid #ddd;
                     font-family:Nunito;font-size:1rem;margin-bottom:10px;box-sizing:border-box">
                 ` : ''}
