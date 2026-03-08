@@ -77,7 +77,16 @@ function showMenu() {
     document.getElementById('app').innerHTML = html;
 }
 
-function startDaily() {
+async function startDaily() {
+    // Create a session in Supabase
+    const { data: session, error } = await sb.from('sessions').insert({
+        child_id: CONFIG.childId,
+        session_type: 'daily_practice'
+    }).select('id').single();
+
+    if (error) { console.error('Session creation failed:', error); }
+    CONFIG.sessionId = session ? session.id : null;
+
     const today = getToday();
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
