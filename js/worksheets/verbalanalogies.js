@@ -111,6 +111,8 @@ function showVerbalAnalogies() {
     let level = parseInt(localStorage.getItem('va_level') || '1');
     const history = JSON.parse(localStorage.getItem('va_history') || '{}');
     let problems=[], current=0, score=0, skips=0, tried=false;
+    let questionStartMs = null;
+    const attemptCounts = {};
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
     function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -248,24 +250,29 @@ function showVerbalAnalogies() {
 
         document.getElementById('app').innerHTML = html;
         tried = false;
+        questionStartMs = Date.now();
 
         // Speak the analogy
         speak(getSpeech(level, cap(p.example.a), cap(p.example.b), cap(p.question.a)));
     }
 
     window.pickVA = function(i) {
+        const responseTimeMs = Date.now() - questionStartMs;
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
         const ch = p.choices[i];
         const el = document.getElementById('vach'+i);
         if(ch.correct) {
             if(!tried) score++;
             currentAnswers.push({q:p.example.a+'→'+p.example.b+', '+p.question.a+'→?', answer:ch.text, correct:true, firstTry:!tried});
+            recordResponse('verbal_analogies', {type:'verbal_analogies', example_a:p.example.a, example_b:p.example.b, question_a:p.question.a, correct_answer:p.question.b}, p.question.b, ch.text, true, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
             el.style.borderColor = '#22c55e';
             el.style.background = '#dcfce7';
             showFeedback(true);
             setTimeout(() => { current++; renderGame(); }, 1200);
         } else {
             tried = true;
+            recordResponse('verbal_analogies', {type:'verbal_analogies', example_a:p.example.a, example_b:p.example.b, question_a:p.question.a, correct_answer:p.question.b}, p.question.b, ch.text, false, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
             el.style.borderColor = '#ef4444';
             el.style.background = '#fee2e2';
             el.style.opacity = '0.5';
@@ -275,8 +282,10 @@ function showVerbalAnalogies() {
     };
 
     window.skipVA = function() {
+        const responseTimeMs = Date.now() - questionStartMs;
         skips++;
         currentAnswers.push({q:problems[current].question.a+'→?', answer:'skipped', correct:false, firstTry:false});
+        recordResponse('verbal_analogies', {type:'verbal_analogies', question_a:problems[current].question.a}, problems[current].question.b, 'skipped', false, false, 1, responseTimeMs, current, true, level);
         current++;
         renderGame();
     };
