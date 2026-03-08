@@ -25,7 +25,7 @@ function showCounting() {
         if (current < 0) return;
         answers[current] = n;
         const correct = n === problems[current][0];
-        currentAnswers.push({q: problems[current][1], a: n, correct: correct});
+        currentAnswers.push({q: problems[current][1], answer: n, correct: correct});
         closeKeypad();
         showFeedback(correct, () => {
             if (correct) { solved.add(current); score++; }
