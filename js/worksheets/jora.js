@@ -5,6 +5,8 @@ function showJora() {
     const emojis = CONFIG.categories[cat].sort(() => Math.random() - 0.5).slice(0, numPairs);
     const cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
     let flipped = [], matched = [], score = 0;
+    let questionStartMs = Date.now();
+    let flipCount = 0;
 
     // Responsive grid: pick columns based on total cards
     const totalCards = cards.length;
@@ -13,7 +15,12 @@ function showJora() {
     const pad = totalCards <= 8 ? 15 : totalCards <= 12 ? 10 : 8;
 
     function render() {
-        if (matched.length === cards.length) { completeWorksheet('Find Pairs', score, emojis.length); return; }
+        if (matched.length === cards.length) {
+            const responseTimeMs = Date.now() - questionStartMs;
+            recordResponse('find_pairs', {type:'find_pairs', total_pairs:numPairs, category:cat}, String(numPairs), String(score), true, true, 1, responseTimeMs, 0);
+            completeWorksheet('Find Pairs', score, emojis.length);
+            return;
+        }
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Find the Pairs! 🧩</div>';
         html += '<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:8px;margin:10px 0">';
         cards.forEach((emoji, i) => {
@@ -30,6 +37,7 @@ function showJora() {
     window.flipCard = (i) => {
         if (flipped.length >= 2 || flipped.includes(i) || matched.includes(i)) return;
         flipped.push(i);
+        flipCount++;
         render();
         if (flipped.length === 2) {
             setTimeout(() => {
