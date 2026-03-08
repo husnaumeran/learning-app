@@ -5,6 +5,8 @@ function showMatchNumbers() {
     const solved = new Set();
     const nums = pairs.map(p => p[0]).sort(() => Math.random() - 0.5);
     const emojiOrder = pairs.map((_, i) => i).sort(() => Math.random() - 0.5);
+    let questionStartMs = null;
+    let matchAttempt = 0;
     // Ensure no number is next to its matching emoji
     for (let i = 0; i < nums.length; i++) {
         if (nums[i] === pairs[emojiOrder[i]][0]) {
@@ -28,11 +30,16 @@ function showMatchNumbers() {
         document.getElementById('app').innerHTML = html;
     }
 
-    window.selectNum = (n) => { if (!solved.has(n)) { selected = n; render(); } };
+    window.selectNum = (n) => { if (!solved.has(n)) { selected = n; questionStartMs = Date.now(); render(); } };
     window.selectEmoji = (n) => {
         if (!selected || solved.has(n)) return;
+        const responseTimeMs = Date.now() - questionStartMs;
+        matchAttempt++;
         const correct = selected === n;
         currentAnswers.push({q: 'Match '+selected, answer: n, correct: correct});
+
+        recordResponse('match_numbers', {type:'match_numbers', number:selected, emoji_count:n}, String(selected), String(n), correct, true, 1, responseTimeMs, matchAttempt);
+
         showFeedback(correct, () => {
             if (correct) { solved.add(n); score++; }
             selected = null;
