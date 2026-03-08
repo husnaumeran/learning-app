@@ -26,7 +26,7 @@ function showAddition() {
         const ans = document.getElementById('ans'+current).textContent;
         if (ans === '?' || solved.has(current)) return;
         const correct = parseInt(ans) === problems[current][2];
-        currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], a: ans, correct: correct});
+        currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], answer: ans, correct: correct});
         showFeedback(correct, () => {
             if (correct) {
                 solved.add(current);
