@@ -9,6 +9,7 @@ function showWhatNext() {
         [[focus,focus-1,focus-2,focus-3], focus-4]
     ];
     let current = 0, score = 0;
+    let questionStartMs = null;
 
     function render() {
         if (current >= problems.length) { completeWorksheet('What Comes Next', score, problems.length); return; }
@@ -20,9 +21,11 @@ function showWhatNext() {
         options.forEach(o => html += '<div class="prob" style="justify-content:center;font-size:32px;cursor:pointer" onclick="pickNext(\''+o+'\')">'+o+'</div>');
         html += '</div><div class="score">'+(current+1)+' / '+problems.length+'</div></div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.pickNext = (choice) => {
+        const responseTimeMs = Date.now() - questionStartMs;
         const correct = String(choice) === String(problems[current][1]);
         currentAnswers.push({q: problems[current][0].join('→')+'→?', answer: choice, correct: correct});
         const boxes = document.querySelectorAll('.card .prob');
@@ -30,6 +33,9 @@ function showWhatNext() {
             if (b.textContent == problems[current][1]) b.style.background = '#22c55e';
             else if (b.textContent == choice && !correct) b.style.background = '#ef4444';
         });
+
+        recordResponse('what_comes_next_numbers', {type:'what_comes_next', sequence:problems[current][0], correct_answer:problems[current][1]}, String(problems[current][1]), String(choice), correct, true, 1, responseTimeMs, current);
+
         showFeedback(correct, () => { if (correct) score++; current++; render(); });
     };
     render();
