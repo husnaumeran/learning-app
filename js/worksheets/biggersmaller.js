@@ -10,6 +10,7 @@ function showBiggerSmaller() {
     }
     problems.sort(() => Math.random() - 0.5);
     let current = 0, score = 0;
+    let questionStartMs = null;
 
     function render() {
         if (current >= problems.length) { completeWorksheet('Bigger/Smaller', score, problems.length); return; }
@@ -23,11 +24,17 @@ function showBiggerSmaller() {
         html += '<button style="padding:30px 50px;font-size:48px;border-radius:15px;background:#FF6B35;color:white;border:none" onclick="pickSize(\'right\','+left+','+right+',\''+type+'\')">'+right+'</button>';
         html += '</div><div class="score">'+(current+1)+' / '+problems.length+'</div></div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.pickSize = (choice, left, right, type) => {
+        const responseTimeMs = Date.now() - questionStartMs;
         const correct = type === 'BIGGER' ? (choice === 'left' ? left > right : right > left) : (choice === 'left' ? left < right : right < left);
+        const correctAnswer = type === 'BIGGER' ? (left > right ? 'left' : 'right') : (left < right ? 'left' : 'right');
         currentAnswers.push({q: type+': '+left+' vs '+right, answer: choice, correct: correct});
+
+        recordResponse('bigger_smaller', {type:'bigger_smaller', left, right, question_type:type}, correctAnswer, choice, correct, true, 1, responseTimeMs, current);
+
         showFeedback(correct, () => { if(correct) score++; current++; render(); });
     };
     render();
