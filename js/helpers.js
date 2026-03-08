@@ -1,3 +1,27 @@
+// ============ SUPABASE RECORDING ============
+function recordResponse(skillId, questionData, correctAnswer, finalAnswer, isCorrect, isFirstTry, attemptCount, responseTimeMs, questionIndex, isSkipped, level) {
+    if (!CONFIG.sessionId || !CONFIG.childId) return;
+    const params = {
+        p_session_id: CONFIG.sessionId,
+        p_child_id: CONFIG.childId,
+        p_skill_id: skillId,
+        p_question_data: questionData,
+        p_correct_answer: String(correctAnswer),
+        p_final_answer: String(finalAnswer),
+        p_is_correct: isCorrect,
+        p_is_first_try: isFirstTry,
+        p_attempt_count: attemptCount,
+        p_is_skipped: isSkipped || false,
+        p_response_time_ms: responseTimeMs,
+        p_client_event_id: CONFIG.sessionId + '_' + skillId + '_' + questionIndex + '_a' + attemptCount
+    };
+    if (level != null) params.p_level = level;
+    sb.rpc('record_response', params).then(({data, error}) => {
+        if (error) console.error('record_response error:', error);
+        else console.log('record_response OK:', data);
+    });
+}
+
 // ============ HELPER FUNCTIONS ============
 function generateAdditionProblems(target) {
     const problems = [];
