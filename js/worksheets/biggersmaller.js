@@ -27,7 +27,7 @@ function showBiggerSmaller() {
 
     window.pickSize = (choice, left, right, type) => {
         const correct = type === 'BIGGER' ? (choice === 'left' ? left > right : right > left) : (choice === 'left' ? left < right : right < left);
-        currentAnswers.push({q: type+': '+left+' vs '+right, a: choice, correct: correct});
+        currentAnswers.push({q: type+': '+left+' vs '+right, answer: choice, correct: correct});
         showFeedback(correct, () => { if(correct) score++; current++; render(); });
     };
     render();
