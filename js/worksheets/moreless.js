@@ -17,7 +17,7 @@ function showMoreLess() {
     window.pickMore = (choice) => {
         const correct = choice === questions[current][3];
         const correctSide = questions[current][3];
-        currentAnswers.push({q: questions[current][2]+': '+questions[current][0]+' vs '+questions[current][1], a: choice, correct: correct});
+        currentAnswers.push({q: questions[current][2]+': '+questions[current][0]+' vs '+questions[current][1], answer: choice, correct: correct});
         const leftEl = document.querySelectorAll('.prob')[0];
         const rightEl = document.querySelectorAll('.prob')[1];
 
