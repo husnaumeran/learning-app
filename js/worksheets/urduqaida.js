@@ -205,10 +205,14 @@ function showUrduQaida() {
             html += '</div>';
             html += '<div class="score">⭐ '+score+' / '+problems.length+'</div></div>';
             document.getElementById('app').innerHTML = html;
+            questionStartMs = Date.now();
         }
+        let questionStartMs = null;
         window.pickUQN = (choice) => {
+            const responseTimeMs = Date.now() - questionStartMs;
             const correct = choice === problems[current].ans;
             currentAnswers.push({q: problems[current].seq.join('←')+'←?', answer: choice, correct: correct});
+            recordResponse('urdu_qaida', {type:'urdu_qaida', sequence:problems[current].seq, correct_answer:problems[current].ans}, problems[current].ans, choice, correct, true, 1, responseTimeMs, current, false, 5);
             showFeedback(correct, () => { if (correct) score++; current++; render(); });
         };
         render();
