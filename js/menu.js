@@ -142,7 +142,14 @@ function nextWorksheet() {
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
     if (todayProgress.length >= wsLimit || queueIndex >= worksheetQueue.length) {
-        
+        // Finalize session in Supabase
+        if (CONFIG.sessionId) {
+            sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
+              .then(({data, error}) => {
+                if (error) console.error('finalize_session error:', error);
+                else console.log('finalize_session OK:', data);
+              });
+        }
         showMenu();
         return;
     }
