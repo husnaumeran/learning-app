@@ -153,6 +153,8 @@ function showNumbersUrdu() {
     }
 
     let problems=[], current=0, score=0, skips=0, tried=false;
+    let questionStartMs = null;
+    const attemptCounts = {};
 
     function startLevel(l) {
         level = l;
@@ -226,12 +228,15 @@ function showNumbersUrdu() {
         html += '</div>';
         document.getElementById('app').innerHTML = html;
         tried = false;
+        questionStartMs = Date.now();
         setTimeout(() => sayNum(p.n), 400);
     }
 
     window.playNUSound = function() { sayNum(problems[current].n); };
 
     window.pickNUAnswer = function(i) {
+        const responseTimeMs = Date.now() - questionStartMs;
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
         const chosen = p.choices[i];
         const el = document.getElementById('nuch'+i);
@@ -244,19 +249,23 @@ function showNumbersUrdu() {
         if (isCorrect) {
             if (!tried) score++;
             currentAnswers.push({q: p.n, level, answer: chosen, correct: true, firstTry: !tried});
+            recordResponse('numbers_urdu', {type:'numbers_urdu', number:p.n, instruction:p.instruction, correct_answer:p.correct}, String(p.correct), String(chosen), true, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
             el.style.borderColor = '#22c55e'; el.style.background = '#dcfce7';
             showFeedback(true);
             setTimeout(() => { current++; renderGame(); }, 1200);
         } else {
             tried = true;
+            recordResponse('numbers_urdu', {type:'numbers_urdu', number:p.n, instruction:p.instruction, correct_answer:p.correct}, String(p.correct), String(chosen), false, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
             el.style.borderColor = '#ef4444'; el.style.background = '#fee2e2'; el.style.opacity = '0.5'; el.onclick = null;
             showFeedback(false);
         }
     };
 
     window.skipNU = function() {
+        const responseTimeMs = Date.now() - questionStartMs;
         skips++;
         currentAnswers.push({q: problems[current].n, level, answer: 'skip', correct: false, firstTry: false});
+        recordResponse('numbers_urdu', {type:'numbers_urdu', number:problems[current].n}, String(problems[current].correct), 'skip', false, false, 1, responseTimeMs, current, true, level);
         current++;
         renderGame();
     };
