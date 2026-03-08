@@ -67,7 +67,7 @@ function showSubtraction() {
         if (ans === '?' || solved.has(current)) return;
         const p = problems[current];
         const correct = parseInt(ans) === p.ans;
-        currentAnswers.push({q: p.a+'−'+p.b, a: ans, correct: correct});
+        currentAnswers.push({q: p.a+'−'+p.b, answer: ans, correct: correct});
         showFeedback(correct, () => {
             if (correct) {
                 solved.add(current);
