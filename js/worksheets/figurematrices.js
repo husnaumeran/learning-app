@@ -114,6 +114,8 @@ function showFigureMatrices() {
     }
 
     let problems=[], current=0, score=0, tried=false;
+    let questionStartMs = null;
+    const attemptCounts = {};
 
     function startLevel(l) {
         level=l;
@@ -205,9 +207,12 @@ function showFigureMatrices() {
 
         html+='<div class="score">'+(current+1)+' / '+QUESTIONS+' &nbsp;⭐ '+score+'</div></div>';
         document.getElementById('app').innerHTML=html;
+        questionStartMs = Date.now();
     }
 
     window.fmPick = (idx) => {
+        const responseTimeMs = Date.now() - questionStartMs;
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const prob=problems[current];
         const ch=prob.choices[idx];
         const correct=ch.shape===prob.answer.shape && ch.ci===prob.answer.ci && ch.si===prob.answer.si;
@@ -215,9 +220,13 @@ function showFigureMatrices() {
 
         currentAnswers.push({
             q:'L'+level+' '+LEVEL_NAMES[level-1],
-            a:SNAMES[ch.si]+' '+CNAMES[ch.ci]+' '+ch.shape,
+            answer:SNAMES[ch.si]+' '+CNAMES[ch.ci]+' '+ch.shape,
             correct, first_try:firstTry
         });
+
+        const ansDesc = SNAMES[prob.answer.si]+' '+CNAMES[prob.answer.ci]+' '+prob.answer.shape;
+        const chDesc = SNAMES[ch.si]+' '+CNAMES[ch.ci]+' '+ch.shape;
+        recordResponse('figure_matrices', {type:'figure_matrices', level_name:LEVEL_NAMES[level-1]}, ansDesc, chDesc, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
 
         if(correct) {
             if(firstTry) score++;
