@@ -55,7 +55,7 @@ function showColorsL2() {
         if (!selectedColor || solved.has(current)) return;
         const p = problems[current];
         const correct = selectedColor === p.ans;
-        currentAnswers.push({q: 'patternL2_'+current, a: selectedColor, correct: correct});
+        currentAnswers.push({q: 'patternL2_'+current, answer: selectedColor, correct: correct});
         if (correct) {
             solved.add(current);
             score++;
