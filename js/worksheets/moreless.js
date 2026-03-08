@@ -2,6 +2,7 @@
 function showMoreLess() {
     const questions = generateMoreLessProblems(CONFIG.focusNumber);
     let current = 0, score = 0;
+    let questionStartMs = null;
 
     function render() {
         if (current >= questions.length) { completeWorksheet('More/Less', score, questions.length); return; }
@@ -12,9 +13,11 @@ function showMoreLess() {
         html += '<div class="prob" style="font-size:32px;padding:20px;cursor:pointer" onclick="pickMore(\'right\')">'+b+'</div>';
         html += '</div><div class="score">'+(current+1)+' / '+questions.length+'</div></div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.pickMore = (choice) => {
+        const responseTimeMs = Date.now() - questionStartMs;
         const correct = choice === questions[current][3];
         const correctSide = questions[current][3];
         currentAnswers.push({q: questions[current][2]+': '+questions[current][0]+' vs '+questions[current][1], answer: choice, correct: correct});
@@ -23,6 +26,8 @@ function showMoreLess() {
 
         if (correctSide === 'left') { leftEl.style.background = '#22c55e'; rightEl.style.background = '#ef4444'; }
         else { rightEl.style.background = '#22c55e'; leftEl.style.background = '#ef4444'; }
+
+        recordResponse('more_less', {type:'more_less', left:questions[current][0], right:questions[current][1], question_type:questions[current][2]}, correctSide, choice, correct, true, 1, responseTimeMs, current);
 
         showFeedback(correct, () => {
             if (correct) score++;
