@@ -4,6 +4,8 @@ function showSubtraction() {
     let current = 0, score = 0;
     const solved = new Set();
     const answers = {};
+    const attemptCounts = {};
+    let questionStartMs = null;
 
     function render() {
         const p = problems[current];
@@ -50,6 +52,7 @@ function showSubtraction() {
         html += '<button class="key red" onclick="clearKey()">✕</button><button class="key green" onclick="checkKey()">✓</button></div>';
         html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.pressKey = (n) => {
@@ -65,9 +68,14 @@ function showSubtraction() {
     window.checkKey = () => {
         const ans = document.getElementById('ansBox').textContent;
         if (ans === '?' || solved.has(current)) return;
+        const responseTimeMs = Date.now() - questionStartMs;
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
         const correct = parseInt(ans) === p.ans;
         currentAnswers.push({q: p.a+'−'+p.b, answer: ans, correct: correct});
+
+        recordResponse('subtraction', {type:'subtraction', a:p.a, b:p.b, answer:p.ans, mode:p.mode}, String(p.ans), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+
         showFeedback(correct, () => {
             if (correct) {
                 solved.add(current);
