@@ -4,6 +4,7 @@ function showCounting() {
     let current = -1, score = 0;
     const solved = new Set();
     const answers = {};
+    let questionStartMs = null;
 
     function render() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Count Them!</div>';
@@ -19,14 +20,18 @@ function showCounting() {
         document.getElementById('app').innerHTML = html;
     }
 
-    window.openKeypad = (i) => { if (!solved.has(i)) { current = i; document.getElementById('overlay').style.display='block'; document.getElementById('popup').style.display='block'; } };
+    window.openKeypad = (i) => { if (!solved.has(i)) { current = i; questionStartMs = Date.now(); document.getElementById('overlay').style.display='block'; document.getElementById('popup').style.display='block'; } };
     window.closeKeypad = () => { document.getElementById('overlay').style.display='none'; document.getElementById('popup').style.display='none'; };
     window.submitAnswer = (n) => {
         if (current < 0) return;
+        const responseTimeMs = Date.now() - questionStartMs;
         answers[current] = n;
         const correct = n === problems[current][0];
         currentAnswers.push({q: problems[current][1], answer: n, correct: correct});
         closeKeypad();
+
+        recordResponse('counting', {type:'counting', emoji:problems[current][1], correct_answer:problems[current][0]}, String(problems[current][0]), String(n), correct, true, 1, responseTimeMs, current);
+
         showFeedback(correct, () => {
             if (correct) { solved.add(current); score++; }
             current = -1;
