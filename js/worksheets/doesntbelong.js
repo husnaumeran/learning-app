@@ -29,7 +29,7 @@ function showDoesntBelong() {
         const responseTimeMs = Date.now() - questionStartMs;
         const [items, ans, category] = problems[current];
         const correct = choice === ans;
-        currentAnswers.push({q: 'Odd one out', a: choice, correct: correct});
+        currentAnswers.push({q: 'Odd one out', answer: choice, correct: correct});
         const wrongCat = Object.keys(CONFIG.categories).find(cat => CONFIG.categories[cat].includes(ans));
         const explanation = ans + ' is ' + wrongCat.toUpperCase() + ', not ' + category.toUpperCase();
 
