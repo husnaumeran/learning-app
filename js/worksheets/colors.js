@@ -2,6 +2,8 @@
 function showColors() {
     const problems = generateColorPatterns();
     let current = 0, score = 0, tried = false;
+    let questionStartMs = null;
+    const attemptCounts = {};
 
     function renderElem(elem, type, size) {
         size = size || 50;
@@ -45,21 +47,30 @@ function showColors() {
 
         document.getElementById('app').innerHTML = html;
         tried = false;
+        questionStartMs = Date.now();
     }
 
     window.pickPatternAnswer = function(i) {
+        const responseTimeMs = Date.now() - questionStartMs;
         const p = problems[current];
         const chosen = p.choices[i];
         const el = document.getElementById('ch'+i);
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         if (chosen === p.ans) {
             if (!tried) score++;
             currentAnswers.push({q: p.seq.join(','), type: p.type, answer: chosen, correct: true, firstTry: !tried});
+
+            recordResponse('color_patterns', {type:'color_patterns', pattern_type:p.type, sequence:p.seq, correct_answer:p.ans}, String(p.ans), String(chosen), true, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+
             el.style.borderColor = '#22c55e';
             el.style.background = '#dcfce7';
             showFeedback(true);
             setTimeout(() => { current++; render(); }, 1200);
         } else {
             tried = true;
+
+            recordResponse('color_patterns', {type:'color_patterns', pattern_type:p.type, sequence:p.seq, correct_answer:p.ans}, String(p.ans), String(chosen), false, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+
             el.style.borderColor = '#ef4444';
             el.style.background = '#fee2e2';
             el.style.opacity = '0.5';
