@@ -78,6 +78,12 @@ function showMenu() {
 }
 
 async function startDaily() {
+    // If session already in progress, resume the queue
+    if (CONFIG.sessionId && worksheetQueue.length > 0 && queueIndex < worksheetQueue.length) {
+        nextWorksheet();
+        return;
+    }
+
     // Create a session in Supabase
     const { data: session, error } = await sb.from('sessions').insert({
         child_id: CONFIG.childId,
