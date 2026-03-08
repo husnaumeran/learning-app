@@ -32,7 +32,7 @@ function showMatchNumbers() {
     window.selectEmoji = (n) => {
         if (!selected || solved.has(n)) return;
         const correct = selected === n;
-        currentAnswers.push({q: 'Match '+selected, a: n, correct: correct});
+        currentAnswers.push({q: 'Match '+selected, answer: n, correct: correct});
         showFeedback(correct, () => {
             if (correct) { solved.add(n); score++; }
             selected = null;
