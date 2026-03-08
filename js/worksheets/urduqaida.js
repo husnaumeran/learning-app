@@ -208,7 +208,7 @@ function showUrduQaida() {
         }
         window.pickUQN = (choice) => {
             const correct = choice === problems[current].ans;
-            currentAnswers.push({q: problems[current].seq.join('←')+'←?', a: choice, correct: correct});
+            currentAnswers.push({q: problems[current].seq.join('←')+'←?', answer: choice, correct: correct});
             showFeedback(correct, () => { if (correct) score++; current++; render(); });
         };
         render();
