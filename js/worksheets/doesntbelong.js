@@ -42,31 +42,7 @@ function showDoesntBelong() {
         document.querySelector('.title').innerHTML = explanation;
         await speak(explanation);
 
-        // Record response to Supabase (fire and forget, log errors)
-        if (CONFIG.sessionId && CONFIG.childId) {
-            sb.rpc('record_response', {
-                p_session_id: CONFIG.sessionId,
-                p_child_id: CONFIG.childId,
-                p_skill_id: 'which_doesnt_belong',
-                p_question_data: {
-                    type: 'which_doesnt_belong',
-                    items: items,
-                    correct_answer: ans,
-                    category: category
-                },
-                p_correct_answer: ans,
-                p_final_answer: choice,
-                p_is_correct: correct,
-                p_is_first_try: true,
-                p_attempt_count: 1,
-                p_is_skipped: false,
-                p_response_time_ms: responseTimeMs,
-                p_client_event_id: CONFIG.sessionId + '_doesntbelong_' + current
-            }).then(({data, error}) => {
-                if (error) console.error('record_response error:', error);
-                else console.log('record_response OK:', data);
-            });
-        }
+        recordResponse('which_doesnt_belong', {type:'which_doesnt_belong', items, correct_answer:ans, category}, ans, choice, correct, true, 1, responseTimeMs, current);
 
         showFeedback(correct, () => { if (correct) score++; current++; render(); });
     };
