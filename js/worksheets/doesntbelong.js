@@ -11,6 +11,7 @@ function showDoesntBelong() {
         problems.push([[...items1, oddOne], oddOne, cat1]);
     }
     let current = 0, score = 0;
+    let questionStartMs = null;
 
     function render() {
         if (current >= problems.length) { completeWorksheet('Doesnt Belong', score, problems.length); return; }
@@ -21,9 +22,11 @@ function showDoesntBelong() {
         shuffled.forEach(item => html += '<div class="prob" style="justify-content:center;font-size:48px;padding:25px;cursor:pointer" onclick="pickOdd(\''+item+'\')">'+item+'</div>');
         html += '</div><div class="score">'+(current+1)+' / '+problems.length+'</div></div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.pickOdd = async (choice) => {
+        const responseTimeMs = Date.now() - questionStartMs;
         const [items, ans, category] = problems[current];
         const correct = choice === ans;
         currentAnswers.push({q: 'Odd one out', a: choice, correct: correct});
@@ -38,6 +41,32 @@ function showDoesntBelong() {
 
         document.querySelector('.title').innerHTML = explanation;
         await speak(explanation);
+
+        // Record response to Supabase (fire and forget, log errors)
+        if (CONFIG.sessionId && CONFIG.childId) {
+            sb.rpc('record_response', {
+                p_session_id: CONFIG.sessionId,
+                p_child_id: CONFIG.childId,
+                p_skill_id: 'which_doesnt_belong',
+                p_question_data: {
+                    type: 'which_doesnt_belong',
+                    items: items,
+                    correct_answer: ans,
+                    category: category
+                },
+                p_correct_answer: ans,
+                p_final_answer: choice,
+                p_is_correct: correct,
+                p_is_first_try: true,
+                p_attempt_count: 1,
+                p_is_skipped: false,
+                p_response_time_ms: responseTimeMs,
+                p_client_event_id: CONFIG.sessionId + '_doesntbelong_' + current
+            }).then(({data, error}) => {
+                if (error) console.error('record_response error:', error);
+                else console.log('record_response OK:', data);
+            });
+        }
 
         showFeedback(correct, () => { if (correct) score++; current++; render(); });
     };
