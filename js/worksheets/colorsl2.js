@@ -3,6 +3,8 @@ function showColorsL2() {
     const problems = generateColorPatternsL2();
     let current = 0, score = 0, selectedColor = null;
     const solved = new Set();
+    const attemptCounts = {};
+    let questionStartMs = null;
 
     function render() {
         const p = problems[current];
@@ -44,6 +46,7 @@ function showColorsL2() {
         html += '</div>';
         html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.tapColorL2 = (color) => {
@@ -53,9 +56,14 @@ function showColorsL2() {
 
     window.checkColorL2 = () => {
         if (!selectedColor || solved.has(current)) return;
+        const responseTimeMs = Date.now() - questionStartMs;
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
         const correct = selectedColor === p.ans;
         currentAnswers.push({q: 'patternL2_'+current, answer: selectedColor, correct: correct});
+
+        recordResponse('color_patterns_l2', {type:'color_patterns_l2', pattern:p.seq, pattern_type:p.type, correct_answer:p.ans}, p.ans, selectedColor, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+
         if (correct) {
             solved.add(current);
             score++;
