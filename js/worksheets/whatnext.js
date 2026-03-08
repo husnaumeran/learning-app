@@ -24,7 +24,7 @@ function showWhatNext() {
 
     window.pickNext = (choice) => {
         const correct = String(choice) === String(problems[current][1]);
-        currentAnswers.push({q: problems[current][0].join('→')+'→?', a: choice, correct: correct});
+        currentAnswers.push({q: problems[current][0].join('→')+'→?', answer: choice, correct: correct});
         const boxes = document.querySelectorAll('.card .prob');
         boxes.forEach(b => {
             if (b.textContent == problems[current][1]) b.style.background = '#22c55e';
