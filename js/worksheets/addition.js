@@ -4,6 +4,8 @@ function showAddition() {
     let current = 0, score = 0;
     const solved = new Set();
     const answers = {};
+    const attemptCounts = {};
+    let questionStartMs = null;
 
     function render() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+CONFIG.focusNumber+'!</div>';
@@ -16,6 +18,7 @@ function showAddition() {
         html += '<button class="key red" onclick="clearKey()">✕</button><button class="key green" onclick="checkKey()">✓</button></div>';
         html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.setCurrent = (i) => { if (!solved.has(i)) { current = i; render(); } };
@@ -25,8 +28,13 @@ function showAddition() {
     window.checkKey = () => {
         const ans = document.getElementById('ans'+current).textContent;
         if (ans === '?' || solved.has(current)) return;
+        const responseTimeMs = Date.now() - questionStartMs;
+        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const correct = parseInt(ans) === problems[current][2];
         currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], answer: ans, correct: correct});
+
+        recordResponse('addition', {type:'addition', a:problems[current][0], b:problems[current][1], sum:problems[current][2]}, String(problems[current][2]), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+
         showFeedback(correct, () => {
             if (correct) {
                 solved.add(current);
