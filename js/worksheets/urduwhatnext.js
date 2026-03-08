@@ -44,7 +44,7 @@ function showUrduWhatNext() {
 
     window.pickUrduNext = (choice) => {
         const correct = choice === problems[current].ans;
-        currentAnswers.push({q: problems[current].seq.join('→')+'→?', a: choice, correct: correct});
+        currentAnswers.push({q: problems[current].seq.join('→')+'→?', answer: choice, correct: correct});
         const boxes = document.querySelectorAll('.card div[onclick]');
         boxes.forEach(b => {
             if (b.textContent.trim() === problems[current].ans) b.style.background = '#22c55e';
