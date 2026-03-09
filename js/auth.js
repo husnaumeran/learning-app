@@ -193,11 +193,12 @@ function showChildPicker(children) {
     };
 }
 
-function selectChild(child) {
+async function selectChild(child) {
     CONFIG.childId = child.id;
     CONFIG.childName = child.name;
     CONFIG.focusNumber = child.focus_number;
     localStorage.setItem('focusNumber', child.focus_number);
+    await checkWeekendAssessment();
     showMenu();
 }
 
