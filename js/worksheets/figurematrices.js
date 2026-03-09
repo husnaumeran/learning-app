@@ -5,7 +5,7 @@ function showFigureMatrices() {
     const CNAMES = ['red','blue','green','yellow','orange','pink'];
     const SIZES = [80, 40]; // big, small
     const SNAMES = ['big','small'];
-    const QUESTIONS = CONFIG.focusNumber;
+    const QUESTIONS = getFocusNumber('figure_matrices');
     const LEVEL_NAMES = ['Color','Size','Shape','Direction','Color+Size','Color+Shape','Size+Shape','All Three'];
 
     let level = parseInt(localStorage.getItem('fm_level') || '1');
