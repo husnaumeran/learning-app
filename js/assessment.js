@@ -318,7 +318,7 @@ function runAssessment(questions, indexOffset) {
         });
 
         if (correct) score++;
-        results.push({ skill_id: q.skill_id, correct, responseTimeMs });
+        results.push({ skill_id: q.skill_id, chosen, correct, responseTimeMs });
 
         // Record to Supabase
         recordResponse(q.skill_id, q.qdata, q.correct, chosen, correct, true, 1, responseTimeMs, indexOffset + current, false);
@@ -345,6 +345,13 @@ function finishAssessment(results, score, total) {
     // Mark done (keyed by child + week)
     localStorage.setItem('weekendChallenge:' + CONFIG.childId + ':' + getWeekKey(), 'true');
     CONFIG.weekendChallengeDone = true;
+
+    // Write to localStorage so progress view can show it
+    const today = new Date().toISOString().split('T')[0];
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    const answers = results.map(r => ({q: r.skill_id.replace(/_/g,' '), answer: r.chosen, correct: r.correct}));
+    todayProgress.push({type: '⭐ Weekend Challenge', score: score+'/'+total, answers: answers, time: new Date().toISOString()});
+    localStorage.setItem('daily_'+today, JSON.stringify(todayProgress));
 
     // Per-skill breakdown
     const bySkill = {};
