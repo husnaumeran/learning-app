@@ -101,6 +101,66 @@ async function adjustFocusNumbers(slices) {
     }
 }
 
+// ============ AUTO-ADJUST FOCUS NUMBER ============
+async function adjustFocusNumbers(slices) {
+    if (!slices || !slices.length || !CONFIG.childId) return;
+
+    for (const slice of slices) {
+        const skillId = slice.skill_id;
+        const accuracy = slice.accuracy;
+        if (accuracy == null || !skillId) continue;
+
+        // Get current settings or defaults
+        const current = (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) || {};
+        let focusNum = current.focus_number || CONFIG.focusNumber;
+        let streakUp = current.streak_up || 0;
+        let streakDown = current.streak_down || 0;
+
+        // Evaluate
+        if (accuracy >= 0.90) {
+            streakUp++;
+            streakDown = 0;
+        } else if (accuracy < 0.60) {
+            streakDown++;
+            streakUp = 0;
+        } else {
+            streakUp = 0;
+            streakDown = 0;
+        }
+
+        // Adjust focus_number if thresholds hit
+        let changed = false;
+        if (streakUp >= 3) {
+            focusNum = Math.min(focusNum + 1, 12);
+            streakUp = 0;
+            changed = true;
+            console.log('📈 ' + skillId + ' focus_number → ' + focusNum);
+        } else if (streakDown >= 2) {
+            focusNum = Math.max(focusNum - 1, 3);
+            streakDown = 0;
+            changed = true;
+            console.log('📉 ' + skillId + ' focus_number → ' + focusNum);
+        }
+
+        // Upsert to Supabase
+        const { error } = await sb.from('child_skill_settings')
+            .upsert({
+                child_id: CONFIG.childId,
+                skill_id: skillId,
+                focus_number: focusNum,
+                streak_up: streakUp,
+                streak_down: streakDown
+            }, { onConflict: 'child_id,skill_id' });
+
+        if (error) console.error('adjustFocus error:', error);
+        else {
+            // Update local cache
+            CONFIG.skillSettings[skillId] = { focus_number: focusNum, streak_up: streakUp, streak_down: streakDown };
+            console.log('🎯 ' + skillId + ': accuracy=' + accuracy + ' streak_up=' + streakUp + ' streak_down=' + streakDown + ' focus=' + focusNum);
+        }
+    }
+}
+
 // ============ HELPER FUNCTIONS ============
 function generateAdditionProblems(target) {
     const problems = [];
