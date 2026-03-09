@@ -1,6 +1,6 @@
 // ============ COLOR PATTERNS L2 ============
 function showColorsL2() {
-    const problems = generateColorPatternsL2();
+    const problems = generateColorPatternsL2(getFocusNumber('color_patterns_l2'));
     let current = 0, score = 0, selectedColor = null;
     const solved = new Set();
     const attemptCounts = {};
