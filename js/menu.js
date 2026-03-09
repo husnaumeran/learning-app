@@ -112,47 +112,10 @@ async function startDaily() {
     const today = getToday();
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
+    const remaining = wsLimit - todayProgress.length;
     const doneTypes = todayProgress.map(p => p.type);
 
-    const sections = [
-        [['showAddition','Addition'],['showSubtraction','Subtraction'],['showCounting','Counting'],['showMatchNumbers','Match Numbers'],['showMoreLess','More/Less'],['showBiggerSmaller','Bigger/Smaller'],['showWhatNext','What Comes Next'],['showNumbersEnglish','Numbers English']],
-        [['showTwoLetter','2-Letter Words'],['showThreeLetter','3-Letter Words'],['showTraceABC','Trace ABC'],['showTraceLower','Trace abc'],['showTraceNumbers','Trace Numbers']],
-        [['showColors','Color Patterns'],['showColorsL2','Color Patterns L2'],['showDoesntBelong','Doesn\'t Belong'],['showJora','Find Pairs'],['showConnectDots','Connect Dots'],['showFigureMatrices','Figure Matrices'],['showVerbalAnalogies','Verbal Analogies']],
-        [['showUrduReading','Urdu Reading'],['showUrduTrace','Urdu Trace'],['showUrdu2Letter','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next'],['showNumbersUrdu','Numbers Urdu']],
-        [['showArabicQaida','Arabic Qaida'],['showNumbersArabic','Numbers Arabic']]
-    ];
-
-    worksheetQueue = [];
-    const remaining = wsLimit - todayProgress.length;
-
-    // First pass: 1 per section (guarantees coverage)
-    const leftovers = [];
-    sections.forEach(section => {
-        const available = section.filter(([fn, type]) => !doneTypes.includes(type)).sort(() => Math.random() - 0.5);
-        if (available.length > 0) worksheetQueue.push(available[0]);
-        leftovers.push(...available.slice(1));
-    });
-
-    // Second pass: 1 more per section if room
-    if (worksheetQueue.length < remaining && leftovers.length > 0) {
-        const bySection = [];
-        let idx = 0;
-        sections.forEach(section => {
-            const available = section.filter(([fn, type]) => !doneTypes.includes(type) && !worksheetQueue.some(q => q[0] === fn)).sort(() => Math.random() - 0.5);
-            if (available.length > 0) bySection.push(available[0]);
-        });
-        worksheetQueue.push(...bySection.sort(() => Math.random() - 0.5).slice(0, remaining - worksheetQueue.length));
-    }
-
-    // Third pass: fill from all remaining if still short
-    if (worksheetQueue.length < remaining) {
-        const usedFns = new Set(worksheetQueue.map(q => q[0]));
-        const extra = leftovers.filter(w => !usedFns.has(w[0])).sort(() => Math.random() - 0.5).slice(0, remaining - worksheetQueue.length);
-        worksheetQueue.push(...extra);
-    }
-
-    // Shuffle and cap
-    worksheetQueue = worksheetQueue.sort(() => Math.random() - 0.5).slice(0, remaining);
+    worksheetQueue = await buildAdaptiveQueue(CONFIG.childId, remaining, doneTypes);
     queueIndex = 0;
 
     if (worksheetQueue.length === 0) { showMenu(); return; }
@@ -356,6 +319,188 @@ function showExport() {
     };
 
     renderProgress();
+}
+
+// ============ ADAPTIVE QUEUE BRAIN ============
+
+// Skill ID → [functionName, displayName] mapping
+const SKILL_MAP = {
+    // Challenge — Quantitative
+    addition:                ['showAddition', 'Addition'],
+    subtraction:             ['showSubtraction', 'Subtraction'],
+    counting:                ['showCounting', 'Counting'],
+    match_numbers:           ['showMatchNumbers', 'Match Numbers'],
+    more_less:               ['showMoreLess', 'More/Less'],
+    bigger_smaller:          ['showBiggerSmaller', 'Bigger/Smaller'],
+    what_comes_next_numbers: ['showWhatNext', 'What Comes Next'],
+    numbers_english:         ['showNumbersEnglish', 'Numbers English'],
+    // Challenge — Nonverbal
+    figure_matrices:         ['showFigureMatrices', 'Figure Matrices'],
+    color_patterns_l2:       ['showColorsL2', 'Color Patterns L2'],
+    // Challenge — Verbal
+    verbal_analogies:        ['showVerbalAnalogies', 'Verbal Analogies'],
+    // Challenge — Literacy
+    two_letter_words:        ['showTwoLetter', '2-Letter Words'],
+    three_letter_words:      ['showThreeLetter', '3-Letter Words'],
+    what_comes_next_letters: ['showWhatNext', 'What Comes Next'],
+    // Challenge — Urdu
+    urdu_reading:            ['showUrduReading', 'Urdu Reading'],
+    urdu_2letter:            ['showUrdu2Letter', 'Urdu 2-Letter Words'],
+    urdu_what_next:          ['showUrduWhatNext', 'Urdu What Next'],
+    urdu_qaida:              ['showUrduQaida', 'Urdu Qaida'],
+    numbers_urdu:            ['showNumbersUrdu', 'Numbers Urdu'],
+    // Challenge — Arabic
+    arabic_qaida:            ['showArabicQaida', 'Arabic Qaida'],
+    numbers_arabic:          ['showNumbersArabic', 'Numbers Arabic'],
+    // Fun
+    color_patterns:          ['showColors', 'Color Patterns'],
+    connect_dots:            ['showConnectDots', 'Connect Dots'],
+    find_pairs:              ['showJora', 'Find Pairs'],
+    which_doesnt_belong:     ['showDoesntBelong', "Doesn't Belong"],
+    trace_upper:             ['showTraceABC', 'Trace ABC'],
+    trace_lower:             ['showTraceLower', 'Trace abc'],
+    trace_numbers:           ['showTraceNumbers', 'Trace Numbers'],
+    urdu_trace:              ['showUrduTrace', 'Urdu Trace'],
+    urdu_videos:             ['showUrduVideos', 'Urdu Videos'],
+};
+
+const CHALLENGE_SKILLS = [
+    'addition','subtraction','counting','match_numbers','more_less','bigger_smaller',
+    'what_comes_next_numbers','numbers_english',
+    'figure_matrices','color_patterns_l2','verbal_analogies',
+    'two_letter_words','three_letter_words',
+    'urdu_what_next','urdu_qaida','numbers_urdu',
+    'arabic_qaida','numbers_arabic'
+];
+
+const FUN_SKILLS = [
+    'color_patterns','connect_dots','find_pairs','which_doesnt_belong',
+    'trace_upper','trace_lower','trace_numbers','urdu_trace','urdu_videos'
+];
+
+const DOMAINS = {
+    quantitative: ['addition','subtraction','counting','match_numbers','more_less','bigger_smaller','what_comes_next_numbers','numbers_english'],
+    nonverbal:    ['figure_matrices','color_patterns_l2'],
+    verbal:       ['verbal_analogies'],
+    literacy:     ['two_letter_words','three_letter_words'],
+    urdu:         ['urdu_what_next','urdu_qaida','numbers_urdu'],
+    arabic:       ['arabic_qaida','numbers_arabic'],
+};
+
+async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
+    const queue = [];
+    const usedFns = new Set();
+
+    // Helper: add to queue if not already used and not done today
+    function tryAdd(skillId) {
+        const entry = SKILL_MAP[skillId];
+        if (!entry) return false;
+        if (usedFns.has(entry[0])) return false;
+        if (doneTypes.includes(entry[1])) return false;
+        queue.push(entry);
+        usedFns.add(entry[0]);
+        return true;
+    }
+
+    // --- Layer 1: Fetch signals ---
+    let reviewItems = [];
+    let stats = [];
+    try {
+        const [reviewRes, statsRes] = await Promise.all([
+            sb.from('review_queue')
+                .select('skill_id,question_data')
+                .eq('child_id', childId)
+                .eq('status', 'pending')
+                .lte('next_review_at', new Date().toISOString())
+                .order('next_review_at')
+                .limit(5),
+            sb.from('skill_stats')
+                .select('skill_id,total_attempts,correct_count,first_try_correct_count')
+                .eq('child_id', childId)
+        ]);
+        reviewItems = reviewRes.data || [];
+        stats = statsRes.data || [];
+    } catch(e) {
+        console.error('Queue brain fetch error:', e);
+    }
+
+    // --- Layer 2: Score & rank challenges ---
+    const statMap = {};
+    stats.forEach(s => { statMap[s.skill_id] = s; });
+
+    // Weakness score: lower accuracy = higher priority (0-1, lower = weaker)
+    function weaknessScore(skillId) {
+        const s = statMap[skillId];
+        if (!s || s.total_attempts === 0) return 0.5; // new skill = medium priority
+        return s.correct_count / s.total_attempts;
+    }
+
+    const rankedChallenges = CHALLENGE_SKILLS
+        .filter(id => SKILL_MAP[id])
+        .sort((a, b) => weaknessScore(a) - weaknessScore(b)); // weakest first
+
+    const shuffledFun = FUN_SKILLS
+        .filter(id => SKILL_MAP[id])
+        .sort(() => Math.random() - 0.5);
+
+    // --- Layer 3: Build queue ---
+
+    // Step 1: Add due review items (max 2)
+    const reviewCap = Math.min(2, reviewItems.length);
+    for (let i = 0; i < reviewCap && queue.length < maxItems; i++) {
+        tryAdd(reviewItems[i].skill_id);
+    }
+
+    // Step 2: Guarantee domain coverage — one challenge per domain
+    const domainOrder = Object.keys(DOMAINS).sort(() => Math.random() - 0.5);
+    for (const domain of domainOrder) {
+        if (queue.length >= maxItems) break;
+        // Pick weakest skill in this domain
+        const domainSkills = DOMAINS[domain]
+            .sort((a, b) => weaknessScore(a) - weaknessScore(b));
+        for (const skill of domainSkills) {
+            if (tryAdd(skill)) break;
+        }
+    }
+
+    // Step 3: Fill alternating challenge/fun
+    let ci = 0, fi = 0;
+    let nextIsChallenge = true;
+    while (queue.length < maxItems) {
+        if (nextIsChallenge) {
+            let added = false;
+            while (ci < rankedChallenges.length && !added) {
+                added = tryAdd(rankedChallenges[ci]);
+                ci++;
+            }
+            if (!added) {
+                // No more challenges, try fun
+                while (fi < shuffledFun.length && !added) {
+                    added = tryAdd(shuffledFun[fi]);
+                    fi++;
+                }
+            }
+            if (!added) break; // nothing left
+        } else {
+            let added = false;
+            while (fi < shuffledFun.length && !added) {
+                added = tryAdd(shuffledFun[fi]);
+                fi++;
+            }
+            if (!added) {
+                // No more fun, try challenge
+                while (ci < rankedChallenges.length && !added) {
+                    added = tryAdd(rankedChallenges[ci]);
+                    ci++;
+                }
+            }
+            if (!added) break;
+        }
+        nextIsChallenge = !nextIsChallenge;
+    }
+
+    console.log('Adaptive queue built:', queue.map(q => q[1]));
+    return queue;
 }
 
 checkAuth();
