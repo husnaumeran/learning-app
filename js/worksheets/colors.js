@@ -1,6 +1,6 @@
 // ============ COLOR PATTERNS ============
 function showColors() {
-    const problems = generateColorPatterns();
+    const problems = generateColorPatterns(getFocusNumber('color_patterns'));
     let current = 0, score = 0, tried = false;
     let questionStartMs = null;
     const attemptCounts = {};
