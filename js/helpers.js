@@ -22,6 +22,14 @@ function recordResponse(skillId, questionData, correctAnswer, finalAnswer, isCor
     });
 }
 
+// ============ FOCUS NUMBER ============
+function getFocusNumber(skillId) {
+    if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
+        return CONFIG.skillSettings[skillId].focus_number;
+    }
+    return CONFIG.focusNumber;
+}
+
 // ============ HELPER FUNCTIONS ============
 function generateAdditionProblems(target) {
     const problems = [];
