@@ -24,6 +24,22 @@ function showMenu() {
     html += '<div class="btn"><label>Focus Number: <input type="number" id="focusInput" value="'+CONFIG.focusNumber+'" min="1" max="20" style="width:60px;font-size:24px;text-align:center" onchange="updateFocus(this.value)"></label></div>';
     html += '<div class="btn"><label>Worksheet Limit: <input type="number" id="limitInput" value="'+wsLimit+'" min="1" max="50" style="width:60px;font-size:24px;text-align:center" onchange="updateLimit(this.value)"></label></div>';
     html += '<p style="color:white;text-align:center">Done today: '+todayProgress.length+' / '+wsLimit+'</p>';
+
+    // Weekend Challenge detection
+    const dayName = new Date().toLocaleDateString('en-US', {weekday: 'long', timeZone: CONFIG.timezone || 'America/Chicago'});
+    const isWeekend = (dayName === 'Saturday' || dayName === 'Sunday');
+    if (isWeekend) {
+        if (CONFIG.weekendChallengeDone) {
+            html += '<div style="padding:20px;margin:10px 0;background:#1a4d1a;border:2px solid #22c55e;border-radius:15px;text-align:center">';
+            html += '<div style="font-size:20px;color:#22c55e">⭐ Weekend Challenge Complete!</div>';
+            html += '<button class="btn" style="margin-top:10px" onclick="showExport()">See Results</button></div>';
+        } else if (CONFIG.weekendChallengeInProgress) {
+            html += '<button class="btn" style="font-size:24px;padding:30px;background:#FFA500;color:#333;font-weight:bold;border:3px solid #FF8C00" onclick="resumeWeekendChallenge()">⭐ Continue Weekend Challenge! ⭐</button>';
+        } else {
+            html += '<button class="btn" style="font-size:24px;padding:30px;background:#FFD700;color:#333;font-weight:bold;border:3px solid #FFA500" onclick="startWeekendChallenge()">⭐ Weekend Challenge! ⭐</button>';
+        }
+    }
+
     html += '<button class="btn green" style="font-size:24px;padding:30px" onclick="startDaily()">Let\'s Start! 🚀</button>';
 
     const sections = [
@@ -166,6 +182,13 @@ function nextWorksheet() {
 
 function getToday() {
     return new Date().toISOString().split('T')[0];
+}
+
+function getWeekKey() {
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const weekNum = Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+    return now.getFullYear() + '-W' + String(weekNum).padStart(2, '0');
 }
 
 function updateFocus(n) {
