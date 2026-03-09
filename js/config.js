@@ -4,7 +4,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============ CONFIGURATION ============
 const CONFIG = {
-    focusNumber: parseInt(localStorage.getItem('focusNumber')) || 7,
+    focusNumber: 1,
     colors: {pink:'#FF1493', orange:'#FF6600', green:'#00CC66', blue:'#0099FF'},
     categories: {
         animals: ['🐱','🐶','🐰','🐻','🐸','🐷','🐮','🦁','🐯','🐨'],
