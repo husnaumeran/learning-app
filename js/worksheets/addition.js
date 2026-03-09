@@ -1,6 +1,6 @@
 // ============ ADDITION ============
 function showAddition() {
-    const problems = generateAdditionProblems(CONFIG.focusNumber);
+    const problems = generateAdditionProblems(getFocusNumber('addition'));
     let current = 0, score = 0;
     const solved = new Set();
     const answers = {};
@@ -8,7 +8,7 @@ function showAddition() {
     let questionStartMs = null;
 
     function render() {
-        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+CONFIG.focusNumber+'!</div>';
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+getFocusNumber('addition')+'!</div>';
         problems.forEach(([a, b, ans], i) => {
             const cls = solved.has(i) ? 'problem solved' : (i === current ? 'problem active' : 'problem');
             html += '<div class="'+cls+'" onclick="setCurrent('+i+')"><span>'+a+'</span><span style="color:#FF6B35">+</span><span>'+b+'</span><span style="color:#FF6B35">=</span><span class="answer-box" id="ans'+i+'">'+(answers[i] || '?')+'</span><span>'+(solved.has(i)?'✅':'')+'</span></div>';
@@ -43,7 +43,7 @@ function showAddition() {
                 else { for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; } }
                 render();
             } else {
-                document.querySelector('.title').innerHTML = 'Ways to Make '+CONFIG.focusNumber+'!';
+                document.querySelector('.title').innerHTML = 'Ways to Make '+getFocusNumber('addition')+'!';
                 document.querySelector('.title').style.color = '#FF6B35';
             }
         });
