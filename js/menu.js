@@ -88,6 +88,7 @@ function showMenu() {
 
     html += '<button class="btn" onclick="showHowToUse()">📋 How to Use</button>';
     html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
+    html += '<button class="btn" onclick="showParentArea()">👨‍👩‍👧 Parent Area</button>';
     html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
     document.getElementById('app').innerHTML = html;
 }
