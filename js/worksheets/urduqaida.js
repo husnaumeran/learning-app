@@ -67,7 +67,7 @@ function showUrduQaida() {
 
     // ===== LEVEL 1: Individual Letters =====
     function uqLetters() {
-        const letters = URDU_LETTERS.slice(0, CONFIG.focusNumber);
+        const letters = URDU_LETTERS.slice(0, getFocusNumber('urdu_qaida'));
         let current = 0;
         function render() {
             const l = letters[current];
@@ -86,7 +86,7 @@ function showUrduQaida() {
 
     // ===== LEVEL 2: Harakat =====
     function uqHarakat() {
-        const letters = URDU_LETTERS.slice(0, CONFIG.focusNumber);
+        const letters = URDU_LETTERS.slice(0, getFocusNumber('urdu_qaida'));
         let current = 0, harakatMode = 0;
         const harakatNames = ['زَبَر (Fatha)', 'زِیر (Kasra)', 'پِیش (Damma)'];
         const harakatKeys = ['fatha', 'kasra', 'damma'];
@@ -121,7 +121,7 @@ function showUrduQaida() {
 
     // ===== LEVEL 3: Trace =====
     function uqTrace() {
-        const letters = URDU_LETTERS.slice(0, CONFIG.focusNumber);
+        const letters = URDU_LETTERS.slice(0, getFocusNumber('urdu_qaida'));
         let current = 0, harakatMode = 0;
         const saved = {};
         const harakatNames = ['زَبَر', 'زِیر', 'پِیش'];
@@ -153,7 +153,7 @@ function showUrduQaida() {
 
     // ===== LEVEL 4: 2-Letter Words =====
     function uq2Letter() {
-        const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, CONFIG.focusNumber);
+        const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, getFocusNumber('urdu_qaida'));
         let current = 0;
         function render() {
             const w = words[current];
@@ -172,7 +172,7 @@ function showUrduQaida() {
 
     // ===== LEVEL 5: What Comes Next =====
     function uqWhatNext() {
-        const focus = Math.min(CONFIG.focusNumber, URDU_LETTERS.length);
+        const focus = Math.min(getFocusNumber('urdu_qaida'), URDU_LETTERS.length);
         const letters = URDU_LETTERS.slice(0, focus);
         const problems = [];
         for (let i = 0; i <= focus - 5; i += 2) {
