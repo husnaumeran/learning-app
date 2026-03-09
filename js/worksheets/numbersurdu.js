@@ -1,6 +1,6 @@
 // ============ NUMBERS URDU ============
 function showNumbersUrdu() {
-    const QUESTIONS = CONFIG.focusNumber;
+    const QUESTIONS = getFocusNumber('numbers_urdu');
     const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
     const STORAGE_KEY = 'nu_level';
