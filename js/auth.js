@@ -196,8 +196,7 @@ function showChildPicker(children) {
 async function selectChild(child) {
     CONFIG.childId = child.id;
     CONFIG.childName = child.name;
-    CONFIG.focusNumber = child.focus_number;
-    localStorage.setItem('focusNumber', child.focus_number);
+    CONFIG.focusNumber = child.focus_number || 1;
 
     // Load per-skill settings
     const { data: settings } = await sb.from('child_skill_settings')
