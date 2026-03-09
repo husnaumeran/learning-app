@@ -1,6 +1,6 @@
 // ============ NUMBERS ARABIC ============
 function showNumbersArabic() {
-    const QUESTIONS = CONFIG.focusNumber;
+    const QUESTIONS = getFocusNumber('numbers_arabic');
     const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
     const STORAGE_KEY = 'na_level';
