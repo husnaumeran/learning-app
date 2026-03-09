@@ -1,6 +1,6 @@
 // ============ TRACE ABC ============
 function showTraceABC() {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0, CONFIG.focusNumber).split('');
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0, getFocusNumber('trace_upper')).split('');
     let current = 0;
     const saved = {};
 
