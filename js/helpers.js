@@ -76,7 +76,7 @@ function generateSubtractionProblems(focusNum) {
 function generateCountingProblems(maxNum) {
     const catNames = Object.keys(CONFIG.categories);
     const problems = [];
-    for (let i = 0; i < CONFIG.focusNumber; i++) {
+    for (let i = 0; i < maxNum; i++) {
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
         const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
         const count = Math.floor(Math.random() * maxNum) + 1;
@@ -89,7 +89,7 @@ function generateMatchPairs(maxNum) {
     const catNames = Object.keys(CONFIG.categories);
     const nums = [];
     for (let i = 1; i <= maxNum; i++) nums.push(i);
-    const shuffled = nums.sort(() => Math.random() - 0.5).slice(0, CONFIG.focusNumber);
+    const shuffled = nums.sort(() => Math.random() - 0.5).slice(0, maxNum);
     const pairs = [];
     for (const n of shuffled) {
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
@@ -105,7 +105,7 @@ function generateMoreLessProblems(focusNum) {
     const cat = catNames[Math.floor(Math.random() * catNames.length)];
     const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
 
-    for (let i = 0; i < CONFIG.focusNumber; i++) {
+    for (let i = 0; i < focusNum; i++) {
         let n;
         do { n = Math.floor(Math.random() * focusNum) + 1; } while (n === focusNum);
         const askMore = Math.random() > 0.5;
@@ -123,7 +123,7 @@ function generateMoreLessProblems(focusNum) {
 }
 
 
-function generateColorPatternsL2() {
+function generateColorPatternsL2(focusNum) {
     const c = Object.keys(CONFIG.colors);
     const shuffle = arr => arr.sort(() => Math.random() - 0.5);
     const pick2 = () => { const s = shuffle([...c]); return [s[0], s[1]]; };
@@ -152,11 +152,11 @@ function generateColorPatternsL2() {
     [x, y, z] = pick3();
     problems.push({seq: [x,y,y,z,x,null,y,z], ans: y, type: 'blank', label: 'ABBC'});
 
-    return shuffle(problems).slice(0, CONFIG.focusNumber);
+    return shuffle(problems).slice(0, focusNum || 7);
 }
 
-function generateColorPatterns() {
-    const n = CONFIG.focusNumber;
+function generateColorPatterns(focusNum) {
+    const n = focusNum || 7;
     const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
