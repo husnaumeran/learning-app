@@ -443,60 +443,64 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
         .filter(id => SKILL_MAP[id])
         .sort(() => Math.random() - 0.5);
 
-    // --- Layer 3: Build queue ---
+    // --- Layer 3: Build queue by interleaving challenge/fun ---
 
-    // Step 1: Add due review items (max 2)
-    const reviewCap = Math.min(2, reviewItems.length);
-    for (let i = 0; i < reviewCap && queue.length < maxItems; i++) {
-        tryAdd(reviewItems[i].skill_id);
+    // Build prioritized challenge list: review items first, then domain coverage, then weakest
+    const challengePool = [];
+    const usedChallengeSkills = new Set();
+
+    function addChallenge(skillId) {
+        if (usedChallengeSkills.has(skillId)) return false;
+        const entry = SKILL_MAP[skillId];
+        if (!entry || doneTypes.includes(entry[1])) return false;
+        challengePool.push(entry);
+        usedChallengeSkills.add(skillId);
+        return true;
     }
 
-    // Step 2: Guarantee domain coverage — one challenge per domain
+    // Priority 1: Review items (max 2)
+    const reviewCap = Math.min(2, reviewItems.length);
+    for (let i = 0; i < reviewCap; i++) {
+        addChallenge(reviewItems[i].skill_id);
+    }
+
+    // Priority 2: Domain coverage — one weakest per domain
     const domainOrder = Object.keys(DOMAINS).sort(() => Math.random() - 0.5);
     for (const domain of domainOrder) {
-        if (queue.length >= maxItems) break;
-        // Pick weakest skill in this domain
         const domainSkills = DOMAINS[domain]
             .sort((a, b) => weaknessScore(a) - weaknessScore(b));
         for (const skill of domainSkills) {
-            if (tryAdd(skill)) break;
+            if (addChallenge(skill)) break;
         }
     }
 
-    // Step 3: Fill alternating challenge/fun
+    // Priority 3: Fill with remaining weakest challenges
+    for (const skill of rankedChallenges) {
+        addChallenge(skill);
+    }
+
+    // Build fun pool
+    const funPool = [];
+    for (const skillId of shuffledFun) {
+        const entry = SKILL_MAP[skillId];
+        if (entry && !doneTypes.includes(entry[1])) funPool.push(entry);
+    }
+
+    // Interleave: challenge → fun → challenge → fun ...
     let ci = 0, fi = 0;
-    let nextIsChallenge = true;
-    while (queue.length < maxItems) {
-        if (nextIsChallenge) {
-            let added = false;
-            while (ci < rankedChallenges.length && !added) {
-                added = tryAdd(rankedChallenges[ci]);
-                ci++;
-            }
-            if (!added) {
-                // No more challenges, try fun
-                while (fi < shuffledFun.length && !added) {
-                    added = tryAdd(shuffledFun[fi]);
-                    fi++;
-                }
-            }
-            if (!added) break; // nothing left
-        } else {
-            let added = false;
-            while (fi < shuffledFun.length && !added) {
-                added = tryAdd(shuffledFun[fi]);
-                fi++;
-            }
-            if (!added) {
-                // No more fun, try challenge
-                while (ci < rankedChallenges.length && !added) {
-                    added = tryAdd(rankedChallenges[ci]);
-                    ci++;
-                }
-            }
-            if (!added) break;
+    while (queue.length < maxItems && (ci < challengePool.length || fi < funPool.length)) {
+        // Challenge turn
+        if (ci < challengePool.length) {
+            queue.push(challengePool[ci]);
+            ci++;
+            if (queue.length >= maxItems) break;
         }
-        nextIsChallenge = !nextIsChallenge;
+        // Fun turn
+        if (fi < funPool.length) {
+            queue.push(funPool[fi]);
+            fi++;
+            if (queue.length >= maxItems) break;
+        }
     }
 
     console.log('Adaptive queue built:', queue.map(q => q[1]));
