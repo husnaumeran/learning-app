@@ -4,6 +4,7 @@ function showUrduReading() {
     let current = 0;
 
     function render() {
+        startItemTimer();
         const l = letters[current];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
         html += '<div class="title" style="direction:rtl">اردو Urdu — Read: '+l.name+'</div>';
@@ -23,6 +24,11 @@ function showUrduReading() {
     }
 
     window.prevUrduRead = () => { if (current > 0) { current--; render(); } };
-    window.nextUrduRead = () => { current++; if (current >= letters.length) { completeWorksheet('Urdu Reading', letters.length, letters.length); return; } render(); };
+    window.nextUrduRead = () => {
+        recordPassiveResponse('urdu_reading', {letter: letters[current].name, symbol: letters[current].letter}, current);
+        current++;
+        if (current >= letters.length) { completeWorksheet('Urdu Reading', letters.length, letters.length); return; }
+        render();
+    };
     render();
 }
