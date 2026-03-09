@@ -30,6 +30,77 @@ function getFocusNumber(skillId) {
     return CONFIG.focusNumber;
 }
 
+// ============ AUTO FOCUS ADJUSTMENT ============
+async function adjustFocusNumbers(slices) {
+    if (!slices || !slices.length || !CONFIG.childId) return;
+
+    for (const slice of slices) {
+        const skillId = slice.skill_id;
+        const accuracy = parseFloat(slice.accuracy);
+        const attempted = slice.attempted;
+
+        // Need at least 3 questions to evaluate
+        if (attempted < 3) continue;
+
+        // Get or create current settings
+        let settings = CONFIG.skillSettings[skillId] || {
+            focus_number: CONFIG.focusNumber,
+            streak_up: 0,
+            streak_down: 0
+        };
+
+        let streakUp = settings.streak_up;
+        let streakDown = settings.streak_down;
+        let focusNum = settings.focus_number;
+        let changed = false;
+
+        if (accuracy >= 0.90) {
+            streakUp++;
+            streakDown = 0;
+            if (streakUp >= 3) {
+                focusNum = Math.min(focusNum + 1, 50);
+                streakUp = 0;
+                changed = true;
+                console.log('📈 ' + skillId + ' focus_number → ' + focusNum);
+            }
+        } else if (accuracy < 0.60) {
+            streakDown++;
+            streakUp = 0;
+            if (streakDown >= 2) {
+                focusNum = Math.max(focusNum - 1, 3);
+                streakDown = 0;
+                changed = true;
+                console.log('📉 ' + skillId + ' focus_number → ' + focusNum);
+            }
+        } else {
+            // 60-89%: reset both streaks
+            streakUp = 0;
+            streakDown = 0;
+        }
+
+        // Upsert to Supabase
+        const { error } = await sb.from('child_skill_settings')
+            .upsert({
+                child_id: CONFIG.childId,
+                skill_id: skillId,
+                focus_number: focusNum,
+                streak_up: streakUp,
+                streak_down: streakDown
+            }, { onConflict: 'child_id,skill_id' });
+
+        if (error) console.error('adjustFocus error for ' + skillId + ':', error);
+
+        // Update local cache
+        CONFIG.skillSettings[skillId] = {
+            focus_number: focusNum,
+            streak_up: streakUp,
+            streak_down: streakDown
+        };
+
+        if (changed) console.log('🎯 ' + skillId + ': streak_up=' + streakUp + ' streak_down=' + streakDown + ' focus=' + focusNum);
+    }
+}
+
 // ============ HELPER FUNCTIONS ============
 function generateAdditionProblems(target) {
     const problems = [];
