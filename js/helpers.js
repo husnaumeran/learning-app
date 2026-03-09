@@ -22,6 +22,31 @@ function recordResponse(skillId, questionData, correctAnswer, finalAnswer, isCor
     });
 }
 
+// ============ PASSIVE ITEM RECORDING ============
+let _itemTimerStart = null;
+
+function startItemTimer() {
+    _itemTimerStart = Date.now();
+}
+
+function recordPassiveResponse(skillId, questionData, itemIndex = null) {
+    const elapsed = _itemTimerStart ? Date.now() - _itemTimerStart : null;
+    recordResponse(
+        skillId,
+        questionData,
+        'seen',         // correctAnswer
+        'seen',         // finalAnswer
+        true,           // is_correct
+        true,           // is_first_try
+        1,              // attempt_count
+        elapsed,        // response_time_ms
+        itemIndex,      // questionIndex (for idempotency key)
+        false,          // is_skipped
+        null            // level
+    );
+    _itemTimerStart = null;
+}
+
 // ============ FOCUS NUMBER ============
 function getFocusNumber(skillId) {
     if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
