@@ -1,7 +1,7 @@
 function showJora() {
     const catNames = Object.keys(CONFIG.categories);
     const cat = catNames[Math.floor(Math.random() * catNames.length)];
-    const numPairs = Math.min(CONFIG.focusNumber, CONFIG.categories[cat].length);
+    const numPairs = Math.min(getFocusNumber('find_pairs'), CONFIG.categories[cat].length);
     const emojis = CONFIG.categories[cat].sort(() => Math.random() - 0.5).slice(0, numPairs);
     const cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
     let flipped = [], matched = [], score = 0;
