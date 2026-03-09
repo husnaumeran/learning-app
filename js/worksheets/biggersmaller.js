@@ -1,6 +1,6 @@
 // ============ Bigger/Smaller ============
 function showBiggerSmaller() {
-    const focus = CONFIG.focusNumber;
+    const focus = getFocusNumber('bigger_smaller');
     const problems = [];
     for (let i = 0; i < focus; i++) {
         let other;
