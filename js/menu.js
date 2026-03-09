@@ -132,7 +132,10 @@ function nextWorksheet() {
             sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
               .then(({data, error}) => {
                 if (error) console.error('finalize_session error:', error);
-                else console.log('finalize_session OK:', data);
+                else {
+                    console.log('finalize_session OK:', data);
+                    if (data && data.slices) adjustFocusNumbers(data.slices);
+                }
               });
         }
         showMenu();
