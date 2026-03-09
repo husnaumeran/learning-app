@@ -107,6 +107,10 @@ async function upsertParent(userId, displayName) {
 }
 
 async function loadParentAndChildren(user) {
+    // Load parent profile for timezone
+    const { data: parent } = await sb.from('parents').select('timezone').eq('id', user.id).maybeSingle();
+    CONFIG.timezone = (parent && parent.timezone) || 'America/Chicago';
+
     const { data: children } = await sb.from('children')
         .select('*')
         .eq('parent_id', user.id)
