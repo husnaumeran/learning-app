@@ -1,6 +1,6 @@
 // ============  What Comes Next ============
 function showWhatNext() {
-    const focus = CONFIG.focusNumber;
+    const focus = getFocusNumber('what_comes_next_numbers');
     const problems = [
         [[1,2,3,4], 5],
         [[2,4,6,8], 10],
