@@ -491,3 +491,40 @@ function completeWorksheet(type, score, total) {
     html += '<button class="btn" onclick="showMenu()">← Menu</button></div>';
     document.getElementById('app').innerHTML = html;
 }
+
+// ============ SKILL NAME FORMATTING ============
+function formatSkillName(skillId) {
+    const names = {
+        addition: 'Addition', subtraction: 'Subtraction', counting: 'Counting',
+        match_numbers: 'Match Numbers', more_less: 'More/Less', bigger_smaller: 'Bigger/Smaller',
+        what_comes_next_numbers: 'What Comes Next', numbers_english: 'Numbers English',
+        figure_matrices: 'Figure Matrices', color_patterns: 'Color Patterns',
+        color_patterns_l2: 'Color Patterns L2', connect_dots: 'Connect Dots',
+        find_pairs: 'Find Pairs', which_doesnt_belong: "Doesn't Belong",
+        verbal_analogies: 'Verbal Analogies', two_letter_words: '2-Letter Words',
+        three_letter_words: '3-Letter Words', what_comes_next_letters: 'Letters What Next',
+        trace_upper: 'Trace ABC', trace_lower: 'Trace abc', trace_numbers: 'Trace Numbers',
+        urdu_reading: 'Urdu Reading', urdu_trace: 'Urdu Trace', urdu_2letter: 'Urdu 2-Letter',
+        urdu_what_next: 'Urdu What Next', urdu_qaida: 'Urdu Qaida', numbers_urdu: 'Numbers Urdu',
+        urdu_videos: 'Urdu Videos', arabic_qaida: 'Arabic Qaida', numbers_arabic: 'Numbers Arabic'
+    };
+    return names[skillId] || skillId;
+}
+
+// ============ QUESTION FORMATTING ============
+function formatQuestion(skillId, qd) {
+    if (!qd) return '—';
+    try {
+        if (qd.word && qd.meaning) return qd.word + ' (' + qd.meaning + ')';
+        if (qd.word) return qd.word;
+        if (qd.symbol) return qd.symbol;
+        if (qd.letter && qd.symbol) return qd.symbol + ' (' + qd.letter + ')';
+        if (qd.letter && qd.name) return qd.letter + ' (' + qd.name + ')';
+        if (qd.prompt) return qd.prompt;
+        if (qd.question) return qd.question;
+        if (qd.a !== undefined && qd.b !== undefined) return qd.a + ' ? ' + qd.b;
+        if (qd.items) return JSON.stringify(qd.items);
+        var s = JSON.stringify(qd);
+        return s.length > 60 ? s.slice(0, 57) + '...' : s;
+    } catch(e) { return '—'; }
+}
