@@ -8,6 +8,7 @@ function showUrduTrace() {
     const soundKeys = ['sf', 'sk', 'sd'];
 
     function render() {
+        startItemTimer();
         const l = letters[current];
         const displayLetter = l[harakatKeys[harakatMode]];
         const sound = l[soundKeys[harakatMode]];
@@ -31,6 +32,11 @@ function showUrduTrace() {
     window.clearCanvas = () => { const c = document.getElementById('canvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); };
     window.setHarakat = (m) => { saveCanvas(); harakatMode = m; render(); };
     window.prevUrduTrace = () => { if (current > 0) { saveCanvas(); current--; render(); } };
-    window.nextUrduTrace = () => { saveCanvas(); current++; if (current >= letters.length) { completeWorksheet('Urdu Trace', letters.length, letters.length); return; } render(); };
+    window.nextUrduTrace = () => {
+        recordPassiveResponse('urdu_trace', {letter: letters[current].name, symbol: letters[current][harakatKeys[harakatMode]], harakat: harakatKeys[harakatMode]}, current);
+        saveCanvas(); current++;
+        if (current >= letters.length) { completeWorksheet('Urdu Trace', letters.length, letters.length); return; }
+        render();
+    };
     render();
 }
