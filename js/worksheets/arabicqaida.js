@@ -70,6 +70,7 @@ function showArabicQaida() {
         const letters = ARABIC_LETTERS.slice(0, getFocusNumber('arabic_qaida'));
         let current = 0;
         function render() {
+            startItemTimer();
             const l = letters[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
             html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — Letters 🔤</div>';
@@ -80,7 +81,9 @@ function showArabicQaida() {
             document.getElementById('app').innerHTML = html;
         }
         window.prevQL = () => { if (current > 0) { current--; render(); } };
-        window.nextQL = () => { current++; if (current >= letters.length) { addCompletion(0); completeWorksheet('Arabic Qaida L1', letters.length, letters.length); return; } render(); };
+        window.nextQL = () => {
+            recordPassiveResponse('arabic_qaida', {letter: letters[current].letter, name: letters[current].name, level: 1}, current);
+            current++; if (current >= letters.length) { addCompletion(0); completeWorksheet('Arabic Qaida L1', letters.length, letters.length); return; } render(); };
         render();
     }
 
@@ -92,6 +95,7 @@ function showArabicQaida() {
         const harakatKeys = ['fatha', 'kasra', 'damma'];
         const soundKeys = ['sf', 'sk', 'sd'];
         function render() {
+            startItemTimer();
             const l = letters[current];
             const display = l[harakatKeys[harakatMode]];
             const sound = l[soundKeys[harakatMode]];
@@ -115,7 +119,9 @@ function showArabicQaida() {
         }
         window.setQH = (m) => { harakatMode = m; render(); };
         window.prevQH = () => { if (current > 0) { current--; render(); } };
-        window.nextQH = () => { current++; if (current >= letters.length) { addCompletion(1); completeWorksheet('Arabic Qaida L2', letters.length, letters.length); return; } render(); };
+        window.nextQH = () => {
+            recordPassiveResponse('arabic_qaida', {letter: letters[current].letter, name: letters[current].name, harakat: harakatKeys[harakatMode], level: 2}, current);
+            current++; if (current >= letters.length) { addCompletion(1); completeWorksheet('Arabic Qaida L2', letters.length, letters.length); return; } render(); };
         render();
     }
 
@@ -124,6 +130,7 @@ function showArabicQaida() {
         const letters = ARABIC_LETTERS.slice(0, getFocusNumber('arabic_qaida'));
         let current = 0;
         function render() {
+            startItemTimer();
             const l = letters[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
             html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — Connections 🔗</div>';
@@ -138,7 +145,9 @@ function showArabicQaida() {
             document.getElementById('app').innerHTML = html;
         }
         window.prevQC = () => { if (current > 0) { current--; render(); } };
-        window.nextQC = () => { current++; if (current >= letters.length) { addCompletion(2); completeWorksheet('Arabic Qaida L3', letters.length, letters.length); return; } render(); };
+        window.nextQC = () => {
+            recordPassiveResponse('arabic_qaida', {letter: letters[current].letter, name: letters[current].name, level: 3}, current);
+            current++; if (current >= letters.length) { addCompletion(2); completeWorksheet('Arabic Qaida L3', letters.length, letters.length); return; } render(); };
         render();
     }
 
@@ -147,6 +156,7 @@ function showArabicQaida() {
         const words = [...ARABIC_2LETTER].sort(() => Math.random()-0.5).slice(0, getFocusNumber('arabic_qaida'));
         let current = 0;
         function render() {
+            startItemTimer();
             const w = words[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
             html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — 2-Letter 📖</div>';
@@ -157,7 +167,9 @@ function showArabicQaida() {
             document.getElementById('app').innerHTML = html;
         }
         window.prevQ2 = () => { if (current > 0) { current--; render(); } };
-        window.nextQ2 = () => { current++; if (current >= words.length) { addCompletion(3); completeWorksheet('Arabic Qaida L4', words.length, words.length); return; } render(); };
+        window.nextQ2 = () => {
+            recordPassiveResponse('arabic_qaida', {word: words[current].word, sound: words[current].sound, meaning: words[current].meaning, level: 4}, current);
+            current++; if (current >= words.length) { addCompletion(3); completeWorksheet('Arabic Qaida L4', words.length, words.length); return; } render(); };
         render();
     }
 
@@ -166,6 +178,7 @@ function showArabicQaida() {
         const words = [...ARABIC_3LETTER].sort(() => Math.random()-0.5).slice(0, getFocusNumber('arabic_qaida'));
         let current = 0;
         function render() {
+            startItemTimer();
             const w = words[current];
             let html = '<button class="back" onclick="showArabicQaida()">← Back</button><div class="card">';
             html += '<div class="title" style="color:#22c55e;direction:rtl">عربی Arabic — 3-Letter Words 📚</div>';
@@ -176,7 +189,9 @@ function showArabicQaida() {
             document.getElementById('app').innerHTML = html;
         }
         window.prevQ3 = () => { if (current > 0) { current--; render(); } };
-        window.nextQ3 = () => { current++; if (current >= words.length) { addCompletion(4); completeWorksheet('Arabic Qaida L5', words.length, words.length); return; } render(); };
+        window.nextQ3 = () => {
+            recordPassiveResponse('arabic_qaida', {word: words[current].word, sound: words[current].sound, meaning: words[current].meaning, level: 5}, current);
+            current++; if (current >= words.length) { addCompletion(4); completeWorksheet('Arabic Qaida L5', words.length, words.length); return; } render(); };
         render();
     }
 
