@@ -192,7 +192,6 @@ function showHowToUse() {
     document.getElementById('app').innerHTML = html;
 }
 
-function showExport() {
 // ============ PROGRESS VIEW (Supabase) ============
 
 async function showExport() {
