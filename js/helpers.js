@@ -48,11 +48,26 @@ function recordPassiveResponse(skillId, questionData, itemIndex = null) {
 }
 
 // ============ FOCUS NUMBER ============
+const FOCUS_FLOORS = {
+    default: 5,
+    urdu_videos: 1,
+    arabic_qaida: 1,
+    urdu_qaida: 1,
+    trace_upper: 3, trace_lower: 3, trace_numbers: 3, urdu_trace: 3,
+    two_letter_words: 3, three_letter_words: 3,
+    urdu_reading: 3, urdu_2letter: 3,
+    connect_dots: 1
+};
+
 function getFocusNumber(skillId) {
+    let val;
     if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
-        return CONFIG.skillSettings[skillId].focus_number;
+        val = CONFIG.skillSettings[skillId].focus_number;
+    } else {
+        val = CONFIG.focusNumber;
     }
-    return CONFIG.focusNumber;
+    const floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
+    return Math.max(val, floor);
 }
 
 // ============ AUTO FOCUS ADJUSTMENT ============
@@ -64,8 +79,8 @@ async function adjustFocusNumbers(slices) {
         const accuracy = parseFloat(slice.accuracy);
         const attempted = slice.attempted;
 
-        // Need at least 3 questions to evaluate
-        if (attempted < 3) continue;
+        // Need at least 5 questions to evaluate
+        if (attempted < 5) continue;
 
         // Get or create current settings
         let settings = CONFIG.skillSettings[skillId] || {
@@ -92,7 +107,8 @@ async function adjustFocusNumbers(slices) {
             streakDown++;
             streakUp = 0;
             if (streakDown >= 2) {
-                focusNum = Math.max(focusNum - 1, 3);
+                const floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
+                focusNum = Math.max(focusNum - 1, floor);
                 streakDown = 0;
                 changed = true;
                 console.log('📉 ' + skillId + ' focus_number → ' + focusNum);
@@ -321,11 +337,11 @@ function generateColorPatternsL2(focusNum) {
     [x, y, z] = pick3();
     problems.push({seq: [x,y,y,z,x,null,y,z], ans: y, type: 'blank', label: 'ABBC'});
 
-    return shuffle(problems).slice(0, focusNum || 7);
+    return shuffle(problems).slice(0, focusNum || 5);
 }
 
 function generateColorPatterns(focusNum) {
-    const n = focusNum || 7;
+    const n = focusNum || 5;
     const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -420,6 +436,7 @@ function setupCanvas() {
 
 function showFeedback(correct, callback, explanation) {
     const title = document.querySelector('.title');
+    if (!title) { if (callback) callback(); return; }
     if (correct) {
         title.innerHTML = '⭐ Correct! ⭐';
         title.style.color = '#22c55e';
