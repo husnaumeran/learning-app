@@ -493,14 +493,52 @@ function speak(text) {
     });
 }
 
+// Display name → skill_id reverse map
+const DISPLAY_TO_SKILL = {
+    'Addition':'addition', 'Subtraction':'subtraction', 'Counting':'counting',
+    'Match Numbers':'match_numbers', 'More/Less':'more_less', 'Bigger/Smaller':'bigger_smaller',
+    'Color Patterns':'color_patterns', 'Color Patterns L2':'color_patterns_l2',
+    'Connect Dots':'connect_dots', 'Doesnt Belong':'which_doesnt_belong',
+    'Figure Matrices':'figure_matrices', 'Find Pairs':'find_pairs',
+    'What Comes Next':'what_comes_next_numbers', 'Numbers English':'numbers_english',
+    '2-Letter Words':'two_letter_words', '3-Letter Words':'three_letter_words',
+    'Trace ABC':'trace_upper', 'Trace abc':'trace_lower', 'Trace Numbers':'trace_numbers',
+    'Urdu Reading':'urdu_reading', 'Urdu Trace':'urdu_trace', 'Urdu 2-Letter Words':'urdu_2letter',
+    'Urdu What Next':'urdu_what_next', 'Verbal Analogies':'verbal_analogies'
+};
+
+function resolveSkillId(type) {
+    if (DISPLAY_TO_SKILL[type]) return DISPLAY_TO_SKILL[type];
+    if (type.startsWith('Urdu Qaida')) return 'urdu_qaida';
+    if (type.startsWith('Arabic Qaida')) return 'arabic_qaida';
+    if (type.startsWith('Urdu Video')) return 'urdu_videos';
+    // If type is already a skill_id (e.g. 'numbers_urdu')
+    return type;
+}
+
 function completeWorksheet(type, score, total) {
     currentAnswers = [];
 
-    // Track daily progress for menu counter
+    // Track daily progress in localStorage (cache for instant menu paint)
     const today = getToday();
     const progress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     progress.push({type: type, score: score, total: total});
     localStorage.setItem('daily_'+today, JSON.stringify(progress));
+
+    // Record to Supabase (source of truth)
+    const skillId = resolveSkillId(type);
+    if (CONFIG.sessionId && CONFIG.childId && typeof sb !== 'undefined') {
+        sb.from('worksheet_completions').insert({
+            session_id: CONFIG.sessionId,
+            child_id: CONFIG.childId,
+            skill_id: skillId,
+            score: score || null,
+            total: total || null
+        }).then(({error}) => {
+            if (error) console.error('worksheet_completion insert error:', error);
+            else console.log('worksheet_completion OK:', skillId);
+        });
+    }
 
     let html = '<div class="card"><div class="title">🌟 Great Job! 🌟</div>';
     html += '<p style="color:white;font-size:24px;text-align:center">'+type+': '+score+'/'+total+'</p>';
