@@ -24,19 +24,34 @@ function showWhatNext() {
         questionStartMs = Date.now();
     }
 
-    window.pickNext = (choice) => {
+    window.pickNext = async (choice) => {
         const responseTimeMs = Date.now() - questionStartMs;
-        const correct = String(choice) === String(problems[current][1]);
-        currentAnswers.push({q: problems[current][0].join('→')+'→?', answer: choice, correct: correct});
+        const [seq, ans] = problems[current];
+        const correct = String(choice) === String(ans);
+        currentAnswers.push({q: seq.join('→')+'→?', answer: choice, correct: correct});
+
+        // Disable all option boxes immediately
         const boxes = document.querySelectorAll('.card .prob');
+        boxes.forEach(b => { b.onclick = null; b.style.pointerEvents = 'none'; });
+
+        // Highlight correct/wrong
         boxes.forEach(b => {
-            if (b.textContent == problems[current][1]) b.style.background = '#22c55e';
+            if (b.textContent == ans) b.style.background = '#22c55e';
             else if (b.textContent == choice && !correct) b.style.background = '#ef4444';
         });
 
-        recordResponse('what_comes_next_numbers', {type:'what_comes_next', sequence:problems[current][0], correct_answer:problems[current][1]}, String(problems[current][1]), String(choice), correct, true, 1, responseTimeMs, current);
+        recordResponse('what_comes_next_numbers', {type:'what_comes_next', sequence: seq, correct_answer: ans}, String(ans), String(choice), correct, true, 1, responseTimeMs, current);
 
-        showFeedback(correct, () => { if (correct) score++; current++; render(); });
+        if (correct) {
+            score++;
+            showFeedback(true, () => { current++; render(); });
+        } else {
+            const explanation = 'After ' + seq.join(', ') + ' comes ' + ans;
+            const title = document.querySelector('.title');
+            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
+            await speak(explanation);
+            current++; render();
+        }
     };
     render();
 }
