@@ -1,274 +1,281 @@
 // ============ NUMBERS ARABIC ============
+// Progressive levels: L1 learn 1-5, L2 learn 1-10, L3 practice 1-10, L4 learn 1-15, L5 practice 1-15
 function showNumbersArabic() {
-    const QUESTIONS = getFocusNumber('numbers_arabic');
-    const MIN_FOR_UNLOCK = 5;
-    const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
+    const SKILL_ID = 'numbers_arabic';
     const STORAGE_KEY = 'na_level';
-    const HISTORY_KEY = 'na_history';
     const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+    const QUIZ_COUNT = 5;
+    const PRACTICE_COUNT = 8;
+    const LEVELS = [
+        { type: 'learn', teach: [1, 5], quiz: [1, 5] },
+        { type: 'learn', teach: [6, 10], quiz: [1, 10] },
+        { type: 'practice', range: [1, 10] },
+        { type: 'learn', teach: [11, 15], quiz: [1, 15] },
+        { type: 'practice', range: [1, 15] }
+    ];
 
     let level = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
 
-    function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
-    function randNum() { return Math.floor(Math.random() * 100) + 1; }
-    function nearNums(n, count) {
-        const s = new Set();
-        while (s.size < count) { const offset = Math.floor(Math.random()*20)-10; const v=n+offset; if(v>=1&&v<=100&&v!==n) s.add(v); }
-        return [...s];
+    function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+    function makeRange(a, b) { return Array.from({ length: b - a + 1 }, (_, i) => i + a); }
+    function dn(n) { return String(n).split('').map(d => ARABIC_DIGITS[parseInt(d)]).join(''); }
+    function say(n) { speakArabic(String(n)); }
+    function pickChoices(correct, pool, count) { return shuffle([correct, ...shuffle(pool.filter(x => x !== correct)).slice(0, count)]); }
+
+    const LEVEL_NAMES = [
+        'Learn ' + dn(1) + '–' + dn(5),
+        'Learn ' + dn(6) + '–' + dn(10),
+        'Practice ' + dn(1) + '–' + dn(10),
+        'Learn ' + dn(11) + '–' + dn(15),
+        'Practice ' + dn(1) + '–' + dn(15)
+    ];
+
+    // ==================== LEVEL PICKER ====================
+    function showLevelPicker() {
+        let h = '<button class="back" onclick="showMenu()">← Back</button>';
+        h += '<div class="card"><div class="title" style="color:#22c55e">🔢 عربی Arabic Numbers</div>';
+        h += '<div class="inst">Pick a level:</div>';
+        for (let i = 0; i < 5; i++) {
+            const unlocked = i + 1 <= level, done = i + 1 < level;
+            h += '<button class="' + (unlocked ? 'btn blue' : 'btn') + '" onclick="goNALevel(' + (i + 1) + ')" ' + (unlocked ? '' : 'disabled') + ' style="font-size:18px;padding:12px;margin:6px 0;width:100%">' + (done ? '✅' : unlocked ? '▶️' : '🔒') + ' Level ' + (i + 1) + ': ' + LEVEL_NAMES[i] + '</button>';
+        }
+        h += '</div>';
+        document.getElementById('app').innerHTML = h;
     }
-    function displayNum(n) { return String(n).split('').map(d => ARABIC_DIGITS[parseInt(d)]).join(''); }
-    function sayNum(n) { speakArabic(String(n)); }
 
-    // ===== LEVEL 1: LEARN =====
-    function startLearn() {
-        const nums = shuffle(Array.from({length:20},(_,i)=>i+1)).slice(0, QUESTIONS);
-        let phase = 'flash', flashIdx = 0, quizIdx = 0, score = 0, tried = false;
-        const quizNums = shuffle([...nums]);
+    window.goNALevel = function(l) { LEVELS[l - 1].type === 'learn' ? startLearn(l) : startPractice(l); };
+    window.showNALevelPicker = showLevelPicker;
 
-        function renderFlash() {
-            const n = nums[flashIdx];
-            let html = '<button class="back" onclick="showMenu()">← Back</button>';
-            html += '<div class="card"><div class="title" style="color:#22c55e">🔢 عربی Arabic — Learn Numbers</div>';
-            html += '<div class="inst">Learn the Arabic numbers!</div>';
-            html += '<div style="text-align:center;font-size:18px;color:#888">'+(flashIdx+1)+' / '+nums.length+'</div>';
-            html += '<div style="text-align:center;margin:25px 0">';
-            html += '<div style="font-size:90px;font-weight:bold;direction:rtl;cursor:pointer" onclick="playNALearn()">'+displayNum(n)+'</div>';
-            html += '<div style="font-size:40px;color:#666;margin-top:10px">= '+n+'</div>';
-            html += '<button onclick="playNALearn()" style="font-size:40px;background:none;border:none;cursor:pointer;margin-top:10px">🔊</button>';
-            html += '</div>';
-            html += '<button class="btn green" onclick="nextNAFlash()" style="font-size:20px;padding:15px">Next →</button>';
-            html += '</div>';
-            document.getElementById('app').innerHTML = html;
-            setTimeout(() => sayNum(n), 400);
+    // ==================== LEARN (L1, L2, L4) ====================
+    function startLearn(lvl) {
+        const cfg = LEVELS[lvl - 1], run = Math.random().toString(36).slice(2, 6);
+        const teachNums = makeRange(cfg.teach[0], cfg.teach[1]);
+        const quizPool = makeRange(cfg.quiz[0], cfg.quiz[1]);
+        let fIdx = 0, qNums, qIdx = 0, score = 0, tried = false, t0;
+
+        function flash() {
+            const n = teachNums[fIdx];
+            let h = '<button class="back" onclick="showNALevelPicker()">← Back</button>';
+            h += '<div class="card"><div class="title" style="color:#22c55e">🔢 Level ' + lvl + ': ' + LEVEL_NAMES[lvl - 1] + '</div>';
+            h += '<div class="inst">Learn the Arabic numbers!</div>';
+            h += '<div style="text-align:center;font-size:18px;color:#888">' + (fIdx + 1) + ' / ' + teachNums.length + '</div>';
+            h += '<div style="text-align:center;margin:25px 0">';
+            h += '<div style="font-size:90px;font-weight:bold;direction:rtl;cursor:pointer" onclick="playNAFlash()">' + dn(n) + '</div>';
+            h += '<div style="font-size:40px;color:#666;margin-top:10px">= ' + n + '</div>';
+            h += '<button onclick="playNAFlash()" style="font-size:40px;background:none;border:none;cursor:pointer;margin-top:10px">🔊</button>';
+            h += '</div><button class="btn green" onclick="nextNAFlash()" style="font-size:20px;padding:15px">Next →</button></div>';
+            document.getElementById('app').innerHTML = h;
+            startItemTimer();
+            setTimeout(function() { say(n); }, 400);
         }
 
-        function renderQuiz() {
-            if (quizIdx >= quizNums.length) {
-                const key = 'L1';
-                const h = history[key] || [];
-                h.push({score, qualifies: true});
-                history[key] = h;
-                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-                const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-                if (maxLevel < 2) {
-                    const recent = h.slice(-3);
-                    const threshold = Math.ceil(QUESTIONS * 0.8);
-                    if (recent.length >= 3 && recent.every(s => s.score >= threshold)) {
-                        localStorage.setItem(STORAGE_KEY, '2');
-                    }
-                }
-                completeWorksheet('Numbers Arabic L1', score, quizNums.length);
-                return;
-            }
-            const n = quizNums[quizIdx];
-            const wrong = nearNums(n, 3);
-            const choices = shuffle([n, ...wrong]);
-            let html = '<button class="back" onclick="showMenu()">← Back</button>';
-            html += '<div class="card"><div class="title" style="color:#22c55e">🔢 عربی Arabic — Match!</div>';
-            html += '<div class="inst">Which English number matches?</div>';
-            html += '<div style="text-align:center;font-size:18px;color:#888">'+(quizIdx+1)+' / '+quizNums.length+'</div>';
-            html += '<div style="text-align:center;font-size:90px;font-weight:bold;direction:rtl;margin:20px 0">'+displayNum(n)+'</div>';
-            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px">';
-            choices.forEach((ch, i) => {
-                html += '<div id="naq'+i+'" onclick="pickNAQuiz('+i+','+ch+','+n+')" style="display:flex;align-items:center;justify-content:center;padding:20px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;font-size:36px;font-weight:bold;transition:all 0.2s">'+ch+'</div>';
-            });
-            html += '</div></div>';
-            document.getElementById('app').innerHTML = html;
-            tried = false;
-            setTimeout(() => sayNum(n), 400);
-        }
-
-        window.playNALearn = function() { sayNum(nums[flashIdx]); };
-
+        window.playNAFlash = function() { say(teachNums[fIdx]); };
         window.nextNAFlash = function() {
-            flashIdx++;
-            if (flashIdx >= nums.length) { phase = 'quiz'; renderQuiz(); }
-            else renderFlash();
+            recordPassiveResponse(SKILL_ID, { type: 'flash', number: teachNums[fIdx], display: dn(teachNums[fIdx]) }, 'L' + lvl + '_' + run + '_f' + fIdx);
+            fIdx++;
+            if (fIdx < teachNums.length) flash();
+            else { qNums = shuffle([].concat(quizPool)).slice(0, QUIZ_COUNT); quiz(); }
         };
 
-        window.pickNAQuiz = function(i, chosen, target) {
-            const el = document.getElementById('naq'+i);
-            if (chosen === target) {
-                if (!tried) score++;
-                currentAnswers.push({q: displayNum(target)+' = ?', answer: chosen, correct: true, firstTry: !tried});
-                el.style.borderColor = '#22c55e'; el.style.background = '#dcfce7';
-                showFeedback(true);
-                setTimeout(() => { quizIdx++; renderQuiz(); }, 1200);
+        function quiz() {
+            if (qIdx >= qNums.length) { finishLevel(); return; }
+            var n = qNums[qIdx], choices = pickChoices(n, quizPool, 3);
+            tried = false; t0 = Date.now();
+            let h = '<button class="back" onclick="showNALevelPicker()">← Back</button>';
+            h += '<div class="card"><div class="title" style="color:#22c55e">🔢 Quiz: What number is this?</div>';
+            h += '<div style="text-align:center;font-size:18px;color:#888">' + (qIdx + 1) + ' / ' + qNums.length + '</div>';
+            h += '<div style="text-align:center;margin:20px 0">';
+            h += '<div style="font-size:80px;font-weight:bold;direction:rtl;cursor:pointer" onclick="playNAFlash()">' + dn(n) + '</div>';
+            h += '<button onclick="playNAFlash()" style="font-size:36px;background:none;border:none;cursor:pointer">🔊</button>';
+            h += '</div><div class="choices">';
+            choices.forEach(function(c) { h += '<button class="btn choice" onclick="pickNAQuiz(' + c + ',' + n + ',this)" style="font-size:28px;padding:15px;min-width:80px">' + c + '</button>'; });
+            h += '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            window.playNAFlash = function() { say(n); };
+            setTimeout(function() { say(n); }, 300);
+        }
+
+        window.pickNAQuiz = function(picked, correct, btn) {
+            var ok = picked === correct, first = !tried; tried = true;
+            var ms = Date.now() - t0;
+            if (ok) {
+                if (first) score++;
+                btn.style.background = '#22c55e'; btn.style.color = '#fff';
+                recordResponse(SKILL_ID, { type: 'quiz', number: correct, display: dn(correct) }, String(correct), String(picked), true, first, first ? 1 : 2, ms, 'L' + lvl + '_' + run + '_q' + qIdx, false, lvl);
+                setTimeout(function() { qIdx++; quiz(); }, 800);
             } else {
-                tried = true;
-                el.style.borderColor = '#ef4444'; el.style.background = '#fee2e2'; el.style.opacity = '0.5'; el.onclick = null;
-                showFeedback(false);
+                btn.style.background = '#ef4444'; btn.style.color = '#fff'; btn.disabled = true;
+                showFeedback(false, dn(correct) + ' = ' + correct);
+                if (first) recordResponse(SKILL_ID, { type: 'quiz', number: correct, display: dn(correct) }, String(correct), String(picked), false, true, 1, ms, 'L' + lvl + '_' + run + '_q' + qIdx, false, lvl);
             }
         };
 
-        renderFlash();
-    }
-
-    // ===== LEVELS 2-5: Game levels =====
-    function makeProblems(lvl) {
-        const problems = [];
-        const used = new Set();
-        let attempts = 0;
-        while (problems.length < QUESTIONS && attempts < 200) {
-            const n = randNum();
-            if (used.has(n)) { attempts++; continue; }
-            used.add(n);
-            let choices, correct, instruction;
-            switch(lvl) {
-                case 2: {
-                    const wrong = nearNums(n, 3);
-                    choices = shuffle([n, ...wrong]); correct = n;
-                    instruction = 'اضغط الرقم الذي تسمعه!'; break;
-                }
-                case 3: {
-                    const target = n + (Math.random()>0.5?1:-1)*(Math.floor(Math.random()*3)+1);
-                    const close = Math.min(100, Math.max(1, target));
-                    const wrong = nearNums(n, 3).filter(w => Math.abs(w-n) > Math.abs(close-n));
-                    while(wrong.length<3){const w=randNum();if(w!==close&&w!==n&&!wrong.includes(w))wrong.push(w);}
-                    choices = shuffle([close, ...wrong.slice(0,3)]); correct = close;
-                    instruction = 'اضغط الرقم الأقرب!'; break;
-                }
-                case 4: {
-                    const bigger = n + Math.floor(Math.random()*10)+1;
-                    const b = Math.min(100, bigger);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.max(1,n-Math.floor(Math.random()*15)-1);if(w<n&&!wrong.includes(w)&&w!==b)wrong.push(w);}
-                    choices = shuffle([b, ...wrong.slice(0,3)]); correct = b;
-                    instruction = 'اضغط الرقم الأكبر!'; break;
-                }
-                case 5: {
-                    const smaller = n - Math.floor(Math.random()*10)-1;
-                    const s = Math.max(1, smaller);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.min(100,n+Math.floor(Math.random()*15)+1);if(w>n&&!wrong.includes(w)&&w!==s)wrong.push(w);}
-                    choices = shuffle([s, ...wrong.slice(0,3)]); correct = s;
-                    instruction = 'اضغط الرقم الأصغر!'; break;
-                }
-            }
-            problems.push({n, choices, correct, instruction});
-            attempts++;
-        }
-        return problems;
-    }
-
-    let problems=[], current=0, score=0, skips=0, tried=false;
-    let questionStartMs = null;
-    const attemptCounts = {};
-
-    function startLevel(l) {
-        level = l;
-        if (l === 1) { startLearn(); return; }
-        problems = makeProblems(level);
-        current = 0; score = 0; skips = 0; tried = false;
-        renderGame();
-    }
-
-    function renderPicker() {
-        const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-        let html = '<button class="back" onclick="showMenu()">← Back</button>';
-        html += '<div class="card"><div class="title" style="color:#22c55e">🔢 عربی Arabic — Numbers</div>';
-        html += '<div class="inst">Pick a level!</div>';
-        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
-        for (let l = 1; l <= 5; l++) {
-            const unlocked = l <= maxLevel;
-            const h = history['L'+l] || [];
-            const best = h.length ? Math.max(...h.map(s=>s.score)) : 0;
-            const bg = !unlocked ? '#666' : (l === maxLevel ? '#22c55e' : '#0099FF');
-            html += '<div onclick="'+(unlocked?'startNALevel('+l+')':'')+'" style="background:'+bg+';color:white;padding:15px;border-radius:12px;text-align:center;cursor:'+(unlocked?'pointer':'not-allowed')+';opacity:'+(unlocked?1:0.5)+'">';
-            html += '<div style="font-size:22px;font-weight:bold">L'+l+'</div>';
-            html += '<div style="font-size:13px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
-            if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
-            html += '</div>';
-        }
-        html += '</div></div>';
-        document.getElementById('app').innerHTML = html;
-    }
-
-    window.startNALevel = startLevel;
-
-    function renderGame() {
-        if (current >= problems.length) {
-            const key = 'L'+level;
-            const h = history[key] || [];
-            const answered = problems.length - skips;
-            const skipRate = problems.length > 0 ? skips / problems.length : 1;
-            const qualifies = answered >= MIN_FOR_UNLOCK && skipRate <= 0.25;
-            h.push({score, qualifies});
-            history[key] = h;
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-            if (qualifies && level >= maxLevel && level < 5) {
-                const recent = h.slice(-3);
-                const threshold = Math.ceil(QUESTIONS * 0.8);
-                if (recent.length >= 3 && recent.every(s => s.qualifies && s.score >= threshold)) {
-                    localStorage.setItem(STORAGE_KEY, String(level + 1));
-                }
-            }
-            completeWorksheet('Numbers Arabic', score, problems.length);
-            return;
+        function finishLevel() {
+            if (lvl >= level) { level = lvl + 1; localStorage.setItem(STORAGE_KEY, String(level)); }
+            let h = '<div class="card"><div class="title" style="color:#22c55e">🎉 Level ' + lvl + ' Complete!</div>';
+            h += '<div style="text-align:center;font-size:60px;margin:15px 0">' + (score >= qNums.length ? '🏆' : score >= Math.ceil(qNums.length * 0.6) ? '💪' : '📚') + '</div>';
+            h += '<div style="text-align:center;font-size:24px;margin:10px 0">' + score + ' / ' + qNums.length + '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            setTimeout(function() { completeWorksheet(SKILL_ID); }, 2000);
         }
 
-        const p = problems[current];
-        let html = '<button class="back" onclick="showMenu()">← Back</button>';
-        html += '<div class="card"><div class="title" style="color:#22c55e">🔢 عربی Arabic — Numbers</div>';
-        html += '<div class="inst" style="direction:rtl">'+p.instruction+'</div>';
-        html += '<div style="text-align:center;font-size:18px;color:#888;margin-bottom:8px">'+(current+1)+' / '+problems.length+'</div>';
-        html += '<div style="text-align:center;margin:20px 0">';
-        html += '<button onclick="playNASound()" style="font-size:60px;background:none;border:none;cursor:pointer;padding:15px">🔊</button>';
-        html += '</div>';
-        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px">';
-        p.choices.forEach((ch, i) => {
-            html += '<div id="nach'+i+'" onclick="pickNAAnswer('+i+')" style="display:flex;align-items:center;justify-content:center;padding:20px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;font-size:clamp(28px,8vw,40px);font-weight:bold;transition:all 0.2s;direction:rtl">';
-            html += displayNum(ch);
-            html += '</div>';
-        });
-        html += '</div>';
-        html += '<div style="text-align:center;margin-top:12px"><a onclick="skipNA()" style="color:#999;font-size:14px;cursor:pointer">Skip →</a></div>';
-        html += '</div>';
-        document.getElementById('app').innerHTML = html;
-        tried = false;
-        questionStartMs = Date.now();
-        setTimeout(() => sayNum(p.n), 400);
+        flash();
     }
 
-    window.playNASound = function() { sayNum(problems[current].n); };
+    // ==================== PRACTICE (L3, L5) ====================
+    function startPractice(lvl) {
+        const cfg = LEVELS[lvl - 1], run = Math.random().toString(36).slice(2, 6);
+        const pool = makeRange(cfg.range[0], cfg.range[1]);
+        const total = PRACTICE_COUNT;
+        let qi = 0, score = 0, tried = false, t0, _tgt = null;
 
-    window.pickNAAnswer = function(i) {
-        const responseTimeMs = Date.now() - questionStartMs;
-        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
-        const p = problems[current];
-        const chosen = p.choices[i];
-        const el = document.getElementById('nach'+i);
-        let isCorrect = false;
-        if (level === 2) isCorrect = (chosen === p.correct);
-        else if (level === 3) isCorrect = (chosen === p.correct);
-        else if (level === 4) isCorrect = (chosen > p.n);
-        else if (level === 5) isCorrect = (chosen < p.n);
-
-        if (isCorrect) {
-            if (!tried) score++;
-            currentAnswers.push({q: p.n, level, answer: chosen, correct: true, firstTry: !tried});
-            recordResponse('numbers_arabic', {type:'numbers_arabic', number:p.n, instruction:p.instruction, correct_answer:p.correct}, String(p.correct), String(chosen), true, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
-            el.style.borderColor = '#22c55e'; el.style.background = '#dcfce7';
-            showFeedback(true);
-            setTimeout(() => { current++; renderGame(); }, 1200);
+        // Build mode sequence
+        const modes = [];
+        if (lvl === 3) {
+            for (let i = 0; i < total; i++) modes.push(i % 2 === 0 ? 'hear_tap' : 'find');
         } else {
-            tried = true;
-            recordResponse('numbers_arabic', {type:'numbers_arabic', number:p.n, instruction:p.instruction, correct_answer:p.correct}, String(p.correct), String(chosen), false, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
-            el.style.borderColor = '#ef4444'; el.style.background = '#fee2e2'; el.style.opacity = '0.5'; el.onclick = null;
-            showFeedback(false);
+            var seq = ['hear_tap', 'find', 'hear_tap', 'find', 'hear_tap', 'more', 'less', 'hear_tap', 'find', 'closest'];
+            for (let i = 0; i < total; i++) modes.push(seq[i % seq.length]);
         }
-    };
 
-    window.skipNA = function() {
-        const responseTimeMs = Date.now() - questionStartMs;
-        skips++;
-        currentAnswers.push({q: problems[current].n, level, answer: 'skip', correct: false, firstTry: false});
-        recordResponse('numbers_arabic', {type:'numbers_arabic', number:problems[current].n}, String(problems[current].correct), 'skip', false, false, 1, responseTimeMs, current, true, level);
-        current++;
-        renderGame();
-    };
+        function nextQ() {
+            if (qi >= total) { finishP(); return; }
+            tried = false; t0 = Date.now();
+            var m = modes[qi];
+            if (m === 'hear_tap') hearTap();
+            else if (m === 'find') findNum();
+            else if (m === 'more') moreLess('more');
+            else if (m === 'less') moreLess('less');
+            else closestQ();
+        }
 
-    renderPicker();
+        // --- Hear & Tap: hear number, tap Urdu digit ---
+        function hearTap() {
+            var n = pool[Math.floor(Math.random() * pool.length)];
+            _tgt = n;
+            var ch = pickChoices(n, pool, 3);
+            let h = '<button class="back" onclick="showNALevelPicker()">← Back</button>';
+            h += '<div class="card"><div class="title" style="color:#22c55e">🔊 Hear & Tap</div>';
+            h += '<div style="text-align:center;font-size:18px;color:#888">' + (qi + 1) + ' / ' + total + '</div>';
+            h += '<div style="text-align:center;margin:20px 0">';
+            h += '<button onclick="playNAP()" style="font-size:60px;background:none;border:none;cursor:pointer">🔊</button>';
+            h += '<div style="font-size:18px;color:#888;margin-top:5px">Tap the number you hear</div>';
+            h += '</div><div class="choices">';
+            ch.forEach(function(c) { h += '<button class="btn choice" onclick="pickNAP(' + c + ',' + n + ',\'hear_tap\',this)" style="font-size:44px;padding:18px;min-width:90px;direction:rtl">' + dn(c) + '</button>'; });
+            h += '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            window.playNAP = function() { say(n); };
+            setTimeout(function() { say(n); }, 400);
+        }
+
+        // --- Find the Number: see Urdu digit, pick English ---
+        function findNum() {
+            var n = pool[Math.floor(Math.random() * pool.length)];
+            _tgt = n;
+            var ch = pickChoices(n, pool, 3);
+            let h = '<button class="back" onclick="showNALevelPicker()">← Back</button>';
+            h += '<div class="card"><div class="title" style="color:#22c55e">🔢 Find the Number</div>';
+            h += '<div style="text-align:center;font-size:18px;color:#888">' + (qi + 1) + ' / ' + total + '</div>';
+            h += '<div style="text-align:center;margin:20px 0">';
+            h += '<div style="font-size:80px;font-weight:bold;direction:rtl;cursor:pointer" onclick="playNAP()">' + dn(n) + '</div>';
+            h += '<button onclick="playNAP()" style="font-size:36px;background:none;border:none;cursor:pointer">🔊</button>';
+            h += '<div style="font-size:18px;color:#888;margin-top:5px">What number is this?</div>';
+            h += '</div><div class="choices">';
+            ch.forEach(function(c) { h += '<button class="btn choice" onclick="pickNAP(' + c + ',' + n + ',\'find\',this)" style="font-size:28px;padding:15px;min-width:80px">' + c + '</button>'; });
+            h += '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            window.playNAP = function() { say(n); };
+            setTimeout(function() { say(n); }, 300);
+        }
+
+        // --- More / Less ---
+        function moreLess(dir) {
+            var lo = cfg.range[0], hi = cfg.range[1];
+            var tgt;
+            if (dir === 'more') { var mn = lo + 2, mx = hi - 1; tgt = mn + Math.floor(Math.random() * (mx - mn + 1)); }
+            else { var mn = lo + 1, mx = hi - 2; tgt = mn + Math.floor(Math.random() * (mx - mn + 1)); }
+            _tgt = tgt;
+            var eligible = pool.filter(function(x) { return dir === 'more' ? x > tgt : x < tgt; });
+            var correct = eligible[Math.floor(Math.random() * eligible.length)];
+            var wrongs = shuffle(pool.filter(function(x) { return x !== correct && (dir === 'more' ? x <= tgt : x >= tgt); })).slice(0, 3);
+            var ch = shuffle([correct].concat(wrongs));
+            var label = dir === 'more' ? 'MORE' : 'LESS';
+            let h = '<button class="back" onclick="showNALevelPicker()">← Back</button>';
+            h += '<div class="card"><div class="title" style="color:#22c55e">' + (dir === 'more' ? '📈' : '📉') + ' Which is ' + label + '?</div>';
+            h += '<div style="text-align:center;font-size:18px;color:#888">' + (qi + 1) + ' / ' + total + '</div>';
+            h += '<div style="text-align:center;margin:20px 0">';
+            h += '<div style="font-size:60px;font-weight:bold;direction:rtl">' + dn(tgt) + '</div>';
+            h += '<div style="font-size:20px;color:#666;margin-top:5px">= ' + tgt + '</div>';
+            h += '<div style="font-size:18px;color:#888;margin-top:10px">Which is <b>' + label + '</b> than ' + tgt + '?</div>';
+            h += '</div><div class="choices">';
+            ch.forEach(function(c) { h += '<button class="btn choice" onclick="pickNAP(' + c + ',' + correct + ',\'' + dir + '\',this)" style="font-size:36px;padding:15px;min-width:90px;direction:rtl">' + dn(c) + ' <span style="font-size:16px;color:#888">(' + c + ')</span></button>'; });
+            h += '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            window.playNAP = function() { say(tgt); };
+        }
+
+        // --- Closest ---
+        function closestQ() {
+            var n = pool[Math.floor(Math.random() * pool.length)];
+            _tgt = n;
+            var others = pool.filter(function(x) { return x !== n; }).sort(function(a, b) { return Math.abs(a - n) - Math.abs(b - n); });
+            var best = others[0], bestDist = Math.abs(best - n);
+            var further = others.filter(function(x) { return Math.abs(x - n) > bestDist; });
+            var wrongs = further.length >= 3 ? shuffle(further).slice(0, 3) : shuffle(others.slice(1)).slice(0, 3);
+            var ch = shuffle([best].concat(wrongs));
+            let h = '<button class="back" onclick="showNALevelPicker()">← Back</button>';
+            h += '<div class="card"><div class="title" style="color:#22c55e">🎯 Which is closest?</div>';
+            h += '<div style="text-align:center;font-size:18px;color:#888">' + (qi + 1) + ' / ' + total + '</div>';
+            h += '<div style="text-align:center;margin:20px 0">';
+            h += '<div style="font-size:60px;font-weight:bold;direction:rtl">' + dn(n) + '</div>';
+            h += '<div style="font-size:20px;color:#666;margin-top:5px">= ' + n + '</div>';
+            h += '<div style="font-size:18px;color:#888;margin-top:10px">Which is <b>closest</b> to ' + n + '?</div>';
+            h += '</div><div class="choices">';
+            ch.forEach(function(c) { h += '<button class="btn choice" onclick="pickNAP(' + c + ',' + best + ',\'closest\',this)" style="font-size:36px;padding:15px;min-width:90px;direction:rtl">' + dn(c) + ' <span style="font-size:16px;color:#888">(' + c + ')</span></button>'; });
+            h += '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            window.playNAP = function() { say(n); };
+        }
+
+        // --- Shared answer handler ---
+        window.pickNAP = function(picked, correct, mode, btn) {
+            var ok;
+            if (mode === 'closest') ok = Math.abs(picked - _tgt) <= Math.abs(correct - _tgt);
+            else ok = picked === correct;
+            var first = !tried; tried = true;
+            var ms = Date.now() - t0;
+            var qd;
+            if (mode === 'more' || mode === 'less' || mode === 'closest') {
+                qd = { type: mode, target: _tgt, target_display: dn(_tgt), answer: correct, answer_display: dn(correct) };
+            } else {
+                qd = { type: mode, number: correct, display: dn(correct) };
+            }
+            if (ok) {
+                if (first) score++;
+                btn.style.background = '#22c55e'; btn.style.color = '#fff';
+                showFeedback(true);
+                recordResponse(SKILL_ID, qd, String(correct), String(picked), true, first, first ? 1 : 2, ms, 'L' + lvl + '_' + run + '_q' + qi, false, lvl);
+                setTimeout(function() { qi++; nextQ(); }, 1000);
+            } else {
+                btn.style.background = '#ef4444'; btn.style.color = '#fff'; btn.disabled = true;
+                showFeedback(false, dn(correct) + ' = ' + correct);
+                if (first) recordResponse(SKILL_ID, qd, String(correct), String(picked), false, true, 1, ms, 'L' + lvl + '_' + run + '_q' + qi, false, lvl);
+            }
+        };
+
+        function finishP() {
+            if (lvl >= level) { level = Math.min(lvl + 1, 6); localStorage.setItem(STORAGE_KEY, String(level)); }
+            var pct = Math.round(score / total * 100);
+            let h = '<div class="card"><div class="title" style="color:#22c55e">🎉 Practice Complete!</div>';
+            h += '<div style="text-align:center;font-size:60px;margin:15px 0">' + (pct >= 80 ? '🏆' : pct >= 60 ? '💪' : '📚') + '</div>';
+            h += '<div style="text-align:center;font-size:24px;margin:10px 0">' + score + ' / ' + total + '</div></div>';
+            document.getElementById('app').innerHTML = h;
+            setTimeout(function() { completeWorksheet(SKILL_ID); }, 2000);
+        }
+
+        nextQ();
+    }
+
+    // ==================== ENTRY ====================
+    showLevelPicker();
 }
