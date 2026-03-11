@@ -465,6 +465,7 @@ function speakUrdu(text) {
 
 function speak(text) {
     return new Promise(resolve => {
+        if (typeof speechSynthesis === 'undefined') { resolve(); return; }
         const timeout = setTimeout(resolve, 3000);
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.8;
