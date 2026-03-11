@@ -22,22 +22,36 @@ function showCounting() {
 
     window.openKeypad = (i) => { if (!solved.has(i)) { current = i; questionStartMs = Date.now(); document.getElementById('overlay').style.display='block'; document.getElementById('popup').style.display='block'; } };
     window.closeKeypad = () => { document.getElementById('overlay').style.display='none'; document.getElementById('popup').style.display='none'; };
-    window.submitAnswer = (n) => {
+    window.submitAnswer = async (n) => {
         if (current < 0) return;
         const responseTimeMs = Date.now() - questionStartMs;
         answers[current] = n;
-        const correct = n === problems[current][0];
-        currentAnswers.push({q: problems[current][1], answer: n, correct: correct});
+        const [ans, emoji] = problems[current];
+        const correct = n === ans;
+        currentAnswers.push({q: emoji, answer: n, correct: correct});
         closeKeypad();
 
-        recordResponse('counting', {type:'counting', emoji:problems[current][1], correct_answer:problems[current][0]}, String(problems[current][0]), String(n), correct, true, 1, responseTimeMs, current);
+        // Disable all problem boxes
+        document.querySelectorAll('.prob').forEach(p => { p.onclick = null; p.style.pointerEvents = 'none'; });
 
-        showFeedback(correct, () => {
-            if (correct) { solved.add(current); score++; }
+        recordResponse('counting', {type:'counting', emoji: emoji, correct_answer: ans}, String(ans), String(n), correct, true, 1, responseTimeMs, current);
+
+        if (correct) {
+            solved.add(current);
+            score++;
+            showFeedback(true, () => {
+                current = -1;
+                if (score === problems.length) { completeWorksheet('Counting', score, problems.length); return; }
+                render();
+            });
+        } else {
+            const explanation = 'There are ' + ans + ' ' + emoji + ', not ' + n;
+            const title = document.querySelector('.title');
+            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
+            await speak(explanation);
             current = -1;
-            if (score === problems.length) { completeWorksheet('Counting', score, problems.length); return; }
             render();
-        });
+        }
     };
     render();
 }
