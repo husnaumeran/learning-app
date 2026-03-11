@@ -49,13 +49,10 @@ function recordPassiveResponse(skillId, questionData, itemIndex = null) {
 
 // ============ FOCUS NUMBER ============
 const FOCUS_FLOORS = {
-    default: 5,
+    default: 1,
     urdu_videos: 1,
     arabic_qaida: 1,
     urdu_qaida: 1,
-    trace_upper: 3, trace_lower: 3, trace_numbers: 3, urdu_trace: 3,
-    two_letter_words: 3, three_letter_words: 3,
-    urdu_reading: 3, urdu_2letter: 3,
     connect_dots: 1
 };
 
@@ -337,11 +334,11 @@ function generateColorPatternsL2(focusNum) {
     [x, y, z] = pick3();
     problems.push({seq: [x,y,y,z,x,null,y,z], ans: y, type: 'blank', label: 'ABBC'});
 
-    return shuffle(problems).slice(0, focusNum || 5);
+    return shuffle(problems).slice(0, focusNum || 1);
 }
 
 function generateColorPatterns(focusNum) {
-    const n = focusNum || 5;
+    const n = focusNum || 1;
     const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
