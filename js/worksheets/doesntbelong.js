@@ -30,21 +30,31 @@ function showDoesntBelong() {
         const [items, ans, category] = problems[current];
         const correct = choice === ans;
         currentAnswers.push({q: 'Odd one out', answer: choice, correct: correct});
-        const wrongCat = Object.keys(CONFIG.categories).find(cat => CONFIG.categories[cat].includes(ans));
-        const explanation = ans + ' is ' + wrongCat.toUpperCase() + ', not ' + category.toUpperCase();
 
+        // Disable all emoji boxes immediately
         const boxes = document.querySelectorAll('.card .prob');
+        boxes.forEach(b => { b.onclick = null; b.style.pointerEvents = 'none'; });
+
+        // Highlight correct + wrong
         boxes.forEach(b => {
             if (b.textContent === ans) b.style.background = '#22c55e';
             else if (b.textContent === choice && !correct) b.style.background = '#ef4444';
         });
 
-        document.querySelector('.title').innerHTML = explanation;
-        await speak(explanation);
-
         recordResponse('which_doesnt_belong', {type:'which_doesnt_belong', items, correct_answer:ans, category}, ans, choice, correct, true, 1, responseTimeMs, current);
 
-        showFeedback(correct, () => { if (correct) score++; current++; render(); });
+        if (correct) {
+            score++;
+            showFeedback(true, () => { current++; render(); });
+        } else {
+            const wrongCat = Object.keys(CONFIG.categories).find(cat => CONFIG.categories[cat].includes(ans));
+            const explanation = ans + ' is ' + wrongCat.toUpperCase() + ', not ' + category.toUpperCase();
+            const title = document.querySelector('.title');
+            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
+            await speak(explanation);
+            current++;
+            render();
+        }
     };
 
     render();
