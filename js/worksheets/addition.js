@@ -2,51 +2,39 @@
 function showAddition() {
     const problems = generateAdditionProblems(getFocusNumber('addition'));
     let current = 0, score = 0;
-    const solved = new Set();
-    const answers = {};
-    const attemptCounts = {};
+    let attemptCount = 0;
     let questionStartMs = null;
+    let currentAnswer = '';
 
     function render() {
-        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+getFocusNumber('addition')+'!</div>';
-        problems.forEach(([a, b, ans], i) => {
-            const cls = solved.has(i) ? 'problem solved' : (i === current ? 'problem active' : 'problem');
-            html += '<div class="'+cls+'" onclick="setCurrent('+i+')"><span>'+a+'</span><span style="color:#FF6B35">+</span><span>'+b+'</span><span style="color:#FF6B35">=</span><span class="answer-box" id="ans'+i+'">'+(answers[i] || '?')+'</span><span>'+(solved.has(i)?'✅':'')+'</span></div>';
-        });
+        if (current >= problems.length) { completeWorksheet('Addition', score, problems.length); return; }
+        const [a, b, ans] = problems[current];
+        attemptCount = 0;
+        currentAnswer = '';
+        let html = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">Addition!</div>';
+        html += '<div style="text-align:center;font-size:48px;margin:20px;color:white">' + a + ' <span style="color:#FF6B35">+</span> ' + b + ' <span style="color:#FF6B35">=</span> <span id="ansBox" style="display:inline-block;min-width:50px;border-bottom:3px solid #FFD700;color:#FFD700">?</span></div>';
         html += '</div><div class="keypad">';
-        for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey('+n+')">'+n+'</button>';
-        html += '<button class="key red" onclick="clearKey()">✕</button><button class="key green" onclick="checkKey()">✓</button></div>';
-        html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
+        for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey(' + n + ')">' + n + '</button>';
+        html += '<button class="key red" onclick="clearKey()">\u2715</button><button class="key green" onclick="checkKey()">\u2713</button></div>';
+        html += '<div class="score">\u2B50 ' + score + ' / ' + problems.length + '  (' + (current + 1) + '/' + problems.length + ')</div>';
         document.getElementById('app').innerHTML = html;
         questionStartMs = Date.now();
     }
 
-    window.setCurrent = (i) => { if (!solved.has(i)) { current = i; render(); } };
-    window.pressKey = (n) => { if (!solved.has(current)) { answers[current] = n;
-    document.getElementById('ans'+current).textContent = n; } };
-    window.clearKey = () => { document.getElementById('ans'+current).textContent = '?'; };
+    window.pressKey = (n) => { currentAnswer = String(n); document.getElementById('ansBox').textContent = n; };
+    window.clearKey = () => { currentAnswer = ''; document.getElementById('ansBox').textContent = '?'; };
     window.checkKey = () => {
-        const ans = document.getElementById('ans'+current).textContent;
-        if (ans === '?' || solved.has(current)) return;
+        if (currentAnswer === '') return;
         const responseTimeMs = Date.now() - questionStartMs;
-        attemptCounts[current] = (attemptCounts[current] || 0) + 1;
-        const correct = parseInt(ans) === problems[current][2];
-        currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], answer: ans, correct: correct});
+        attemptCount++;
+        const [a, b, ans] = problems[current];
+        const correct = parseInt(currentAnswer) === ans;
+        currentAnswers.push({q: a + '+' + b, answer: currentAnswer, correctAnswer: String(ans), correct: correct, firstTry: attemptCount === 1});
 
-        recordResponse('addition', {type:'addition', a:problems[current][0], b:problems[current][1], sum:problems[current][2]}, String(problems[current][2]), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+        recordResponse('addition', {type: 'addition', a: a, b: b, sum: ans}, String(ans), currentAnswer, correct, attemptCount === 1, attemptCount, responseTimeMs, current);
 
-        showFeedback(correct, () => {
-            if (correct) {
-                solved.add(current);
-                score++;
-                if (score === problems.length) { completeWorksheet('Addition', score, problems.length); return; }
-                else { for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; } }
-                render();
-            } else {
-                document.querySelector('.title').innerHTML = 'Ways to Make '+getFocusNumber('addition')+'!';
-                document.querySelector('.title').style.color = '#FF6B35';
-            }
-        });
+        const explanation = correct ? null : a + ' + ' + b + ' = ' + ans + ', not ' + currentAnswer;
+        showFeedback(correct, () => { if (correct) score++; current++; render(); }, explanation);
     };
     render();
 }
