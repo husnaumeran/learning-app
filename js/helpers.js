@@ -187,11 +187,24 @@ async function adjustFocusNumbers(slices) {
 }
 
 // ============ HELPER FUNCTIONS ============
-function generateAdditionProblems(target) {
+function generateAdditionProblems(focusNum) {
     const problems = [];
-    for (let a = 0; a <= target; a++) {
+    const numProblems = focusNum;
+    const numFocusTarget = Math.max(1, Math.ceil(numProblems / 3));
+
+    // ~1/3 problems sum to focusNumber
+    for (let i = 0; i < numFocusTarget; i++) {
+        const a = Math.floor(Math.random() * (focusNum + 1));
+        problems.push([a, focusNum - a, focusNum]);
+    }
+
+    // ~2/3 problems sum to random numbers 1..focusNumber
+    for (let i = numFocusTarget; i < numProblems; i++) {
+        const target = Math.floor(Math.random() * focusNum) + 1;
+        const a = Math.floor(Math.random() * (target + 1));
         problems.push([a, target - a, target]);
     }
+
     return problems.sort(() => Math.random() - 0.5);
 }
 
