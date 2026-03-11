@@ -16,7 +16,7 @@ function showSubtraction() {
         problems.forEach((_, i) => {
             const color = solved.has(i) ? '#00CC66' : (i === current ? '#FF6B35' : '#555');
             html += '<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:'+color+';margin:3px"></span>';
-        });
+        }, explanation);
         html += '</div>';
 
         if (p.mode === 'visual') {
@@ -76,6 +76,7 @@ function showSubtraction() {
 
         recordResponse('subtraction', {type:'subtraction', a:p.a, b:p.b, answer:p.ans, mode:p.mode}, String(p.ans), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
 
+        const explanation = correct ? null : p.a + ' \u2212 ' + p.b + ' = ' + p.ans + ', not ' + ans;
         showFeedback(correct, () => {
             if (correct) {
                 solved.add(current);
