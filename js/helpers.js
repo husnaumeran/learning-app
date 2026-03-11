@@ -496,6 +496,12 @@ function speak(text) {
 function completeWorksheet(type, score, total) {
     currentAnswers = [];
 
+    // Track daily progress for menu counter
+    const today = getToday();
+    const progress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    progress.push({type: type, score: score, total: total});
+    localStorage.setItem('daily_'+today, JSON.stringify(progress));
+
     let html = '<div class="card"><div class="title">🌟 Great Job! 🌟</div>';
     html += '<p style="color:white;font-size:24px;text-align:center">'+type+': '+score+'/'+total+'</p>';
     html += '<button class="btn green" style="font-size:20px;padding:15px 30px" onclick="nextWorksheet()">Continue →</button>';
