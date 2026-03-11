@@ -16,24 +16,34 @@ function showMoreLess() {
         questionStartMs = Date.now();
     }
 
-    window.pickMore = (choice) => {
+    window.pickMore = async (choice) => {
         const responseTimeMs = Date.now() - questionStartMs;
-        const correct = choice === questions[current][3];
-        const correctSide = questions[current][3];
-        currentAnswers.push({q: questions[current][2]+': '+questions[current][0]+' vs '+questions[current][1], answer: choice, correct: correct});
-        const leftEl = document.querySelectorAll('.prob')[0];
-        const rightEl = document.querySelectorAll('.prob')[1];
+        const [a, b, type, correctSide] = questions[current];
+        const correct = choice === correctSide;
+        currentAnswers.push({q: type+': '+a+' vs '+b, answer: choice, correct: correct});
 
+        // Disable both boxes immediately
+        const boxes = document.querySelectorAll('.prob');
+        boxes.forEach(box => { box.onclick = null; box.style.pointerEvents = 'none'; });
+
+        const leftEl = boxes[0], rightEl = boxes[1];
         if (correctSide === 'left') { leftEl.style.background = '#22c55e'; rightEl.style.background = '#ef4444'; }
         else { rightEl.style.background = '#22c55e'; leftEl.style.background = '#ef4444'; }
 
-        recordResponse('more_less', {type:'more_less', left:questions[current][0], right:questions[current][1], question_type:questions[current][2]}, correctSide, choice, correct, true, 1, responseTimeMs, current);
+        recordResponse('more_less', {type:'more_less', left:a, right:b, question_type:type}, correctSide, choice, correct, true, 1, responseTimeMs, current);
 
-        showFeedback(correct, () => {
-            if (correct) score++;
-            current++;
-            render();
-        });
+        if (correct) {
+            score++;
+            showFeedback(true, () => { current++; render(); });
+        } else {
+            const correctVal = correctSide === 'left' ? a : b;
+            const wrongVal = correctSide === 'left' ? b : a;
+            const explanation = correctVal + ' has ' + type + ' than ' + wrongVal;
+            const title = document.querySelector('.title');
+            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
+            await speak(explanation);
+            current++; render();
+        }
     };
     render();
 }
