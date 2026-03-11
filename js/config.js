@@ -1,3 +1,15 @@
+// ============ VERSION CHECK — clear stale localStorage on upgrade ============
+const APP_VERSION = '2.0';
+if (localStorage.getItem('app_version') !== APP_VERSION) {
+    const keysToKeep = ['supabase.auth.token']; // preserve auth
+    const saved = {};
+    keysToKeep.forEach(k => { const v = localStorage.getItem(k); if (v) saved[k] = v; });
+    localStorage.clear();
+    Object.entries(saved).forEach(([k, v]) => localStorage.setItem(k, v));
+    localStorage.setItem('app_version', APP_VERSION);
+    console.log('🔄 App upgraded to v' + APP_VERSION + ' — localStorage cleared');
+}
+
 const SUPABASE_URL = 'https://qwcigjclpxnwtfjhjqgr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3Y2lnamNscHhud3RmamhqcWdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDYyOTMsImV4cCI6MjA4ODM4MjI5M30.f1O-M128j8UD28Ts0QSRe6phkMLc_LlNdJHDbGbyvr4';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
