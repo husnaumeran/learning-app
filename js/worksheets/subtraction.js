@@ -16,7 +16,7 @@ function showSubtraction() {
         problems.forEach((_, i) => {
             const color = solved.has(i) ? '#00CC66' : (i === current ? '#FF6B35' : '#555');
             html += '<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:'+color+';margin:3px"></span>';
-        }, explanation);
+        });
         html += '</div>';
 
         if (p.mode === 'visual') {
@@ -65,7 +65,7 @@ function showSubtraction() {
         answers[current] = null;
         document.getElementById('ansBox').textContent = '?';
     };
-    window.checkKey = () => {
+    window.checkKey = async () => {
         const ans = document.getElementById('ansBox').textContent;
         if (ans === '?' || solved.has(current)) return;
         const responseTimeMs = Date.now() - questionStartMs;
@@ -74,22 +74,26 @@ function showSubtraction() {
         const correct = parseInt(ans) === p.ans;
         currentAnswers.push({q: p.a+'−'+p.b, answer: ans, correct: correct});
 
+        // Disable keypad immediately
+        document.querySelectorAll('.key').forEach(k => { k.onclick = null; k.style.pointerEvents = 'none'; k.style.opacity = '0.5'; });
+
         recordResponse('subtraction', {type:'subtraction', a:p.a, b:p.b, answer:p.ans, mode:p.mode}, String(p.ans), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
 
-        const explanation = correct ? null : p.a + ' \u2212 ' + p.b + ' = ' + p.ans + ', not ' + ans;
-        showFeedback(correct, () => {
-            if (correct) {
-                solved.add(current);
-                score++;
-                
+        if (correct) {
+            solved.add(current);
+            score++;
+            showFeedback(true, () => {
                 if (score === problems.length) { completeWorksheet('Subtraction', score, problems.length); return; }
                 for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; }
                 render();
-            } else {
-                
-                render();
-            }
-        });
+            });
+        } else {
+            const explanation = p.a + ' − ' + p.b + ' = ' + p.ans + ', not ' + ans;
+            const title = document.querySelector('.title');
+            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
+            await speak(explanation);
+            render();
+        }
     };
     render();
 }
