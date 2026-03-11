@@ -12,7 +12,7 @@ function showAddition() {
         attemptCount = 0;
         currentAnswer = '';
         let html = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">Addition!</div>';
-        html += '<div style="text-align:center;font-size:48px;margin:20px;color:white">' + a + ' <span style="color:#FF6B35">+</span> ' + b + ' <span style="color:#FF6B35">=</span> <span id="ansBox" style="display:inline-block;min-width:50px;border-bottom:3px solid #FFD700;color:#FFD700">?</span></div>';
+        html += '<div style="text-align:center;font-size:48px;margin:20px;color:#333">' + a + ' <span style="color:#FF6B35">+</span> ' + b + ' <span style="color:#FF6B35">=</span> <span id="ansBox" style="display:inline-block;min-width:50px;border-bottom:3px solid #FFD700;color:#FFD700">?</span></div>';
         html += '</div><div class="keypad">';
         for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey(' + n + ')">' + n + '</button>';
         html += '<button class="key red" onclick="clearKey()">\u2715</button><button class="key green" onclick="checkKey()">\u2713</button></div>';
