@@ -23,7 +23,7 @@ function showAddition() {
 
     window.pressKey = (n) => { currentAnswer = String(n); document.getElementById('ansBox').textContent = n; };
     window.clearKey = () => { currentAnswer = ''; document.getElementById('ansBox').textContent = '?'; };
-    window.checkKey = () => {
+    window.checkKey = async () => {
         if (currentAnswer === '') return;
         const responseTimeMs = Date.now() - questionStartMs;
         attemptCount++;
@@ -31,10 +31,21 @@ function showAddition() {
         const correct = parseInt(currentAnswer) === ans;
         currentAnswers.push({q: a + '+' + b, answer: currentAnswer, correctAnswer: String(ans), correct: correct, firstTry: attemptCount === 1});
 
+        // Disable keypad immediately
+        document.querySelectorAll('.key').forEach(k => { k.onclick = null; k.style.pointerEvents = 'none'; k.style.opacity = '0.5'; });
+
         recordResponse('addition', {type: 'addition', a: a, b: b, sum: ans}, String(ans), currentAnswer, correct, attemptCount === 1, attemptCount, responseTimeMs, current);
 
-        const explanation = correct ? null : a + ' + ' + b + ' = ' + ans + ', not ' + currentAnswer;
-        showFeedback(correct, () => { if (correct) score++; current++; render(); }, explanation);
+        if (correct) {
+            score++;
+            showFeedback(true, () => { current++; render(); });
+        } else {
+            const explanation = a + ' + ' + b + ' = ' + ans + ', not ' + currentAnswer;
+            const title = document.querySelector('.title');
+            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
+            await speak(explanation);
+            current++; render();
+        }
     };
     render();
 }
