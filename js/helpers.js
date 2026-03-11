@@ -465,12 +465,14 @@ function speakUrdu(text) {
 
 function speak(text) {
     return new Promise(resolve => {
+        const timeout = setTimeout(resolve, 3000);
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.8;
         const voices = speechSynthesis.getVoices();
         const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen'));
         if (femaleVoice) utterance.voice = femaleVoice;
-        utterance.onend = resolve;
+        utterance.onend = () => { clearTimeout(timeout); resolve(); };
+        utterance.onerror = () => { clearTimeout(timeout); resolve(); };
         speechSynthesis.speak(utterance);
     });
 }
