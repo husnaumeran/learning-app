@@ -2,27 +2,44 @@
 var worksheetQueue = [];
 var queueIndex = 0;
 
-function showMenu() {
+async function showMenu() {
     const today = getToday();
-    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
-    const doneTypes = todayProgress.map(p => p.type);
+
+    // Instant paint from localStorage cache
+    const cachedProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    let completedToday = cachedProgress.length;
+
+    // Then fetch from Supabase (source of truth) and repaint if different
+    if (CONFIG.childId && typeof sb !== 'undefined') {
+        try {
+            const { data, error } = await sb.rpc('get_daily_status', { p_child_id: CONFIG.childId });
+            if (!error && data) {
+                completedToday = data.completed_today || 0;
+                // If Supabase has an active session, restore it
+                if (data.active_session_id && !CONFIG.sessionId) {
+                    CONFIG.sessionId = data.active_session_id;
+                }
+            }
+        } catch (e) { console.error('get_daily_status error:', e); }
+    }
 
     // Check if limit reached
-    if (todayProgress.length >= wsLimit) {
+    if (completedToday >= wsLimit) {
         let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
-        html += '<p style="color:white;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
+        html += '<p style="color:white;font-size:24px;text-align:center">You finished '+completedToday+' worksheets!</p>';
         html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
         html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
-// Reset Progress button removed — progress now reads from Supabase
         document.getElementById('app').innerHTML = html;
         return;
     }
 
+    const doneTypes = cachedProgress.map(p => p.type);
+
     let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
     html += '<div class="btn"><label>Worksheet Limit: <input type="number" id="limitInput" value="'+wsLimit+'" min="1" max="50" style="width:60px;font-size:24px;text-align:center" onchange="updateLimit(this.value)"></label></div>';
-    html += '<p style="color:white;text-align:center">Done today: '+todayProgress.length+' / '+wsLimit+'</p>';
+    html += '<p style="color:white;text-align:center">Done today: '+completedToday+' / '+wsLimit+'</p>';
 
     // Weekend Challenge detection
     const dayName = new Date().toLocaleDateString('en-US', {weekday: 'long', timeZone: CONFIG.timezone || 'America/Chicago'});
@@ -109,11 +126,17 @@ async function startDaily() {
     if (error) { console.error('Session creation failed:', error); }
     CONFIG.sessionId = session ? session.id : null;
 
-    const today = getToday();
-    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
-    const remaining = wsLimit - todayProgress.length;
-    const doneTypes = todayProgress.map(p => p.type);
+    let completedToday = 0;
+    try {
+        const { data } = await sb.rpc('get_daily_status', { p_child_id: CONFIG.childId });
+        if (data) completedToday = data.completed_today || 0;
+    } catch (e) {
+        const today = getToday();
+        completedToday = JSON.parse(localStorage.getItem('daily_'+today) || '[]').length;
+    }
+    const remaining = wsLimit - completedToday;
+    const doneTypes = []; // Supabase adaptive queue handles this internally
 
     worksheetQueue = await buildAdaptiveQueue(CONFIG.childId, remaining, doneTypes);
     queueIndex = 0;
@@ -123,10 +146,7 @@ async function startDaily() {
 }
 
 function nextWorksheet() {
-    const today = getToday();
-    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
-    const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
-    if (todayProgress.length >= wsLimit || queueIndex >= worksheetQueue.length) {
+    if (queueIndex >= worksheetQueue.length) {
         // Finalize session in Supabase
         if (CONFIG.sessionId) {
             sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
