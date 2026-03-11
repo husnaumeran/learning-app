@@ -405,17 +405,22 @@ function setupCanvas() {
     canvas.addEventListener('mouseup', () => { drawing = false; });
 }
 
-function showFeedback(correct, callback) {
+function showFeedback(correct, callback, explanation) {
     const title = document.querySelector('.title');
     if (correct) {
         title.innerHTML = '⭐ Correct! ⭐';
         title.style.color = '#22c55e';
+        setTimeout(callback, 800);
     } else {
-        title.innerHTML = '❌ Try again next time!';
+        title.innerHTML = '❌ ' + (explanation || 'Try again next time!');
         title.style.color = '#ef4444';
         document.querySelector('.card').style.animation = 'shake 0.5s';
+        if (explanation) {
+            speak(explanation).then(() => setTimeout(callback, 1500));
+        } else {
+            setTimeout(callback, 2000);
+        }
     }
-    setTimeout(callback, correct ? 800 : 1000);
 }
 
 
