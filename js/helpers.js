@@ -422,44 +422,41 @@ function showFeedback(correct, callback) {
 
 function speakArabic(text) {
     return new Promise(resolve => {
+        const timeout = setTimeout(resolve, 3000);
+        function done() { clearTimeout(timeout); resolve(); }
+        function fallback() {
+            if (typeof speechSynthesis === 'undefined') { done(); return; }
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ar-SA';
+            u.rate = 0.7;
+            u.onend = done;
+            u.onerror = done;
+            speechSynthesis.speak(u);
+        }
         const audio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q='+encodeURIComponent(text));
-        audio.onended = resolve;
-        audio.onerror = () => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ar-SA';
-            u.rate = 0.7;
-            u.onend = resolve;
-            speechSynthesis.speak(u);
-        };
-        audio.play().catch(() => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ar-SA';
-            u.rate = 0.7;
-            u.onend = resolve;
-            speechSynthesis.speak(u);
-        });
+        audio.onended = done;
+        audio.onerror = fallback;
+        audio.play().catch(fallback);
     });
 }
 
 function speakUrdu(text) {
     return new Promise(resolve => {
+        const timeout = setTimeout(resolve, 3000);
+        function done() { clearTimeout(timeout); resolve(); }
+        function fallback() {
+            if (typeof speechSynthesis === 'undefined') { done(); return; }
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ur-PK';
+            u.rate = 0.7;
+            u.onend = done;
+            u.onerror = done;
+            speechSynthesis.speak(u);
+        }
         const audio = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ur&q='+encodeURIComponent(text));
-        audio.onended = resolve;
-        audio.onerror = () => {
-            // Fallback to Web Speech API
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ur-PK';
-            u.rate = 0.7;
-            u.onend = resolve;
-            speechSynthesis.speak(u);
-        };
-        audio.play().catch(() => {
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ur-PK';
-            u.rate = 0.7;
-            u.onend = resolve;
-            speechSynthesis.speak(u);
-        });
+        audio.onended = done;
+        audio.onerror = fallback;
+        audio.play().catch(fallback);
     });
 }
 
@@ -479,14 +476,7 @@ function speak(text) {
 }
 
 function completeWorksheet(type, score, total) {
-    const today = getToday();
-    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
-    todayProgress.push({type: type, score: score+'/'+total, answers: currentAnswers, time: new Date().toISOString()});
-    localStorage.setItem('daily_'+today, JSON.stringify(todayProgress));
     currentAnswers = [];
-
-    const current = parseInt(localStorage.getItem('currentWorksheet') || '0');
-    localStorage.setItem('currentWorksheet', String(current + 1));
 
     let html = '<div class="card"><div class="title">🌟 Great Job! 🌟</div>';
     html += '<p style="color:white;font-size:24px;text-align:center">'+type+': '+score+'/'+total+'</p>';
