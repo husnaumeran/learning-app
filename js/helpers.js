@@ -101,34 +101,34 @@ async function adjustFocusNumbers(slices) {
 
         // Get or create current settings
         let settings = CONFIG.skillSettings[skillId] || {
-            focus_number: CONFIG.focusNumber,
+            difficulty_level: 1,
             streak_up: 0,
             streak_down: 0
         };
 
         let streakUp = settings.streak_up;
         let streakDown = settings.streak_down;
-        let focusNum = settings.focus_number;
+        let diffLevel = settings.difficulty_level || settings.focus_number || 1;
         let changed = false;
 
         if (accuracy >= 0.90) {
             streakUp++;
             streakDown = 0;
             if (streakUp >= 3) {
-                focusNum = Math.min(focusNum + 1, 50);
+                diffLevel = Math.min(diffLevel + 1, 50);
                 streakUp = 0;
                 changed = true;
-                console.log('📈 ' + skillId + ' focus_number → ' + focusNum);
+                console.log('📈 ' + skillId + ' difficulty_level → ' + diffLevel);
             }
         } else if (accuracy < 0.60) {
             streakDown++;
             streakUp = 0;
             if (streakDown >= 2) {
                 const floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
-                focusNum = Math.max(focusNum - 1, floor);
+                diffLevel = Math.max(diffLevel - 1, floor);
                 streakDown = 0;
                 changed = true;
-                console.log('📉 ' + skillId + ' focus_number → ' + focusNum);
+                console.log('📉 ' + skillId + ' difficulty_level → ' + diffLevel);
             }
         } else {
             // 60-89%: reset both streaks
@@ -141,7 +141,8 @@ async function adjustFocusNumbers(slices) {
             .upsert({
                 child_id: CONFIG.childId,
                 skill_id: skillId,
-                focus_number: focusNum,
+                difficulty_level: diffLevel,
+                focus_number: diffLevel,
                 streak_up: streakUp,
                 streak_down: streakDown
             }, { onConflict: 'child_id,skill_id' });
@@ -150,90 +151,33 @@ async function adjustFocusNumbers(slices) {
 
         // Update local cache
         CONFIG.skillSettings[skillId] = {
-            focus_number: focusNum,
+            difficulty_level: diffLevel,
+            focus_number: diffLevel,
             streak_up: streakUp,
             streak_down: streakDown
         };
 
-        if (changed) console.log('🎯 ' + skillId + ': streak_up=' + streakUp + ' streak_down=' + streakDown + ' focus=' + focusNum);
-    }
-}
-
-// ============ AUTO-ADJUST FOCUS NUMBER ============
-async function adjustFocusNumbers(slices) {
-    if (!slices || !slices.length || !CONFIG.childId) return;
-
-    for (const slice of slices) {
-        const skillId = slice.skill_id;
-        const accuracy = slice.accuracy;
-        if (accuracy == null || !skillId) continue;
-
-        // Get current settings or defaults
-        const current = (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) || {};
-        let focusNum = current.focus_number || CONFIG.focusNumber;
-        let streakUp = current.streak_up || 0;
-        let streakDown = current.streak_down || 0;
-
-        // Evaluate
-        if (accuracy >= 0.90) {
-            streakUp++;
-            streakDown = 0;
-        } else if (accuracy < 0.60) {
-            streakDown++;
-            streakUp = 0;
-        } else {
-            streakUp = 0;
-            streakDown = 0;
-        }
-
-        // Adjust focus_number if thresholds hit
-        let changed = false;
-        if (streakUp >= 3) {
-            focusNum = Math.min(focusNum + 1, 12);
-            streakUp = 0;
-            changed = true;
-            console.log('📈 ' + skillId + ' focus_number → ' + focusNum);
-        } else if (streakDown >= 2) {
-            focusNum = Math.max(focusNum - 1, 3);
-            streakDown = 0;
-            changed = true;
-            console.log('📉 ' + skillId + ' focus_number → ' + focusNum);
-        }
-
-        // Upsert to Supabase
-        const { error } = await sb.from('child_skill_settings')
-            .upsert({
-                child_id: CONFIG.childId,
-                skill_id: skillId,
-                focus_number: focusNum,
-                streak_up: streakUp,
-                streak_down: streakDown
-            }, { onConflict: 'child_id,skill_id' });
-
-        if (error) console.error('adjustFocus error:', error);
-        else {
-            // Update local cache
-            CONFIG.skillSettings[skillId] = { focus_number: focusNum, streak_up: streakUp, streak_down: streakDown };
-            console.log('🎯 ' + skillId + ': accuracy=' + accuracy + ' streak_up=' + streakUp + ' streak_down=' + streakDown + ' focus=' + focusNum);
-        }
+        if (changed) console.log('🎯 ' + skillId + ': streak_up=' + streakUp + ' streak_down=' + streakDown + ' difficulty=' + diffLevel);
     }
 }
 
 // ============ HELPER FUNCTIONS ============
-function generateAdditionProblems(focusNum) {
+function generateAdditionProblems(difficulty, count) {
+    // Migration: if called with one arg, use it for both (legacy)
+    if (count == null) { count = difficulty; }
     const problems = [];
-    const numProblems = focusNum;
+    const numProblems = count;
     const numFocusTarget = Math.max(1, Math.ceil(numProblems / 3));
 
-    // ~1/3 problems sum to focusNumber
+    // ~1/3 problems sum to difficulty
     for (let i = 0; i < numFocusTarget; i++) {
-        const a = Math.floor(Math.random() * (focusNum + 1));
-        problems.push([a, focusNum - a, focusNum]);
+        const a = Math.floor(Math.random() * (difficulty + 1));
+        problems.push([a, difficulty - a, difficulty]);
     }
 
-    // ~2/3 problems sum to random numbers 1..focusNumber
+    // ~2/3 problems sum to random numbers 1..difficulty
     for (let i = numFocusTarget; i < numProblems; i++) {
-        const target = Math.floor(Math.random() * focusNum) + 1;
+        const target = Math.floor(Math.random() * difficulty) + 1;
         const a = Math.floor(Math.random() * (target + 1));
         problems.push([a, target - a, target]);
     }
@@ -242,9 +186,11 @@ function generateAdditionProblems(focusNum) {
 }
 
 
-function generateSubtractionProblems(focusNum) {
+function generateSubtractionProblems(difficulty, count) {
+    if (count == null) { count = difficulty; }
     const problems = [];
-    const numProblems = focusNum;
+    const numProblems = count;
+    const focusNum = difficulty;
     const numFocusAnswer = Math.max(1, Math.ceil(numProblems / 3));
     const catNames = Object.keys(CONFIG.categories);
 
@@ -275,23 +221,25 @@ function generateSubtractionProblems(focusNum) {
     return problems;
 }
 
-function generateCountingProblems(maxNum) {
+function generateCountingProblems(difficulty, count) {
+    if (count == null) { count = difficulty; }
     const catNames = Object.keys(CONFIG.categories);
     const problems = [];
-    for (let i = 0; i < maxNum; i++) {
+    for (let i = 0; i < count; i++) {
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
         const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
-        const count = Math.floor(Math.random() * maxNum) + 1;
-        problems.push([count, emoji.repeat(count)]);
+        const num = Math.floor(Math.random() * difficulty) + 1;
+        problems.push([num, emoji.repeat(num)]);
     }
     return problems;
 }
 
-function generateMatchPairs(maxNum) {
+function generateMatchPairs(difficulty, count) {
+    if (count == null) { count = difficulty; }
     const catNames = Object.keys(CONFIG.categories);
     const nums = [];
-    for (let i = 1; i <= maxNum; i++) nums.push(i);
-    const shuffled = nums.sort(() => Math.random() - 0.5).slice(0, maxNum);
+    for (let i = 1; i <= difficulty; i++) nums.push(i);
+    const shuffled = nums.sort(() => Math.random() - 0.5).slice(0, count);
     const pairs = [];
     for (const n of shuffled) {
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
@@ -301,13 +249,15 @@ function generateMatchPairs(maxNum) {
     return pairs;
 }
 
-function generateMoreLessProblems(focusNum) {
+function generateMoreLessProblems(difficulty, count) {
+    if (count == null) { count = difficulty; }
+    const focusNum = difficulty;
     const problems = [];
     const catNames = Object.keys(CONFIG.categories);
     const cat = catNames[Math.floor(Math.random() * catNames.length)];
     const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
 
-    for (let i = 0; i < focusNum; i++) {
+    for (let i = 0; i < count; i++) {
         let n;
         do { n = Math.floor(Math.random() * focusNum) + 1; } while (n === focusNum);
         const askMore = Math.random() > 0.5;
