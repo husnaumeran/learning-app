@@ -5,7 +5,7 @@ function showFigureMatrices() {
     const CNAMES = ['red','blue','green','yellow','orange','pink'];
     const SIZES = [80, 40]; // big, small
     const SNAMES = ['big','small'];
-    const QUESTIONS = getQuestionCount('figure_matrices');
+    const QUESTIONS = getFocusNumber('figure_matrices');
     const LEVEL_NAMES = ['Color','Size','Shape','Direction','Color+Size','Color+Shape','Size+Shape','All Three'];
 
     let level = parseInt(localStorage.getItem('fm_level') || '1');
@@ -218,7 +218,7 @@ function showFigureMatrices() {
         const correct=ch.shape===prob.answer.shape && ch.ci===prob.answer.ci && ch.si===prob.answer.si;
         const firstTry=!tried;
 
-        currentAnswers.push({
+        if (attemptCounts[current] === 1) currentAnswers.push({
             q:'L'+level+' '+LEVEL_NAMES[level-1],
             answer:SNAMES[ch.si]+' '+CNAMES[ch.ci]+' '+ch.shape,
             correct, first_try:firstTry
