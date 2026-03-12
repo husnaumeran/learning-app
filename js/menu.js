@@ -16,7 +16,7 @@ async function showMenu() {
         html += '<p style="color:#333;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
         html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
         html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
-html += '<button class="btn" onclick="showMenu()" style="opacity:0.5;font-size:14px">🔧 Menu (test)</button>';
+
         document.getElementById('app').innerHTML = html;
         return;
     }
