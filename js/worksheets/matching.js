@@ -1,6 +1,6 @@
 // ============ MATCH NUMBERS ============
 function showMatchNumbers() {
-    const pairs = generateMatchPairs(getFocusNumber('match_numbers'));
+    const pairs = generateMatchPairs(getDifficultyLevel('match_numbers'), getQuestionCount('match_numbers'));
     let score = 0, selected = null;
     const solved = new Set();
     const nums = pairs.map(p => p[0]).sort(() => Math.random() - 0.5);
