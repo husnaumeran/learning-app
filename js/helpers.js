@@ -142,7 +142,6 @@ async function adjustFocusNumbers(slices) {
                 child_id: CONFIG.childId,
                 skill_id: skillId,
                 difficulty_level: diffLevel,
-                focus_number: diffLevel,
                 streak_up: streakUp,
                 streak_down: streakDown
             }, { onConflict: 'child_id,skill_id' });
@@ -152,7 +151,6 @@ async function adjustFocusNumbers(slices) {
         // Update local cache
         CONFIG.skillSettings[skillId] = {
             difficulty_level: diffLevel,
-            focus_number: diffLevel,
             streak_up: streakUp,
             streak_down: streakDown
         };
