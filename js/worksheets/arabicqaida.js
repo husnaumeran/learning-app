@@ -67,7 +67,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 1: Individual Letters =====
     function levelLetters() {
-        const letters = ARABIC_LETTERS.slice(0, getFocusNumber('arabic_qaida'));
+        const letters = ARABIC_LETTERS.slice(0, getQuestionCount('arabic_qaida'));
         let current = 0;
         function render() {
             startItemTimer();
@@ -89,7 +89,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 2: Harakat =====
     function levelHarakat() {
-        const letters = ARABIC_LETTERS.slice(0, getFocusNumber('arabic_qaida'));
+        const letters = ARABIC_LETTERS.slice(0, getQuestionCount('arabic_qaida'));
         let current = 0, harakatMode = 0;
         const harakatNames = ['فَتْحَة (Fatha)', 'كَسْرَة (Kasra)', 'ضَمَّة (Damma)'];
         const harakatKeys = ['fatha', 'kasra', 'damma'];
@@ -127,7 +127,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 3: Letter Connections =====
     function levelConnections() {
-        const letters = ARABIC_LETTERS.slice(0, getFocusNumber('arabic_qaida'));
+        const letters = ARABIC_LETTERS.slice(0, getQuestionCount('arabic_qaida'));
         let current = 0;
         function render() {
             startItemTimer();
@@ -153,7 +153,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 4: 2-Letter Combos =====
     function level2Letter() {
-        const words = [...ARABIC_2LETTER].sort(() => Math.random()-0.5).slice(0, getFocusNumber('arabic_qaida'));
+        const words = [...ARABIC_2LETTER].sort(() => Math.random()-0.5).slice(0, getQuestionCount('arabic_qaida'));
         let current = 0;
         function render() {
             startItemTimer();
@@ -175,7 +175,7 @@ function showArabicQaida() {
 
     // ===== LEVEL 5: 3-Letter Words =====
     function level3Letter() {
-        const words = [...ARABIC_3LETTER].sort(() => Math.random()-0.5).slice(0, getFocusNumber('arabic_qaida'));
+        const words = [...ARABIC_3LETTER].sort(() => Math.random()-0.5).slice(0, getQuestionCount('arabic_qaida'));
         let current = 0;
         function render() {
             startItemTimer();
