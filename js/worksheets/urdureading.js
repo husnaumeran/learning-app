@@ -1,6 +1,6 @@
 // ============ URDU READING ============
 function showUrduReading() {
-    const letters = URDU_LETTERS.slice(0, getFocusNumber('urdu_reading'));
+    const letters = URDU_LETTERS.slice(0, getQuestionCount('urdu_reading'));
     let current = 0;
 
     function render() {
