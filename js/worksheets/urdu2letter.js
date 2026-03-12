@@ -1,6 +1,6 @@
 // ============ URDU 2-LETTER WORDS ============
 function showUrdu2Letter() {
-    const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, getFocusNumber('urdu_2letter'));
+    const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, getQuestionCount('urdu_2letter'));
     let current = 0;
 
     function render() {
