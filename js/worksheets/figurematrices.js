@@ -219,7 +219,7 @@ function showFigureMatrices() {
         const firstTry=!tried;
 
         if (attemptCounts[current] === 1) currentAnswers.push({
-            q:'L'+level+' '+LEVEL_NAMES[level-1],
+            q:'L'+level+' '+LEVEL_NAMES[level-1]+' → '+SNAMES[prob.answer.si]+' '+CNAMES[prob.answer.ci]+' '+prob.answer.shape,
             answer:SNAMES[ch.si]+' '+CNAMES[ch.ci]+' '+ch.shape,
             correct, first_try:firstTry
         });
