@@ -28,9 +28,10 @@ async function showMenu() {
     if (completedToday >= wsLimit) {
         let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
-        html += '<p style="color:white;font-size:24px;text-align:center">You finished '+completedToday+' worksheets!</p>';
-        html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
+        html += '<p style="color:#333;font-size:24px;text-align:center">You finished '+completedToday+' worksheets!</p>';
+        html += '<p style="font-size:28px;text-align:center">Come back later! 🎉</p></div>';
         html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
+        html += '<button class="btn" onclick="showParentArea()">👨‍👩‍👧 Parent Area</button>';
         document.getElementById('app').innerHTML = html;
         return;
     }
