@@ -311,22 +311,20 @@ function showExport() {
         if (data.length === 0) {
             html += '<p style="text-align:center;color:#999">No worksheets completed this day.</p>';
         } else {
-            const firstTryTotal = data.reduce((sum, ws) => sum + (ws.answers||[]).filter(a => a.firstTry).length, 0);
             const totalQs = data.reduce((sum, ws) => sum + (ws.answers||[]).length, 0);
             html += '<div style="background:#f0f4f8;padding:10px;border-radius:8px;margin-bottom:12px;text-align:center;color:#333">';
-            html += '<b>'+data.length+'</b> worksheets · <b>'+totalQs+'</b> questions · <b>'+firstTryTotal+'</b> first-try ⭐';
+            html += '<b>'+data.length+'</b> worksheets · <b>'+totalQs+'</b> questions';
             html += '</div>';
 
             data.forEach((ws, wi) => {
                 const t = ws.time ? new Date(ws.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-                const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
                 const total = (ws.answers||[]).length;
 
                 html += '<div style="border:1px solid #ddd;border-radius:10px;margin-bottom:10px;overflow:hidden">';
                 // Header
                 html += '<div onclick="toggleWS('+wi+')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8f9fa;cursor:pointer">';
                 html += '<div><b>'+ws.type+'</b> <span style="color:#666;font-size:13px">'+t+'</span></div>';
-                html += '<div style="font-size:14px">'+ws.score+' · ⭐'+firstTry+'/'+total+' <span id="arrow'+wi+'">▶</span></div>';
+                html += '<div style="font-size:14px">'+ws.score+' · '+total+' Q <span id="arrow'+wi+'">▶</span></div>';
                 html += '</div>';
 
                 // Detail (hidden by default)
@@ -334,9 +332,8 @@ function showExport() {
                 if (ws.answers && ws.answers.length > 0) {
                     ws.answers.forEach((a, qi) => {
                         const icon = a.correct ? '✅' : (a.answer === 'skip' || a.answer === 'skipped' ? '⏭️' : '❌');
-                        const ftIcon = a.firstTry ? '⭐' : '';
                         html += '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px">';
-                        html += '<div>'+icon+' ' +ftIcon+' <b>Q'+(qi+1)+':</b> ';
+                        html += '<div>'+icon+' <b>Q'+(qi+1)+':</b> ';
 
                         // Show question
                         if (a.q) html += '<span style="color:#555">'+a.q+'</span>';
