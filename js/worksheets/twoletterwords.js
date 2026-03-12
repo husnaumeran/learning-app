@@ -1,6 +1,6 @@
 // ============ 2-LETTER WORDS ============
 function showTwoLetter() {
-    const words = [...CONFIG.twoLetterWords].sort(() => Math.random()-0.5).slice(0, getFocusNumber('two_letter_words'));
+    const words = [...CONFIG.twoLetterWords].sort(() => Math.random()-0.5).slice(0, getQuestionCount('two_letter_words'));
     let current = 0;
 
     function render() {
