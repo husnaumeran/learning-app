@@ -1,12 +1,13 @@
 // ============ Bigger/Smaller ============
 function showBiggerSmaller() {
-    const focus = getFocusNumber('bigger_smaller');
+    const difficulty = getDifficultyLevel('bigger_smaller');
+    const qCount = getQuestionCount('bigger_smaller');
     const problems = [];
-    for (let i = 0; i < focus; i++) {
+    for (let i = 0; i < qCount; i++) {
         let other;
-        do { other = Math.floor(Math.random() * focus) + 1; } while (other === focus);
+        do { other = Math.floor(Math.random() * difficulty) + 1; } while (other === difficulty);
         const askBigger = Math.random() > 0.5;
-        problems.push([focus, other, askBigger ? 'BIGGER' : 'SMALLER']);
+        problems.push([difficulty, other, askBigger ? 'BIGGER' : 'SMALLER']);
     }
     problems.sort(() => Math.random() - 0.5);
     let current = 0, score = 0;
