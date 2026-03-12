@@ -1,6 +1,6 @@
 // ============ VERBAL ANALOGIES (CogAT Prep) ============
 function showVerbalAnalogies() {
-    const QUESTIONS = getFocusNumber('verbal_analogies');
+    const QUESTIONS = getQuestionCount('verbal_analogies');
     const MIN_FOR_UNLOCK = 5;
     const LEVELS = [
         null,
