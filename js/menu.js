@@ -118,6 +118,19 @@ async function startDaily() {
     worksheetQueue = await buildAdaptiveQueue(CONFIG.childId, remaining, doneTypes);
     queueIndex = 0;
 
+    if (CONFIG.sessionId) {
+        sb.from('sessions').update({
+            queue_json: worksheetQueue,
+            queue_index: 0,
+            current_skill_id: null,
+            last_activity_at: new Date().toISOString(),
+            status: 'in_progress'
+        }).eq('id', CONFIG.sessionId).then(({ error }) => {
+            if (error) console.error('Save queue failed:', error);
+        });
+    }
+
+
     if (worksheetQueue.length === 0) { showMenu(); return; }
     nextWorksheet();
 }
