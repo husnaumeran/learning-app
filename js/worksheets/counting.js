@@ -1,6 +1,6 @@
 // ============ COUNTING ============
 function showCounting() {
-    const problems = generateCountingProblems(getFocusNumber('counting'));
+    const problems = generateCountingProblems(getDifficultyLevel('counting'), getQuestionCount('counting'));
     let current = -1, score = 0;
     const solved = new Set();
     const answers = {};
