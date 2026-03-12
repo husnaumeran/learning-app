@@ -1,10 +1,9 @@
 // ============ URDU 2-LETTER WORDS ============
 function showUrdu2Letter() {
-    const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, getQuestionCount('urdu_2letter'));
+    const words = [...URDU_WORDS].sort(() => Math.random()-0.5).slice(0, getFocusNumber('urdu_2letter'));
     let current = 0;
 
     function render() {
-        startItemTimer();
         const w = words[current];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
         html += '<div class="title" style="direction:rtl">اردو Urdu — Read the Word!</div>';
@@ -18,11 +17,6 @@ function showUrdu2Letter() {
     }
 
     window.prevUrdu2 = () => { if (current > 0) { current--; render(); } };
-    window.nextUrdu2 = () => {
-        recordPassiveResponse('urdu_2letter', {word: words[current].word, sound: words[current].sound, meaning: words[current].meaning}, current);
-        current++;
-        if (current >= words.length) { completeWorksheet('Urdu 2-Letter Words', words.length, words.length); return; }
-        render();
-    };
+    window.nextUrdu2 = () => { currentAnswers.push({q: words[current].word, answer: words[current].sound, correct: true}); current++; if (current >= words.length) { completeWorksheet('Urdu 2-Letter Words', words.length, words.length); return; } render(); };
     render();
 }
