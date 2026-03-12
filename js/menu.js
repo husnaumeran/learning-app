@@ -2,7 +2,7 @@
 var worksheetQueue = [];
 var queueIndex = 0;
 
-function showMenu() {
+async function showMenu() {
     const today = getToday();
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
@@ -39,7 +39,34 @@ function showMenu() {
         }
     }
 
-    html += '<button class="btn green" style="font-size:24px;padding:30px" onclick="startDaily()">Let\'s Start! 🚀</button>';
+// Check for active session to resume
+    let activeSession = null;
+    if (CONFIG.childId) {
+        const { data } = await sb.from('sessions')
+            .select('id, queue_json, queue_index, started_at, status')
+            .eq('child_id', CONFIG.childId)
+            .eq('status', 'in_progress')
+            .order('started_at', { ascending: false })
+            .limit(1);
+        if (data && data.length > 0 && data[0].queue_json) activeSession = data[0];
+    }
+
+    if (activeSession) {
+        const sessionDay = activeSession.started_at ? activeSession.started_at.split('T')[0] : null;
+        const isToday = sessionDay === today;
+        const remaining = (activeSession.queue_json.length || 0) - (activeSession.queue_index || 0);
+        if (isToday) {
+            html += '<button class="btn green" style="font-size:24px;padding:30px" onclick="resumeSession(\''+activeSession.id+'\')">Continue ▶️ ('+remaining+' left)</button>';
+        } else {
+            html += '<div style="background:#1a3a5c;padding:15px;border-radius:12px;margin:10px 0;text-align:center">';
+            html += '<p style="color:#fbbf24;font-size:16px;margin:0 0 10px">📋 You have an unfinished session from '+sessionDay+'</p>';
+            html += '<button class="btn" style="font-size:20px;padding:20px;background:#3b82f6" onclick="resumeSession(\''+activeSession.id+'\')">Resume ('+remaining+' left) ▶️</button>';
+            html += '<button class="btn" style="font-size:20px;padding:20px;margin-top:8px" onclick="archiveAndStart(\''+activeSession.id+'\')">Start Fresh 🚀</button>';
+            html += '</div>';
+        }
+    } else {
+        html += '<button class="btn green" style="font-size:24px;padding:30px" onclick="startDaily()">Let\'s Start! 🚀</button>';
+    }
 
     const sections = [
         {title:'🔢 Math', color:'#FF6B35', items:[
@@ -133,6 +160,35 @@ async function startDaily() {
 
     if (worksheetQueue.length === 0) { showMenu(); return; }
     nextWorksheet();
+}
+
+
+async function resumeSession(sessionId) {
+    const { data, error } = await sb.from('sessions')
+        .select('id, queue_json, queue_index')
+        .eq('id', sessionId)
+        .single();
+    if (error || !data || !data.queue_json) {
+        console.error('Resume failed:', error);
+        startDaily();
+        return;
+    }
+    worksheetQueue = data.queue_json;
+    queueIndex = data.queue_index || 0;
+    CONFIG.sessionId = data.id;
+    sb.from('sessions').update({ last_activity_at: new Date().toISOString() })
+        .eq('id', sessionId).then(({ error }) => {
+            if (error) console.error('Resume timestamp update failed:', error);
+        });
+    nextWorksheet();
+}
+
+async function archiveAndStart(sessionId) {
+    await sb.from('sessions').update({
+        status: 'abandoned',
+        last_activity_at: new Date().toISOString()
+    }).eq('id', sessionId);
+    startDaily();
 }
 
 function nextWorksheet() {
