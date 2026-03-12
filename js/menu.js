@@ -203,7 +203,7 @@ function nextWorksheet() {
                 if (error) console.error('finalize_session error:', error);
                 else {
                     console.log('finalize_session OK:', data);
-                    if (data && data.slices) adjustFocusNumbers(data.slices);
+                    // Daily practice: no difficulty adjustment (weekend challenge only)
                 }
               });
         }
