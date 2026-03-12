@@ -501,13 +501,12 @@ function resolveSkillId(type) {
 }
 
 function completeWorksheet(type, score, total) {
-    currentAnswers = [];
-
     // Track daily progress in localStorage (cache for instant menu paint)
     const today = getToday();
     const progress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
-    progress.push({type: type, score: score, total: total});
+    progress.push({type: type, score: score+'/'+total, answers: currentAnswers, time: new Date().toISOString()});
     localStorage.setItem('daily_'+today, JSON.stringify(progress));
+    currentAnswers = [];
 
     // Record to Supabase (source of truth)
     const skillId = resolveSkillId(type);
