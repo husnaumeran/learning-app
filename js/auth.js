@@ -200,7 +200,7 @@ async function selectChild(child) {
 
     // Load per-skill settings
     const { data: settings } = await sb.from('child_skill_settings')
-        .select('skill_id,focus_number,streak_up,streak_down')
+        .select('skill_id,focus_number,difficulty_level,practice_question_count,challenge_question_count,streak_up,streak_down')
         .eq('child_id', child.id);
     CONFIG.skillSettings = {};
     (settings || []).forEach(s => { CONFIG.skillSettings[s.skill_id] = s; });
