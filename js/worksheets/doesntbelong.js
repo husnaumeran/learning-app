@@ -2,7 +2,7 @@
 function showDoesntBelong() {
     const catNames = Object.keys(CONFIG.categories);
     const problems = [];
-    for (let i = 0; i < getFocusNumber('which_doesnt_belong'); i++) {
+    for (let i = 0; i < getQuestionCount('which_doesnt_belong'); i++) {
         const cat1 = catNames[Math.floor(Math.random() * catNames.length)];
         let cat2;
         do { cat2 = catNames[Math.floor(Math.random() * catNames.length)]; } while (cat2 === cat1);
