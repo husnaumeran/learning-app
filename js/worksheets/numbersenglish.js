@@ -1,6 +1,6 @@
 // ============ NUMBERS ENGLISH ============
 function showNumbersEnglish() {
-    const QUESTIONS = getFocusNumber('numbers_english');
+    const QUESTIONS = getQuestionCount('numbers_english');
     const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Hear & Tap','Closest','More Than','Less Than'];
     const STORAGE_KEY = 'ne_level';
