@@ -1,6 +1,6 @@
 // ============ SUBTRACTION ============
 function showSubtraction() {
-    const problems = generateSubtractionProblems(getFocusNumber('subtraction'));
+    const problems = generateSubtractionProblems(getDifficultyLevel('subtraction'), getQuestionCount('subtraction'));
     let current = 0, score = 0;
     const solved = new Set();
     const answers = {};
