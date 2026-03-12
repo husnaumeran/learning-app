@@ -47,7 +47,7 @@ function recordPassiveResponse(skillId, questionData, itemIndex = null) {
     _itemTimerStart = null;
 }
 
-// ============ FOCUS NUMBER ============
+// ============ DIFFICULTY & QUESTION COUNT ============
 const FOCUS_FLOORS = {
     default: 1,
     urdu_videos: 1,
@@ -56,6 +56,26 @@ const FOCUS_FLOORS = {
     connect_dots: 1
 };
 
+function getDifficultyLevel(skillId) {
+    const s = CONFIG.skillSettings && CONFIG.skillSettings[skillId];
+    if (s && s.difficulty_level != null) return Math.max(s.difficulty_level, 1);
+    if (s && s.focus_number != null) return Math.max(s.focus_number, 1); // fallback during migration
+    return Math.max(CONFIG.focusNumber, 1);
+}
+
+function getQuestionCount(skillId, sessionType) {
+    const mode = sessionType || 'practice';
+    const s = CONFIG.skillSettings && CONFIG.skillSettings[skillId];
+    if (mode === 'challenge') {
+        if (s && s.challenge_question_count != null) return s.challenge_question_count;
+        return 5; // default challenge count
+    }
+    // practice
+    if (s && s.practice_question_count != null) return s.practice_question_count;
+    return 1; // default practice count — start gentle
+}
+
+// Legacy wrapper — used by worksheets not yet migrated
 function getFocusNumber(skillId) {
     let val;
     if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
