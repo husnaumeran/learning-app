@@ -1,5 +1,5 @@
 // ============ VERSION CHECK — clear stale localStorage on upgrade ============
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
     const keysToKeep = ['supabase.auth.token']; // preserve auth
     const saved = {};
