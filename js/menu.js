@@ -12,8 +12,8 @@ async function showMenu() {
     if (todayProgress.length >= wsLimit) {
         let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
-        html += '<p style="color:white;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
-        html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
+        html += '<p style="color:#333;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
+        html += '<p style="color:#333;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
         html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
         html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
         document.getElementById('app').innerHTML = html;
