@@ -219,7 +219,7 @@ async function showExport() {
     const app = document.getElementById('app');
     const tz = CONFIG.timezone || 'America/Chicago';
 
-    app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:white;text-align:center">Loading...</p></div>';
+    app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">Loading...</p></div>';
 
     function getDateKey(dateLike) {
         const parts = new Intl.DateTimeFormat('en-US', {
@@ -238,11 +238,11 @@ async function showExport() {
 
     if (sessionsError) {
         console.error('showExport sessions error', sessionsError);
-        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:white;text-align:center">Failed to load sessions.</p></div>';
+        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">Failed to load sessions.</p></div>';
         return;
     }
     if (!sessions || sessions.length === 0) {
-        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:white;text-align:center">No completed sessions yet.</p></div>';
+        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">No completed sessions yet.</p></div>';
         return;
     }
 
@@ -256,7 +256,7 @@ async function showExport() {
 
     if (responsesError) {
         console.error('showExport responses error', responsesError);
-        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:white;text-align:center">Failed to load responses.</p></div>';
+        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">Failed to load responses.</p></div>';
         return;
     }
 
