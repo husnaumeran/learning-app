@@ -525,7 +525,7 @@ function completeWorksheet(type, score, total) {
     }
 
     let html = '<div class="card"><div class="title">🌟 Great Job! 🌟</div>';
-    html += '<p style="color:white;font-size:24px;text-align:center">'+type+': '+score+'/'+total+'</p>';
+    html += '<p style="color:#333;font-size:24px;text-align:center">'+type+': '+score+'/'+total+'</p>';
     html += '<button class="btn green" style="font-size:20px;padding:15px 30px" onclick="nextWorksheet()">Continue →</button>';
     html += '<button class="btn" onclick="showMenu()">← Menu</button></div>';
     document.getElementById('app').innerHTML = html;
