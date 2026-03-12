@@ -1,6 +1,6 @@
 // ============ ADDITION ============
 function showAddition() {
-    const problems = generateAdditionProblems(getFocusNumber('addition'));
+    const problems = generateAdditionProblems(getDifficultyLevel('addition'), getQuestionCount('addition'));
     let current = 0, score = 0;
     let attemptCount = 0;
     let questionStartMs = null;
