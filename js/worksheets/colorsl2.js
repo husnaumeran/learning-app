@@ -69,7 +69,7 @@ function showColorsL2() {
         attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
         const correct = color === p.ans;
-        if (attemptCounts[current] === 1) currentAnswers.push({q: 'patternL2_'+current, answer: color, correct: correct});
+        if (attemptCounts[current] === 1) currentAnswers.push({q: p.seq.map(c => c || '?').join('→'), answer: color, correct: correct});
 
         recordResponse('color_patterns_l2', {type:'color_patterns_l2', pattern:p.seq, pattern_type:p.type, correct_answer:p.ans}, p.ans, color, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
 
