@@ -2,45 +2,27 @@
 var worksheetQueue = [];
 var queueIndex = 0;
 
-async function showMenu() {
+function showMenu() {
     const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
-
-    // Instant paint from localStorage cache
-    const cachedProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
-    let completedToday = cachedProgress.length;
-
-    // Then fetch from Supabase (source of truth) and repaint if different
-    if (CONFIG.childId && typeof sb !== 'undefined') {
-        try {
-            const { data, error } = await sb.rpc('get_daily_status', { p_child_id: CONFIG.childId });
-            if (!error && data) {
-                completedToday = data.completed_today || 0;
-                // If Supabase has an active session, restore it
-                if (data.active_session_id && !CONFIG.sessionId) {
-                    CONFIG.sessionId = data.active_session_id;
-                }
-            }
-        } catch (e) { console.error('get_daily_status error:', e); }
-    }
+    const doneTypes = todayProgress.map(p => p.type);
 
     // Check if limit reached
-    if (completedToday >= wsLimit) {
+    if (todayProgress.length >= wsLimit) {
         let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
         html += '<div class="card"><div class="title">🌟 Amazing job today! 🌟</div>';
-        html += '<p style="color:#333;font-size:24px;text-align:center">You finished '+completedToday+' worksheets!</p>';
-        html += '<p style="font-size:28px;text-align:center">Come back later! 🎉</p></div>';
+        html += '<p style="color:white;font-size:24px;text-align:center">You finished '+todayProgress.length+' worksheets!</p>';
+        html += '<p style="color:white;font-size:28px;text-align:center">Come back later! 🎉</p></div>';
         html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
-        html += '<button class="btn" onclick="showParentArea()">👨‍👩‍👧 Parent Area</button>';
+        html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
         document.getElementById('app').innerHTML = html;
         return;
     }
 
-    const doneTypes = cachedProgress.map(p => p.type);
-
     let html = '<h1>🎨 ' + (CONFIG.childName||'Aliza') + '\'s Learning</h1>';
     html += '<div class="btn"><label>Worksheet Limit: <input type="number" id="limitInput" value="'+wsLimit+'" min="1" max="50" style="width:60px;font-size:24px;text-align:center" onchange="updateLimit(this.value)"></label></div>';
-    html += '<p style="color:white;text-align:center">Done today: '+completedToday+' / '+wsLimit+'</p>';
+    html += '<p style="color:white;text-align:center">Done today: '+todayProgress.length+' / '+wsLimit+'</p>';
 
     // Weekend Challenge detection
     const dayName = new Date().toLocaleDateString('en-US', {weekday: 'long', timeZone: CONFIG.timezone || 'America/Chicago'});
@@ -107,7 +89,7 @@ async function showMenu() {
     html += '<button class="btn" onclick="showHowToUse()">📋 How to Use</button>';
     html += '<button class="btn" onclick="showExport()">📊 View Progress</button>';
     html += '<button class="btn" onclick="showParentArea()">👨‍👩‍👧 Parent Area</button>';
-// Reset Progress button removed — progress now reads from Supabase
+    html += '<button class="btn" onclick="resetProgress()">🔄 Reset Progress</button>';
     document.getElementById('app').innerHTML = html;
 }
 
@@ -127,17 +109,11 @@ async function startDaily() {
     if (error) { console.error('Session creation failed:', error); }
     CONFIG.sessionId = session ? session.id : null;
 
+    const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
-    let completedToday = 0;
-    try {
-        const { data } = await sb.rpc('get_daily_status', { p_child_id: CONFIG.childId });
-        if (data) completedToday = data.completed_today || 0;
-    } catch (e) {
-        const today = getToday();
-        completedToday = JSON.parse(localStorage.getItem('daily_'+today) || '[]').length;
-    }
-    const remaining = wsLimit - completedToday;
-    const doneTypes = []; // Supabase adaptive queue handles this internally
+    const remaining = wsLimit - todayProgress.length;
+    const doneTypes = todayProgress.map(p => p.type);
 
     worksheetQueue = await buildAdaptiveQueue(CONFIG.childId, remaining, doneTypes);
     queueIndex = 0;
@@ -147,7 +123,10 @@ async function startDaily() {
 }
 
 function nextWorksheet() {
-    if (queueIndex >= worksheetQueue.length) {
+    const today = getToday();
+    const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
+    const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
+    if (todayProgress.length >= wsLimit || queueIndex >= worksheetQueue.length) {
         // Finalize session in Supabase
         if (CONFIG.sessionId) {
             sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
@@ -155,7 +134,7 @@ function nextWorksheet() {
                 if (error) console.error('finalize_session error:', error);
                 else {
                     console.log('finalize_session OK:', data);
-                    // Daily practice: no difficulty adjustment (weekend only)
+                    if (data && data.slices) adjustFocusNumbers(data.slices);
                 }
               });
         }
@@ -187,7 +166,12 @@ function updateLimit(n) {
     localStorage.setItem('worksheetLimit', n);
 }
 
-// resetProgress removed — progress now reads from Supabase
+function resetProgress() {
+    if (confirm('Delete all progress?')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
 
 function showHowToUse() {
     let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
@@ -213,194 +197,133 @@ function showHowToUse() {
     document.getElementById('app').innerHTML = html;
 }
 
-// ============ PROGRESS VIEW (Supabase) ============
-
-async function showExport() {
-    const app = document.getElementById('app');
-    const tz = CONFIG.timezone || 'America/Chicago';
-
-    app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">Loading...</p></div>';
-
-    function getDateKey(dateLike) {
-        const parts = new Intl.DateTimeFormat('en-US', {
-            timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'
-        }).formatToParts(new Date(dateLike));
-        const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-        return map.year + '-' + map.month + '-' + map.day;
+function showExport() {
+    // Gather all days
+    const days = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('daily_')) days.push(key.replace('daily_', ''));
     }
+    days.sort().reverse();
+    const today = getToday();
 
-    const { data: sessions, error: sessionsError } = await sb
-        .from('sessions')
-        .select('id, started_at, status')
-        .eq('child_id', CONFIG.childId)
-        .eq('status', 'completed')
-        .order('started_at', { ascending: false });
-
-    if (sessionsError) {
-        console.error('showExport sessions error', sessionsError);
-        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">Failed to load sessions.</p></div>';
-        return;
-    }
-    if (!sessions || sessions.length === 0) {
-        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">No completed sessions yet.</p></div>';
-        return;
-    }
-
-    const sessionIds = sessions.map(s => s.id);
-
-    const { data: responses, error: responsesError } = await sb
-        .from('responses')
-        .select('id, session_id, skill_id, question_data, final_answer, correct_answer, is_correct, is_first_try, response_time_ms, created_at')
-        .in('session_id', sessionIds)
-        .order('created_at', { ascending: true });
-
-    if (responsesError) {
-        console.error('showExport responses error', responsesError);
-        app.innerHTML = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div><p style="color:#333;text-align:center">Failed to load responses.</p></div>';
-        return;
-    }
-
-    const sessionDateMap = {};
-    const days = {};
-
-    sessions.forEach(s => {
-        const date = getDateKey(s.started_at);
-        sessionDateMap[s.id] = date;
-        if (!days[date]) days[date] = { sessions: [], skills: {} };
-        days[date].sessions.push(s);
-    });
-
-    (responses || []).forEach(r => {
-        const date = sessionDateMap[r.session_id];
-        if (!date) return;
-        if (!days[date].skills[r.skill_id]) days[date].skills[r.skill_id] = { total: 0, correct: 0, firstTry: 0, questions: [] };
-        const skill = days[date].skills[r.skill_id];
-        skill.total++;
-        if (r.is_correct) skill.correct++;
-        if (r.is_first_try && r.is_correct) skill.firstTry++;
-        skill.questions.push(r);
-    });
-
-    Object.values(days).forEach(day => {
-        Object.values(day.skills).forEach(skill => {
-            skill.questions.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        });
-    });
-
-    const dayKeys = Object.keys(days).sort().reverse();
-    const today = getDateKey(new Date());
-    let activeDay = dayKeys.includes(today) ? today : dayKeys[0];
+    let activeDay = today;
 
     function renderProgress() {
-        let html = '<button class="back" onclick="showMenu()">\u2190 Back</button><div class="card"><div class="title">\uD83D\uDCCA Progress</div>';
+        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">📊 Progress</div>';
 
+        // Day tabs
         html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px">';
-        dayKeys.forEach(d => {
+        days.forEach(d => {
             const isActive = d === activeDay;
-            const label = d === today ? '\uD83D\uDCC5 Today' : d;
-            html += '<div onclick="switchDay(\'' + d + '\')" style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;' + (isActive ? 'background:#FFD700;color:#333;font-weight:bold' : 'background:#444;color:#aaa') + '">' + label + '</div>';
+            const label = d === today ? '📅 Today' : d;
+            html += '<div onclick="switchDay(\''+d+'\')" style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;background:'+(isActive?'#22c55e':'#e5e7eb')+';color:'+(isActive?'white':'#333')+'">'+label+'</div>';
         });
         html += '</div>';
 
-        const day = days[activeDay];
-        const skillIds = Object.keys(day.skills);
-
-        if (skillIds.length === 0) {
-            html += '<p style="color:white;text-align:center">No worksheets completed this day.</p>';
+        // Day content
+        const data = JSON.parse(localStorage.getItem('daily_'+activeDay) || '[]');
+        if (data.length === 0) {
+            html += '<p style="text-align:center;color:#999">No worksheets completed this day.</p>';
         } else {
-            let totalQ = 0, totalCorrect = 0, totalFirstTry = 0;
-            skillIds.forEach(sid => { totalQ += day.skills[sid].total; totalCorrect += day.skills[sid].correct; totalFirstTry += day.skills[sid].firstTry; });
-            html += '<div style="text-align:center;color:white;margin-bottom:15px">' + skillIds.length + ' worksheets \u00B7 ' + totalQ + ' questions \u00B7 ' + totalFirstTry + ' first-try \u2B50</div>';
+            const firstTryTotal = data.reduce((sum, ws) => sum + (ws.answers||[]).filter(a => a.firstTry).length, 0);
+            const totalQs = data.reduce((sum, ws) => sum + (ws.answers||[]).length, 0);
+            html += '<div style="background:#f0f4f8;padding:10px;border-radius:8px;margin-bottom:12px;text-align:center;color:#333">';
+            html += '<b>'+data.length+'</b> worksheets · <b>'+totalQs+'</b> questions · <b>'+firstTryTotal+'</b> first-try ⭐';
+            html += '</div>';
 
-            skillIds.forEach(sid => {
-                const s = day.skills[sid];
-                const name = formatSkillName(sid);
-                const time = s.questions[0] ? new Date(s.questions[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: tz }) : '';
-                html += '<div style="background:#1a1a2e;padding:12px;border-radius:10px;margin:8px 0">';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleDetail(\'' + sid + '\')">';
-                html += '<div><b style="color:white">' + name + '</b> <span style="color:#888;font-size:13px">' + time + '</span></div>';
-                html += '<div style="color:#aaa;white-space:nowrap">' + s.correct + '/' + s.total + ' \u00B7 \u2B50' + s.firstTry + '/' + s.total + ' \u25B8</div>';
+            data.forEach((ws, wi) => {
+                const t = ws.time ? new Date(ws.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+                const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
+                const total = (ws.answers||[]).length;
+
+                html += '<div style="border:1px solid #ddd;border-radius:10px;margin-bottom:10px;overflow:hidden">';
+                // Header
+                html += '<div onclick="toggleWS('+wi+')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8f9fa;cursor:pointer">';
+                html += '<div><b>'+ws.type+'</b> <span style="color:#666;font-size:13px">'+t+'</span></div>';
+                html += '<div style="font-size:14px">'+ws.score+' · ⭐'+firstTry+'/'+total+' <span id="arrow'+wi+'">▶</span></div>';
                 html += '</div>';
-                html += '<div id="detail_' + sid + '" style="display:none;margin-top:10px;color:#ccc;font-size:14px">';
-                s.questions.forEach((q, qi) => {
-                    const icon = q.is_correct ? '\u2705' : '\u274C';
-                    const ft = (q.is_first_try && q.is_correct) ? '\u2B50' : '  ';
-                    const qText = formatQuestion(sid, q.question_data);
-                    if (q.correct_answer === 'seen') {
-                        html += '<div>' + icon + ft + ' Q' + (qi + 1) + ': ' + qText + '</div>';
-                    } else {
-                        html += '<div>' + icon + ft + ' Q' + (qi + 1) + ': ' + qText + ' \u2192 Picked: ' + q.final_answer;
-                        if (!q.is_correct) html += ' (Answer: ' + q.correct_answer + ')';
+
+                // Detail (hidden by default)
+                html += '<div id="wsDetail'+wi+'" style="display:none;padding:10px 12px;background:white">';
+                if (ws.answers && ws.answers.length > 0) {
+                    ws.answers.forEach((a, qi) => {
+                        const icon = a.correct ? '✅' : (a.answer === 'skip' || a.answer === 'skipped' ? '⏭️' : '❌');
+                        const ftIcon = a.firstTry ? '⭐' : '';
+                        html += '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px">';
+                        html += '<div>'+icon+' ' +ftIcon+' <b>Q'+(qi+1)+':</b> ';
+
+                        // Show question
+                        if (a.q) html += '<span style="color:#555">'+a.q+'</span>';
                         html += '</div>';
-                    }
-                });
+
+                        // Show details
+                        html += '<div style="margin-left:24px;color:#888;font-size:12px">';
+                        if (a.choices) html += 'Choices: '+a.choices.join(', ')+' · ';
+                        if (a.type) html += 'Type: '+a.type+' · ';
+                        if (a.level) html += 'Level: '+a.level+' · ';
+                        html += 'Picked: <b style="color:'+(a.correct?'#22c55e':'#ef4444')+'">'+a.answer+'</b>';
+                        if (a.correctAnswer) html += ' · Answer: <b style="color:#22c55e">'+a.correctAnswer+'</b>';
+                        html += '</div></div>';
+                    });
+                } else {
+                    html += '<p style="color:#999;font-size:13px">No detailed answer data.</p>';
+                }
                 html += '</div></div>';
             });
         }
 
-        html += '<button class="btn green" style="margin-top:15px" onclick="copyDay()">\uD83D\uDCCB Copy This Day</button>';
-        html += '<div style="text-align:center;margin:10px"><span style="color:#aaa;cursor:pointer;text-decoration:underline" onclick="copyAllProgress()">\uD83D\uDCCB Copy All Days</span></div>';
+        html += '<button class="btn green" onclick="copyDayProgress()">📋 Copy This Day</button>';
+        html += '<button class="btn" onclick="copyAllProgress()">📋 Copy All Days</button>';
         html += '</div>';
-        app.innerHTML = html;
+        document.getElementById('app').innerHTML = html;
     }
 
     window.switchDay = (d) => { activeDay = d; renderProgress(); };
-    window.toggleDetail = (sid) => {
-        const el = document.getElementById('detail_' + sid);
-        if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+
+    window.toggleWS = (i) => {
+        const el = document.getElementById('wsDetail'+i);
+        const arrow = document.getElementById('arrow'+i);
+        if (el.style.display === 'none') { el.style.display = 'block'; arrow.textContent = '▼'; }
+        else { el.style.display = 'none'; arrow.textContent = '▶'; }
     };
 
-    window.copyDay = () => {
-        let text = '\uD83D\uDCC5 ' + activeDay + '\n';
-        const day = days[activeDay];
-        Object.keys(day.skills).forEach(sid => {
-            const s = day.skills[sid];
-            text += '  \uD83D\uDCDD ' + formatSkillName(sid) + ' \u2014 ' + s.correct + '/' + s.total + ' (\u2B50' + s.firstTry + ' first-try)\n';
-            s.questions.forEach((q, qi) => {
-                const icon = q.is_correct ? '\u2705' : '\u274C';
-                const ft = (q.is_first_try && q.is_correct) ? '\u2B50' : '  ';
-                const qText = formatQuestion(sid, q.question_data);
-                if (q.correct_answer === 'seen') {
-                    text += '    ' + icon + ft + ' Q' + (qi + 1) + ': ' + qText + '\n';
-                } else {
-                    text += '    ' + icon + ft + ' Q' + (qi + 1) + ': ' + qText + ' \u2192 Picked: ' + q.final_answer;
-                    if (!q.is_correct) text += ' (Answer: ' + q.correct_answer + ')';
-                    text += '\n';
-                }
+    window.copyDayProgress = () => {
+        const data = JSON.parse(localStorage.getItem('daily_'+activeDay) || '[]');
+        let text = '📅 '+activeDay+'\n\n';
+        data.forEach((ws, wi) => {
+            const t = ws.time ? new Date(ws.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+            const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
+            text += '📝 '+ws.type+' — '+ws.score+' (⭐'+firstTry+' first-try) '+t+'\n';
+            (ws.answers||[]).forEach((a, qi) => {
+                const icon = a.correct ? '✅' : (a.answer === 'skip' || a.answer === 'skipped' ? '⏭️' : '❌');
+                const ft = a.firstTry ? '⭐' : '  ';
+                text += '  '+icon+ft+' Q'+(qi+1)+': '+(a.q||'')+ ' → Picked: '+a.answer;
+                if (a.correctAnswer) text += ' (Answer: '+a.correctAnswer+')';
+                text += '\n';
             });
             text += '\n';
         });
-        navigator.clipboard.writeText(text).then(() => alert('Copied ' + activeDay + '!'));
+        navigator.clipboard.writeText(text).then(() => alert('Copied '+activeDay+'!'));
     };
 
     window.copyAllProgress = () => {
         let text = '';
-        dayKeys.forEach(d => {
-            text += '\uD83D\uDCC5 ' + d + '\n';
-            const day = days[d];
-            Object.keys(day.skills).forEach(sid => {
-                const s = day.skills[sid];
-                text += '  \uD83D\uDCDD ' + formatSkillName(sid) + ' \u2014 ' + s.correct + '/' + s.total + ' (\u2B50' + s.firstTry + ' first-try)\n';
-                s.questions.forEach((q, qi) => {
-                    const icon = q.is_correct ? '\u2705' : '\u274C';
-                    const ft = (q.is_first_try && q.is_correct) ? '\u2B50' : '  ';
-                    const qText = formatQuestion(sid, q.question_data);
-                    if (q.correct_answer === 'seen') {
-                        text += '    ' + icon + ft + ' Q' + (qi + 1) + ': ' + qText + '\n';
-                    } else {
-                        text += '    ' + icon + ft + ' Q' + (qi + 1) + ': ' + qText + ' \u2192 Picked: ' + q.final_answer;
-                        if (!q.is_correct) text += ' (Answer: ' + q.correct_answer + ')';
-                        text += '\n';
-                    }
-                });
-                text += '\n';
+        days.forEach(d => {
+            const data = JSON.parse(localStorage.getItem('daily_'+d) || '[]');
+            text += '📅 '+d+'\n';
+            data.forEach(ws => {
+                const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
+                text += '  📝 '+ws.type+' — '+ws.score+' (⭐'+firstTry+' first-try)\n';
             });
+            text += '\n';
         });
         navigator.clipboard.writeText(text).then(() => alert('Copied all days!'));
     };
 
     renderProgress();
 }
+
 // ============ ADAPTIVE QUEUE BRAIN ============
 
 // Skill ID → [functionName, displayName] mapping
