@@ -116,7 +116,7 @@ async function startWeekendChallenge() {
 // ============ QUESTION GENERATORS ============
 
 function makeAssessmentQs(skillId, count) {
-    const focus = getFocusNumber(skillId);
+    const focus = getDifficultyLevel(skillId);
     const qs = [];
 
     function randWrongs(correct, n, min) {
