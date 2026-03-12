@@ -1,7 +1,7 @@
 // ============ TRACE NUMBERS ============
 function showTraceNumbers() {
     const numbers = [];
-    for (let i = 1; i <= getFocusNumber('trace_numbers'); i++) numbers.push(String(i));
+    for (let i = 1; i <= getQuestionCount('trace_numbers'); i++) numbers.push(String(i));
     let current = 0;
     const saved = {};
 
