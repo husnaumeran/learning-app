@@ -2,7 +2,7 @@
 function showUrduWhatNext() {
     const letters = URDU_LETTERS;
     const problems = [];
-    for (let i = 0; i < getFocusNumber('urdu_what_next') && i < letters.length - 4; i++) {
+    for (let i = 0; i < getQuestionCount('urdu_what_next') && i < letters.length - 4; i++) {
         const start = Math.floor(Math.random() * (letters.length - 4));
         const seq = letters.slice(start, start+3);
         const ans = letters[start+3];
