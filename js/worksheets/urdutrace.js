@@ -1,6 +1,6 @@
 // ============ URDU TRACE ============
 function showUrduTrace() {
-    const letters = URDU_LETTERS.slice(0, getFocusNumber('urdu_trace'));
+    const letters = URDU_LETTERS.slice(0, getQuestionCount('urdu_trace'));
     let current = 0, harakatMode = 0; // 0=fatha, 1=kasra, 2=damma
     const saved = {};
     const harakatNames = ['زَبَر (Fatha)', 'زِیر (Kasra)', 'پِیش (Damma)'];
