@@ -1,12 +1,12 @@
 // ============  What Comes Next ============
 function showWhatNext() {
-    const focus = getFocusNumber('what_comes_next_numbers');
+    const difficulty = getDifficultyLevel('what_comes_next_numbers');
     const problems = [
         [[1,2,3,4], 5],
         [[2,4,6,8], 10],
         [['A','B','C','D'], 'E'],
-        [[focus-4,focus-3,focus-2,focus-1], focus],
-        [[focus,focus-1,focus-2,focus-3], focus-4]
+        [[difficulty-4,difficulty-3,difficulty-2,difficulty-1], difficulty],
+        [[difficulty,difficulty-1,difficulty-2,difficulty-3], difficulty-4]
     ];
     let current = 0, score = 0;
     let questionStartMs = null;
