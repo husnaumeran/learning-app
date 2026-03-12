@@ -1,6 +1,6 @@
 // ============ MORE/LESS ============
 function showMoreLess() {
-    const questions = generateMoreLessProblems(getFocusNumber('more_less'));
+    const questions = generateMoreLessProblems(getDifficultyLevel('more_less'), getQuestionCount('more_less'));
     let current = 0, score = 0;
     let questionStartMs = null;
 
