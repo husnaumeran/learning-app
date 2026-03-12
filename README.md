@@ -27,7 +27,7 @@ An interactive learning app for preschool/kindergarten children (ages 3-5), buil
 
 ### 🧠 Thinking
 - **Color Patterns** — Multi-type patterns (colors, emojis, numbers, letters) with 12 templates
-- **Color Patterns L2** — ABB, AABB, ABBC patterns (next color + fill-the-blank)
+- **Color Patterns L2** — ABB, AABB, ABBC patterns — tap "?" → palette pops up → tap color → wrong greys out → correct auto-advances
 - **Doesn't Belong** — Find the odd one out
 - **Find Pairs** — Memory matching game
 - **Connect Dots** — Connect numbered dots
@@ -51,23 +51,29 @@ An interactive learning app for preschool/kindergarten children (ages 3-5), buil
 
 ## How It Works
 
-- **"Let's Start 🚀"** — Picks 1 per section first (guarantees coverage), then fills to limit from remaining
-- **Focus Number** — Controls difficulty across ALL worksheets (start low 3-5, increase over time)
+- **"Let's Start 🚀"** — Builds an adaptive queue: 1 per section first (guarantees coverage), then fills to limit weighted by weak areas
+- **"Continue ▶️"** — Resumes an in-progress session (queue persisted to Supabase for cross-device support)
+- **Stale sessions** — Unfinished sessions from a previous day show "Resume / Start Fresh" choice
+- **Three-Variable Adaptive Model** — `difficulty_level` (progression), `practice_question_count` (daily stamina), `challenge_question_count` (weekend evaluation)
 - **Worksheet Limit** — Set max worksheets per day to avoid screen fatigue
 - **Locked worksheets 🔒** — Kids can't open individual worksheets; parents hold 3s to unlock
 - **Leveled worksheets** — Figure Matrices (8 levels), Verbal Analogies (6 levels), Numbers (4 levels each) — auto-unlock via mastery (80% × 3 sessions)
 - **Kid-proof unlock** — min 5 questions answered, ≤25% skip rate, 80% × 3 qualifying sessions
 - **Qaida progression** — 5 completions (different days) to unlock next level; parent 3s hold to override
+- **Wrong-answer feedback** — incorrect answers show feedback, allow retry; retries don't inflate progress counts
 - **Completion screen** — Shows score + "Continue →" or "← Menu"
-- **Progress tracking** — Saved per day in localStorage
+- **Progress tracking** — Saved per day (localStorage cache + Supabase source of truth)
 - **Responsive design** — Works on phones, tablets, laptops, and TVs
 
 ## Technical Details
 
 - **Separate JS files** — modular, easy to maintain
-- **CONFIG object** — `focusNumber` controls difficulty everywhere
+- **Supabase backend** — PostgreSQL for sessions, responses, skill stats, spaced repetition queue, worksheet completions
+- **Adaptive engine** — auto-adjusts difficulty based on accuracy; spaced repetition for wrong answers
+- **Session persistence** — `queue_json` + `queue_index` on sessions table; resume across devices
+- **CONFIG object** — per-skill `difficulty_level`, `practice_question_count`, `challenge_question_count`
 - **Google Translate TTS** — Arabic + Urdu pronunciation with Web Speech API fallback
-- **No dependencies** — pure HTML/CSS/JS, hosted on GitHub Pages
+- **No framework dependencies** — pure HTML/CSS/JS, hosted on GitHub Pages
 - **Responsive CSS** — `clamp()` font sizes, media queries for phone → TV
 - **SVG shapes** — Figure Matrices uses programmatic SVG (no image files)
 
@@ -78,8 +84,11 @@ learning-app/
 ├── css/styles.css
 ├── js/
 │   ├── config.js          (CONFIG, categories, URDU_LETTERS, ARABIC_LETTERS, words)
-│   ├── helpers.js         (generators, setupCanvas, speak, speakUrdu, speakArabic)
-│   ├── menu.js            (showMenu, startDaily, nextWorksheet, howToUse, limits)
+│   ├── helpers.js         (generators, setupCanvas, speak, speakUrdu, speakArabic, recordResponse, completeWorksheet)
+│   ├── menu.js            (showMenu, startDaily, nextWorksheet, resumeSession, buildAdaptiveQueue, progress view)
+│   ├── auth.js            (Supabase auth, child profile selector)
+│   ├── parent.js          (parent dashboard, analytics)
+│   ├── assessment.js      (weekend challenge mode)
 │   └── worksheets/
 │       ├── addition.js, subtraction.js, biggersmaller.js
 │       ├── colors.js, colorsl2.js, connectdots.js
