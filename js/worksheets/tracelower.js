@@ -1,6 +1,6 @@
 // ============ TRACE LOWERCASE ============
 function showTraceLower() {
-    const letters = 'abcdefghijklmnopqrstuvwxyz'.slice(0, getFocusNumber('trace_lower')).split('');
+    const letters = 'abcdefghijklmnopqrstuvwxyz'.slice(0, getQuestionCount('trace_lower')).split('');
     let current = 0;
     const saved = {};
 
