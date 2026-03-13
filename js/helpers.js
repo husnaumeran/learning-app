@@ -564,6 +564,19 @@ function completeWorksheet(type, score, total) {
     localStorage.setItem('daily_'+today, JSON.stringify(progress));
     currentAnswers = [];
 
+    // Advance queue index now that worksheet is complete
+    if (typeof queueIndex !== 'undefined') {
+        queueIndex++;
+        if (CONFIG.sessionId && typeof sb !== 'undefined') {
+            sb.from('sessions').update({
+                queue_index: queueIndex,
+                last_activity_at: new Date().toISOString()
+            }).eq('id', CONFIG.sessionId).then(({ error }) => {
+                if (error) console.error('Update queue_index failed:', error);
+            });
+        }
+    }
+
     // Record to Supabase (source of truth)
     const skillId = resolveSkillId(type);
     if (CONFIG.sessionId && CONFIG.childId && typeof sb !== 'undefined') {
