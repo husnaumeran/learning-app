@@ -211,9 +211,10 @@ function nextWorksheet() {
         if (CONFIG.sessionId) {
             sb.from('sessions').update({
                 queue_index: queueIndex,
+                progress_json: todayProgress,
                 last_activity_at: new Date().toISOString()
             }).eq('id', CONFIG.sessionId).then(({ error }) => {
-                if (error) console.error('Final queue_index update failed:', error);
+                if (error) console.error('Final session update failed:', error);
             });
         }
         showMenu();
@@ -283,17 +284,43 @@ function showHowToUse() {
     document.getElementById('app').innerHTML = html;
 }
 
-function showExport() {
-    // Gather all days
-    const days = [];
+async function showExport() {
+    // Gather days from localStorage
+    const localDays = new Set();
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith('daily_')) days.push(key.replace('daily_', ''));
+        if (key.startsWith('daily_')) localDays.add(key.replace('daily_', ''));
     }
-    days.sort().reverse();
+
+    // Fetch completed sessions with progress_json from Supabase
+    const remoteDays = {};
+    if (CONFIG.childId) {
+        const { data } = await sb.from('sessions')
+            .select('started_at, progress_json')
+            .eq('child_id', CONFIG.childId)
+            .not('progress_json', 'is', null)
+            .order('started_at', { ascending: false })
+            .limit(30);
+        if (data) {
+            for (const s of data) {
+                const day = s.started_at.split('T')[0];
+                if (!localDays.has(day) && s.progress_json && s.progress_json.length > 0) {
+                    remoteDays[day] = s.progress_json;
+                }
+            }
+        }
+    }
+
+    const days = [...new Set([...localDays, ...Object.keys(remoteDays)])].sort().reverse();
     const today = getToday();
 
     let activeDay = today;
+
+    function getDayData(day) {
+        const local = JSON.parse(localStorage.getItem('daily_'+day) || '[]');
+        if (local.length > 0) return local;
+        return remoteDays[day] || [];
+    }
 
     function renderProgress() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">📊 Progress</div>';
@@ -308,11 +335,11 @@ function showExport() {
         html += '</div>';
 
         // Day content
-        const data = JSON.parse(localStorage.getItem('daily_'+activeDay) || '[]');
+        const data = getDayData(activeDay);
         if (data.length === 0) {
             html += '<p style="text-align:center;color:#999">No worksheets completed this day.</p>';
         } else {
-            const totalQs = data.reduce((sum, ws) => sum + (ws.answers||[]).length, 0);
+const totalQs = data.reduce((sum, ws) => sum + (ws.answers||[]).length, 0);
             html += '<div style="background:#f0f4f8;padding:10px;border-radius:8px;margin-bottom:12px;text-align:center;color:#333">';
             html += '<b>'+data.length+'</b> worksheets · <b>'+totalQs+'</b> questions';
             html += '</div>';
@@ -372,7 +399,7 @@ function showExport() {
     };
 
     window.copyDayProgress = () => {
-        const data = JSON.parse(localStorage.getItem('daily_'+activeDay) || '[]');
+        const data = getDayData(activeDay);
         let text = '📅 '+activeDay+'\n\n';
         data.forEach((ws, wi) => {
             const t = ws.time ? new Date(ws.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
@@ -393,7 +420,7 @@ function showExport() {
     window.copyAllProgress = () => {
         let text = '';
         days.forEach(d => {
-            const data = JSON.parse(localStorage.getItem('daily_'+d) || '[]');
+            const data = getDayData(d);
             text += '📅 '+d+'\n';
             data.forEach(ws => {
                 const firstTry = (ws.answers||[]).filter(a => a.firstTry).length;
