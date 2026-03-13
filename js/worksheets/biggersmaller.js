@@ -1,13 +1,18 @@
 // ============ Bigger/Smaller ============
 function showBiggerSmaller() {
-    const difficulty = getDifficultyLevel('bigger_smaller');
-    const qCount = getQuestionCount('bigger_smaller');
-    const problems = [];
-    for (let i = 0; i < qCount; i++) {
-        let other;
-        do { other = Math.floor(Math.random() * difficulty) + 1; } while (other === difficulty);
-        const askBigger = Math.random() > 0.5;
-        problems.push([difficulty, other, askBigger ? 'BIGGER' : 'SMALLER']);
+    const focus = getFocusNumber('bigger_smaller');
+const problems = [];
+    const used = new Set();
+    for (let i = 0; i < focus; i++) {
+        let other, askBigger, key, attempts = 0;
+        do {
+            do { other = Math.floor(Math.random() * focus) + 1; } while (other === focus);
+            askBigger = Math.random() > 0.5;
+            key = (askBigger ? 'bigger:' : 'smaller:') + Math.min(focus, other) + ',' + Math.max(focus, other);
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
+        problems.push([focus, other, askBigger ? 'BIGGER' : 'SMALLER']);
     }
     problems.sort(() => Math.random() - 0.5);
     let current = 0, score = 0;
@@ -28,34 +33,15 @@ function showBiggerSmaller() {
         questionStartMs = Date.now();
     }
 
-    window.pickSize = async (choice, left, right, type) => {
+    window.pickSize = (choice, left, right, type) => {
         const responseTimeMs = Date.now() - questionStartMs;
         const correct = type === 'BIGGER' ? (choice === 'left' ? left > right : right > left) : (choice === 'left' ? left < right : right < left);
         const correctAnswer = type === 'BIGGER' ? (left > right ? 'left' : 'right') : (left < right ? 'left' : 'right');
         currentAnswers.push({q: type+': '+left+' vs '+right, answer: choice, correct: correct});
 
-        // Disable both buttons immediately
-        const btns = document.querySelectorAll('.card button');
-        btns.forEach(b => { b.onclick = null; b.style.pointerEvents = 'none'; });
-
-        // Highlight correct/wrong
-        const leftBtn = btns[0], rightBtn = btns[1];
-        if (correctAnswer === 'left') { leftBtn.style.background = '#22c55e'; rightBtn.style.background = '#ef4444'; }
-        else { rightBtn.style.background = '#22c55e'; leftBtn.style.background = '#ef4444'; }
-
         recordResponse('bigger_smaller', {type:'bigger_smaller', left, right, question_type:type}, correctAnswer, choice, correct, true, 1, responseTimeMs, current);
 
-        if (correct) {
-            score++;
-            showFeedback(true, () => { current++; render(); });
-        } else {
-            const correctVal = correctAnswer === 'left' ? left : right;
-            const explanation = correctVal + ' is ' + type + ' than ' + (correctAnswer === 'left' ? right : left);
-            const title = document.querySelector('.title');
-            if (title) { title.innerHTML = '❌ ' + explanation; title.style.color = '#ef4444'; }
-            await speak(explanation);
-            current++; render();
-        }
+        showFeedback(correct, () => { if(correct) score++; current++; render(); });
     };
     render();
 }
