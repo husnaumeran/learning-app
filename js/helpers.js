@@ -87,6 +87,22 @@ function getFocusNumber(skillId) {
     return Math.max(val, floor);
 }
 
+
+function getDifficultyLevel(skillId) {
+    if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
+        return CONFIG.skillSettings[skillId].difficulty_level ?? 1;
+    }
+    return 1;
+}
+
+function getQuestionCount(skillId, mode) {
+    const key = mode === 'challenge' ? 'challenge_question_count' : 'practice_question_count';
+    const fallback = mode === 'challenge' ? 5 : 1;
+    if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
+        return CONFIG.skillSettings[skillId][key] ?? fallback;
+    }
+    return fallback;
+}
 // ============ AUTO FOCUS ADJUSTMENT ============
 async function adjustFocusNumbers(slices) {
     if (!slices || !slices.length || !CONFIG.childId) return;
@@ -109,6 +125,7 @@ async function adjustFocusNumbers(slices) {
         let streakUp = settings.streak_up;
         let streakDown = settings.streak_down;
         let diffLevel = settings.difficulty_level || settings.focus_number || 1;
+        let practiceCount = settings.practice_question_count || 1;
         let changed = false;
 
         if (accuracy >= 0.90) {
@@ -116,9 +133,10 @@ async function adjustFocusNumbers(slices) {
             streakDown = 0;
             if (streakUp >= 3) {
                 diffLevel = Math.min(diffLevel + 1, 50);
+                practiceCount = Math.min(practiceCount + 1, 7);
                 streakUp = 0;
                 changed = true;
-                console.log('📈 ' + skillId + ' difficulty_level → ' + diffLevel);
+                console.log('📈 ' + skillId + ' difficulty_level → ' + diffLevel + ', practice_count → ' + practiceCount);
             }
         } else if (accuracy < 0.60) {
             streakDown++;
@@ -142,6 +160,7 @@ async function adjustFocusNumbers(slices) {
                 child_id: CONFIG.childId,
                 skill_id: skillId,
                 difficulty_level: diffLevel,
+                practice_question_count: practiceCount,
                 streak_up: streakUp,
                 streak_down: streakDown
             }, { onConflict: 'child_id,skill_id' });
