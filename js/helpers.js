@@ -79,7 +79,7 @@ function getQuestionCount(skillId, sessionType) {
 function getFocusNumber(skillId) {
     let val;
     if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
-        val = CONFIG.skillSettings[skillId].focus_number;
+        val = CONFIG.skillSettings[skillId].difficulty_level ?? CONFIG.skillSettings[skillId].focus_number;
     } else {
         val = CONFIG.focusNumber;
     }
