@@ -170,6 +170,8 @@ async function adjustFocusNumbers(slices) {
         // Update local cache
         CONFIG.skillSettings[skillId] = {
             difficulty_level: diffLevel,
+            practice_question_count: practiceCount,
+            challenge_question_count: settings.challenge_question_count || 5,
             streak_up: streakUp,
             streak_down: streakDown
         };
