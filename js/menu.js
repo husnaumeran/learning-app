@@ -221,15 +221,6 @@ function nextWorksheet() {
         return;
     }
     const [fn, type] = worksheetQueue[queueIndex];
-    queueIndex++;
-    if (CONFIG.sessionId) {
-        sb.from('sessions').update({
-            queue_index: queueIndex,
-            last_activity_at: new Date().toISOString()
-        }).eq('id', CONFIG.sessionId).then(({ error }) => {
-            if (error) console.error('Update queue_index failed:', error);
-        });
-    }
     window[fn]();
 }
 
