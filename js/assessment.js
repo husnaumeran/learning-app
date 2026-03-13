@@ -40,7 +40,8 @@ async function resumeWeekendChallenge() {
         .select('id')
         .eq('session_id', CONFIG.sessionId);
     const answered = (existing || []).length;
-    const remaining = Math.max(0, 10 - answered);
+    const totalExpected = skills.reduce((sum, s) => sum + getQuestionCount(s, 'challenge'), 0);
+    const remaining = Math.max(0, totalExpected - answered);
 
     if (remaining === 0) {
         // All questions done, just finalize
@@ -101,13 +102,13 @@ async function startWeekendChallenge() {
     if (error) { console.error('Weekend session failed:', error); return; }
     CONFIG.sessionId = session.id;
 
-    // 3. Generate 10 questions distributed across skills
+    // 3. Generate questions — each skill gets its own challenge_question_count
     const questions = [];
-    const perSkill = Math.max(2, Math.ceil(10 / skills.length));
     for (const skill of skills) {
-        questions.push(...makeAssessmentQs(skill, perSkill));
+        const count = getQuestionCount(skill, 'challenge');
+        questions.push(...makeAssessmentQs(skill, count));
     }
-    const finalQs = questions.sort(() => Math.random() - 0.5).slice(0, 10);
+    const finalQs = questions.sort(() => Math.random() - 0.5);
 
     // 4. Run
     runAssessment(finalQs);
