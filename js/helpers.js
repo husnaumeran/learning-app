@@ -161,22 +161,34 @@ async function adjustFocusNumbers(slices) {
 
 // ============ HELPER FUNCTIONS ============
 function generateAdditionProblems(difficulty, count) {
-    // Migration: if called with one arg, use it for both (legacy)
     if (count == null) { count = difficulty; }
     const problems = [];
+    const used = new Set();
     const numProblems = count;
     const numFocusTarget = Math.max(1, Math.ceil(numProblems / 3));
 
     // ~1/3 problems sum to difficulty
     for (let i = 0; i < numFocusTarget; i++) {
-        const a = Math.floor(Math.random() * (difficulty + 1));
+        let a, key, attempts = 0;
+        do {
+            a = Math.floor(Math.random() * (difficulty + 1));
+            key = Math.min(a, difficulty - a) + '+' + Math.max(a, difficulty - a);
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
         problems.push([a, difficulty - a, difficulty]);
     }
 
     // ~2/3 problems sum to random numbers 1..difficulty
     for (let i = numFocusTarget; i < numProblems; i++) {
-        const target = Math.floor(Math.random() * difficulty) + 1;
-        const a = Math.floor(Math.random() * (target + 1));
+        let target, a, key, attempts = 0;
+        do {
+            target = Math.floor(Math.random() * difficulty) + 1;
+            a = Math.floor(Math.random() * (target + 1));
+            key = Math.min(a, target - a) + '+' + Math.max(a, target - a);
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
         problems.push([a, target - a, target]);
     }
 
@@ -187,6 +199,7 @@ function generateAdditionProblems(difficulty, count) {
 function generateSubtractionProblems(difficulty, count) {
     if (count == null) { count = difficulty; }
     const problems = [];
+    const used = new Set();
     const numProblems = count;
     const focusNum = difficulty;
     const numFocusAnswer = Math.max(1, Math.ceil(numProblems / 3));
@@ -199,14 +212,26 @@ function generateSubtractionProblems(difficulty, count) {
 
     // Some problems where answer = focusNumber
     for (let i = 0; i < numFocusAnswer; i++) {
-        const b = Math.floor(Math.random() * Math.min(focusNum, 3)) + 1;
+        let b, key, attempts = 0;
+        do {
+            b = Math.floor(Math.random() * Math.min(focusNum, 3)) + 1;
+            key = (focusNum + b) + '-' + b;
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
         problems.push({a: focusNum + b, b: b, ans: focusNum, mode: i % 2 === 0 ? 'visual' : 'equation', emoji: pickEmoji()});
     }
 
     // Rest are random easier subtractions (a <= focusNum)
     for (let i = numFocusAnswer; i < numProblems; i++) {
-        const a = Math.floor(Math.random() * (focusNum - 1)) + 2;
-        const b = Math.floor(Math.random() * (a - 1)) + 1;
+        let a, b, key, attempts = 0;
+        do {
+            a = Math.floor(Math.random() * (focusNum - 1)) + 2;
+            b = Math.floor(Math.random() * (a - 1)) + 1;
+            key = a + '-' + b;
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
         const ans = a - b;
         problems.push({a: ans + b, b: b, ans: ans, mode: i % 2 === 0 ? 'visual' : 'equation', emoji: pickEmoji()});
     }
@@ -223,10 +248,17 @@ function generateCountingProblems(difficulty, count) {
     if (count == null) { count = difficulty; }
     const catNames = Object.keys(CONFIG.categories);
     const problems = [];
+    const used = new Set();
     for (let i = 0; i < count; i++) {
+        let num, key, attempts = 0;
+        do {
+            num = Math.floor(Math.random() * difficulty) + 1;
+            key = 'count:' + num;
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
         const cat = catNames[Math.floor(Math.random() * catNames.length)];
         const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
-        const num = Math.floor(Math.random() * difficulty) + 1;
         problems.push([num, emoji.repeat(num)]);
     }
     return problems;
@@ -251,14 +283,20 @@ function generateMoreLessProblems(difficulty, count) {
     if (count == null) { count = difficulty; }
     const focusNum = difficulty;
     const problems = [];
+    const used = new Set();
     const catNames = Object.keys(CONFIG.categories);
     const cat = catNames[Math.floor(Math.random() * catNames.length)];
     const emoji = CONFIG.categories[cat][Math.floor(Math.random() * CONFIG.categories[cat].length)];
 
     for (let i = 0; i < count; i++) {
-        let n;
-        do { n = Math.floor(Math.random() * focusNum) + 1; } while (n === focusNum);
-        const askMore = Math.random() > 0.5;
+        let n, askMore, key, attempts = 0;
+        do {
+            do { n = Math.floor(Math.random() * focusNum) + 1; } while (n === focusNum);
+            askMore = Math.random() > 0.5;
+            key = (askMore ? 'more:' : 'less:') + Math.min(focusNum, n) + ',' + Math.max(focusNum, n);
+            attempts++;
+        } while (used.has(key) && attempts < 20);
+        used.add(key);
         const focusEmojis = emoji.repeat(focusNum);
         const otherEmojis = emoji.repeat(n);
         if (Math.random() > 0.5) {
@@ -271,7 +309,6 @@ function generateMoreLessProblems(difficulty, count) {
     }
     return problems.sort(() => Math.random() - 0.5);
 }
-
 
 function generateColorPatternsL2(focusNum) {
     const c = Object.keys(CONFIG.colors);
