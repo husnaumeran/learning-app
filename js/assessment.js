@@ -1,3 +1,42 @@
+// ============ ASSESSMENT SKILL REGISTRY ============
+// type: 'text' = standard choices, 'visual' = needs SVG/canvas, 'audio' = needs TTS
+// enabled: only enabled skills are included in the weekend challenge
+const ASSESSMENT_SKILLS = {
+    addition:                 { type: 'text',   enabled: true },
+    subtraction:              { type: 'text',   enabled: true },
+    counting:                 { type: 'text',   enabled: true },
+    more_less:                { type: 'text',   enabled: true },
+    bigger_smaller:           { type: 'text',   enabled: true },
+    which_doesnt_belong:      { type: 'text',   enabled: true },
+    what_comes_next_numbers:  { type: 'text',   enabled: true },
+    color_patterns:           { type: 'text',   enabled: true },
+    color_patterns_l2:        { type: 'text',   enabled: true },
+    verbal_analogies:         { type: 'text',   enabled: true },
+    figure_matrices:          { type: 'visual', enabled: false },
+    numbers_english:          { type: 'audio',  enabled: false },
+    numbers_urdu:             { type: 'audio',  enabled: false },
+    numbers_arabic:           { type: 'audio',  enabled: false },
+    urdu_qaida:               { type: 'audio',  enabled: false },
+    arabic_qaida:             { type: 'audio',  enabled: false },
+};
+
+// Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
+const VA_ASSESS_LEVELS = [
+    null,
+    { name:'Opposites', conn:' means ',
+      pairs:[{a:'big',b:'small'},{a:'hot',b:'cold'},{a:'up',b:'down'},{a:'happy',b:'sad'},{a:'fast',b:'slow'},{a:'day',b:'night'},{a:'open',b:'close'},{a:'loud',b:'quiet'},{a:'go',b:'stop'},{a:'wet',b:'dry'},{a:'full',b:'empty'},{a:'in',b:'out'}] },
+    { name:'Function', conn:' is for ',
+      pairs:[{a:'pen',b:'write'},{a:'scissors',b:'cut'},{a:'oven',b:'cook'},{a:'broom',b:'sweep'},{a:'phone',b:'call'},{a:'camera',b:'photo'},{a:'toothbrush',b:'brush'},{a:'key',b:'unlock'},{a:'crayon',b:'color'},{a:'drum',b:'beat'},{a:'soap',b:'wash'},{a:'bell',b:'ring'}] },
+    { name:'Associations', conn:' → ',
+      pairs:[{a:'rain',b:'umbrella'},{a:'cold',b:'coat'},{a:'night',b:'moon'},{a:'bee',b:'honey'},{a:'teacher',b:'school'},{a:'doctor',b:'hospital'},{a:'baby',b:'bottle'},{a:'fish',b:'water'},{a:'bird',b:'nest'},{a:'snow',b:'snowman'},{a:'sun',b:'sunglasses'},{a:'dog',b:'bone'}] },
+    { name:'Relational', conn:' → ',
+      pairs:[{a:'kitten',b:'cat'},{a:'puppy',b:'dog'},{a:'baby',b:'adult'},{a:'cub',b:'bear'},{a:'chick',b:'chicken'},{a:'lamb',b:'sheep'},{a:'foal',b:'horse'},{a:'calf',b:'cow'},{a:'duckling',b:'duck'},{a:'caterpillar',b:'butterfly'},{a:'piglet',b:'pig'},{a:'seed',b:'flower'}] },
+    { name:'Categories', conn:' → ',
+      pairs:[{a:'dog',b:'animal'},{a:'apple',b:'fruit'},{a:'car',b:'vehicle'},{a:'shirt',b:'clothing'},{a:'chair',b:'furniture'},{a:'banana',b:'fruit'},{a:'cat',b:'animal'},{a:'shoe',b:'clothing'},{a:'carrot',b:'vegetable'},{a:'truck',b:'vehicle'},{a:'bed',b:'furniture'},{a:'orange',b:'fruit'}] },
+    { name:'Parts', conn:' → ',
+      pairs:[{a:'wheel',b:'car'},{a:'page',b:'book'},{a:'petal',b:'flower'},{a:'branch',b:'tree'},{a:'door',b:'house'},{a:'feather',b:'bird'},{a:'button',b:'shirt'},{a:'window',b:'house'},{a:'leaf',b:'tree'},{a:'candle',b:'cake'},{a:'seed',b:'plant'},{a:'roof',b:'building'}] },
+];
+
 // ============ WEEKEND ASSESSMENT ============
 
 function getWeekStartISO() {
@@ -78,13 +117,10 @@ async function startWeekendChallenge() {
         if (r.skill_id) counts[r.skill_id] = (counts[r.skill_id] || 0) + 1;
     });
 
-    // Filter to skills we can generate assessment questions for
-    const supported = ['addition','subtraction','counting','more_less','bigger_smaller',
-        'which_doesnt_belong','what_comes_next_numbers'];
+    // Filter to enabled evaluable skills only (no cap — all practiced skills included)
     let skills = Object.entries(counts)
-        .filter(([id]) => supported.includes(id))
+        .filter(([id]) => ASSESSMENT_SKILLS[id] && ASSESSMENT_SKILLS[id].enabled)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
         .map(e => e[0]);
 
     // Fallback if no practice this week
@@ -249,6 +285,77 @@ function makeAssessmentQs(skillId, count) {
             }
             break;
         }
+        case 'color_patterns': {
+            const probs = generateColorPatterns(count).slice(0, count);
+            for (const p of probs) {
+                const seqDisplay = p.seq.map(s => typeof s === 'string' && CONFIG.colors[s]
+                    ? '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:' + CONFIG.colors[s] + ';vertical-align:middle"></span>'
+                    : '<span>' + s + '</span>'
+                ).join(' ');
+                const ansDisplay = typeof p.ans === 'string' && CONFIG.colors[p.ans] ? p.ans : String(p.ans);
+                qs.push({
+                    skill_id: 'color_patterns',
+                    prompt_html: seqDisplay + ' <span style="font-size:28px;font-weight:bold">?</span>',
+                    prompt: 'What comes next?',
+                    choices: p.choices.map(String),
+                    correct: String(p.ans),
+                    color_choices: p.type === 'color',
+                    qdata: {type:'color_patterns', pattern_type:p.type, sequence:p.seq, correct_answer:p.ans}
+                });
+            }
+            break;
+        }
+        case 'color_patterns_l2': {
+            const probs = generateColorPatternsL2(count).slice(0, count);
+            for (const p of probs) {
+                const colorKeys = Object.keys(CONFIG.colors);
+                const seqDisplay = p.seq.map(s => {
+                    if (s === null) return '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;border:3px dashed #888;vertical-align:middle"></span>';
+                    return '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:' + CONFIG.colors[s] + ';vertical-align:middle"></span>';
+                }).join(' ');
+                const wrong = colorKeys.filter(c => c !== p.ans).sort(() => Math.random() - 0.5).slice(0, 3);
+                const choices = [p.ans, ...wrong].sort(() => Math.random() - 0.5);
+                qs.push({
+                    skill_id: 'color_patterns_l2',
+                    prompt_html: seqDisplay,
+                    prompt: p.type === 'blank' ? 'Fill the blank!' : 'What comes next?',
+                    choices: choices,
+                    correct: p.ans,
+                    color_choices: true,
+                    qdata: {type:'color_patterns_l2', pattern_label:p.label, sequence:p.seq, correct_answer:p.ans}
+                });
+            }
+            break;
+        }
+        case 'verbal_analogies': {
+            // Use child's current VA level (stored in localStorage)
+            const vaLevel = Math.min(parseInt(localStorage.getItem('va_level') || '1'), VA_ASSESS_LEVELS.length - 1);
+            const levelData = VA_ASSESS_LEVELS[vaLevel];
+            if (!levelData) break;
+            const pairs = levelData.pairs;
+            const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+            const used = new Set();
+            let attempts = 0;
+            while (qs.length < count && attempts < 200) {
+                const sh = shuffle(pairs);
+                const ex = sh[0], q = sh.find(p => p !== ex && p.b !== ex.b);
+                if (!q) { attempts++; continue; }
+                const key = ex.a + ':' + q.a;
+                if (used.has(key)) { attempts++; continue; }
+                used.add(key);
+                const wrongBs = shuffle([...new Set(pairs.filter(p => p.b !== q.b).map(p => p.b))]).slice(0, 3);
+                const choices = shuffle([q.b, ...wrongBs]);
+                qs.push({
+                    skill_id: 'verbal_analogies',
+                    prompt: ex.a + levelData.conn + ex.b + '.  ' + q.a + levelData.conn + '?',
+                    choices: choices,
+                    correct: q.b,
+                    qdata: {type:'verbal_analogies', level:vaLevel, level_name:levelData.name, example:{a:ex.a,b:ex.b}, question_a:q.a, correct_answer:q.b}
+                });
+                attempts++;
+            }
+            break;
+        }
     }
 
     return qs;
@@ -277,6 +384,11 @@ function runAssessment(questions, indexOffset) {
         html += '<div style="background:#333;border-radius:10px;height:8px;margin:10px 0">';
         html += '<div style="background:#FFD700;border-radius:10px;height:8px;width:' + (current / questions.length * 100) + '%"></div></div>';
 
+        // HTML prompt (pattern sequences with color swatches)
+        if (q.prompt_html) {
+            html += '<div style="text-align:center;font-size:28px;margin:15px 0;line-height:2">' + q.prompt_html + '</div>';
+        }
+
         // Emoji prompt (counting)
         if (q.prompt_emoji) {
             html += '<div style="text-align:center;font-size:36px;margin:15px 0">' + q.prompt_emoji + '</div>';
@@ -286,12 +398,19 @@ function runAssessment(questions, indexOffset) {
         html += '<div class="title" style="font-size:28px">' + q.prompt + '</div>';
 
         // Choices
-        const cols = q.choices.length <= 2 ? 2 : 2;
+        const cols = q.choices.length <= 2 ? 2 : (q.color_choices ? 4 : 2);
         const fontSize = q.emoji_choices ? '36px' : '28px';
         html += '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:12px;margin:20px 0">';
         q.choices.forEach((ch, i) => {
-            const label = q.choice_labels ? q.choice_labels[i] : ch;
-            html += '<div id="ach' + i + '" onclick="assessPick(' + i + ')" style="display:flex;align-items:center;justify-content:center;padding:20px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;font-size:' + fontSize + ';font-weight:bold;transition:all 0.2s;min-height:60px">' + label + '</div>';
+            if (q.color_choices && CONFIG.colors[ch]) {
+                // Color swatch choice
+                html += '<div id="ach' + i + '" onclick="assessPick(' + i + ')" style="display:flex;align-items:center;justify-content:center;padding:10px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;transition:all 0.2s;min-height:60px">';
+                html += '<span style="display:inline-block;width:44px;height:44px;border-radius:50%;background:' + CONFIG.colors[ch] + '"></span>';
+                html += '</div>';
+            } else {
+                const label = q.choice_labels ? q.choice_labels[i] : ch;
+                html += '<div id="ach' + i + '" onclick="assessPick(' + i + ')" style="display:flex;align-items:center;justify-content:center;padding:20px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;font-size:' + fontSize + ';font-weight:bold;transition:all 0.2s;min-height:60px">' + label + '</div>';
+            }
         });
         html += '</div></div>';
 
