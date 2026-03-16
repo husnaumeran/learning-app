@@ -174,7 +174,7 @@ function makeAssessmentQs(skillId, count) {
 
     switch(skillId) {
         case 'addition': {
-            const probs = generateAdditionProblems(focus).slice(0, count);
+            const probs = generateAdditionProblems(focus, count);
             for (const [a, b, sum] of probs) {
                 qs.push({
                     skill_id: 'addition',
@@ -187,7 +187,7 @@ function makeAssessmentQs(skillId, count) {
             break;
         }
         case 'subtraction': {
-            const probs = generateSubtractionProblems(focus).slice(0, count);
+            const probs = generateSubtractionProblems(focus, count);
             for (const p of probs) {
                 qs.push({
                     skill_id: 'subtraction',
@@ -200,7 +200,7 @@ function makeAssessmentQs(skillId, count) {
             break;
         }
         case 'counting': {
-            const probs = generateCountingProblems(focus).slice(0, count);
+            const probs = generateCountingProblems(focus, count);
             for (const [ans, emoji] of probs) {
                 qs.push({
                     skill_id: 'counting',
@@ -214,7 +214,7 @@ function makeAssessmentQs(skillId, count) {
             break;
         }
         case 'more_less': {
-            const probs = generateMoreLessProblems(focus).slice(0, count);
+            const probs = generateMoreLessProblems(focus, count);
             for (const [a, b, type, ans] of probs) {
                 qs.push({
                     skill_id: 'more_less',
