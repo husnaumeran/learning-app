@@ -142,8 +142,12 @@ async function startWeekendChallenge() {
     const questions = [];
     for (const skill of skills) {
         const count = getQuestionCount(skill, 'challenge');
-        questions.push(...makeAssessmentQs(skill, count));
+        const generated = makeAssessmentQs(skill, count);
+        console.log(`[CHALLENGE DEBUG] skill=${skill}, requested=${count}, generated=${generated.length}`);
+        questions.push(...generated);
     }
+    console.log(`[CHALLENGE DEBUG] Total questions: ${questions.length}, skills: ${JSON.stringify(skills)}`);
+    console.log(`[CHALLENGE DEBUG] Practiced counts: ${JSON.stringify(counts)}`);
     const finalQs = questions.sort(() => Math.random() - 0.5);
 
     // 4. Run
