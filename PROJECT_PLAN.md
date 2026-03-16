@@ -75,7 +75,14 @@ An AI-powered adaptive learning platform that starts with gifted academy prep (a
 - [ ] Smart daily queue uses spaced repetition + weak areas
 - [ ] Anti-repeat across days
 
-### 2C. Polish
+### 2C. AI Integration (NVIDIA Build)
+**Resource:** https://build.nvidia.com/models (free API endpoints available)
+
+- [ ] Better TTS — Replace Google Translate TTS hack for Urdu/Arabic with a proper TTS model
+- [ ] AI question generation — LLM-generated novel questions (verbal analogies, doesn't belong, patterns)
+- [ ] AI tutor / adaptive feedback — Real-time encouragement, hints, explanations
+
+### 2D. Polish
 - [ ] Offline mode (service worker)
 - [ ] Push notifications ("Time to practice!")
 - [ ] Animations / celebrations
