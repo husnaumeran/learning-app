@@ -1,3 +1,48 @@
+// ============ EMOJI COMPATIBILITY ============
+const _emojiCache = {};
+function canRenderEmoji(emoji) {
+    if (emoji in _emojiCache) return _emojiCache[emoji];
+    const c = document.createElement('canvas');
+    c.width = 20; c.height = 20;
+    const ctx = c.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(emoji, 0, 0);
+    const data = ctx.getImageData(0, 0, 20, 20).data;
+    let hasColor = false;
+    for (let i = 0; i < data.length; i += 4) {
+        const [r, g, b, a] = [data[i], data[i+1], data[i+2], data[i+3]];
+        if (a > 0 && (r !== g || g !== b || (r > 50 && r < 200))) { hasColor = true; break; }
+    }
+    _emojiCache[emoji] = hasColor;
+    return hasColor;
+}
+
+// Newer emoji → universally supported fallback
+const EMOJI_FALLBACKS = {
+    '🪑':'💺','🪞':'🔲','🩴':'👡','🛼':'⛸️','🩳':'👖','🪲':'🐛','🪳':'🐜',
+    '🦭':'🐟','🪸':'🐚','🦩':'🐦','🪻':'🌸','🪷':'🌸','🪛':'🔧','🪚':'🔨',
+    '🪜':'📐','🪘':'🥁','🫖':'☕','🪐':'🌍','🤫':'😶','🥤':'🍵','🧹':'🔨',
+    '🪥':'🔑','🧼':'💧','🧥':'👔','🪺':'🐦','🦴':'🍖','🧑':'👤','🪵':'🌳',
+    '🪶':'🐦','🪟':'🔲','🪴':'🌱','🛞':'⚙️','🧲':'⚙️','🥡':'🍴',
+    '🧂':'🍴','🛸':'🚀','🧦':'👟','🧣':'👒','🤗':'😊','🥰':'😍',
+};
+
+function safeEmoji(emoji, fallback) {
+    if (canRenderEmoji(emoji)) return emoji;
+    return fallback || EMOJI_FALLBACKS[emoji] || '❓';
+}
+
+// Sanitize all emoji in CONFIG.categories and any array/object data at load time
+function sanitizeEmojis() {
+    // Sanitize CONFIG.categories
+    if (CONFIG && CONFIG.categories) {
+        for (const key of Object.keys(CONFIG.categories)) {
+            CONFIG.categories[key] = CONFIG.categories[key].map(e => safeEmoji(e));
+        }
+    }
+}
+
 // ============ SUPABASE RECORDING ============
 function recordResponse(skillId, questionData, correctAnswer, finalAnswer, isCorrect, isFirstTry, attemptCount, responseTimeMs, questionIndex, isSkipped, level) {
     if (!CONFIG.sessionId || !CONFIG.childId) return;
