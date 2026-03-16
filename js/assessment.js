@@ -495,7 +495,7 @@ function finishAssessment(results, score, total) {
     let html = '<div class="card">';
     html += '<div class="title" style="color:#FFD700;font-size:28px">⭐ Weekend Challenge Complete! ⭐</div>';
     html += '<div style="text-align:center;font-size:80px;margin:10px">' + emoji + '</div>';
-    html += '<div style="text-align:center;font-size:36px;color:white;font-weight:bold">' + score + ' / ' + total + ' (' + pct + '%)</div>';
+    html += '<div style="text-align:center;font-size:36px;color:#333;font-weight:bold">' + score + ' / ' + total + ' (' + pct + '%)</div>';
     html += '<div style="text-align:center;font-size:24px;color:#FFD700;margin:10px">' + msg + '</div>';
 
     // Per-skill bars
@@ -504,7 +504,7 @@ function finishAssessment(results, score, total) {
         const skillPct = Math.round(data.correct / data.total * 100);
         const barColor = skillPct >= 80 ? '#22c55e' : skillPct >= 60 ? '#FFD700' : '#ef4444';
         const displayName = skill.replace(/_/g, ' ');
-        html += '<div style="display:flex;align-items:center;margin:8px 0;color:white;font-size:16px">';
+        html += '<div style="display:flex;align-items:center;margin:8px 0;color:#333;font-size:16px">';
         html += '<span style="min-width:130px;text-transform:capitalize">' + displayName + '</span>';
         html += '<div style="background:#333;border-radius:5px;height:12px;flex:1;margin:0 10px"><div style="background:' + barColor + ';border-radius:5px;height:12px;width:' + skillPct + '%"></div></div>';
         html += '<span>' + data.correct + '/' + data.total + '</span>';
