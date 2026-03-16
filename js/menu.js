@@ -27,7 +27,7 @@ async function showMenu() {
 
     // Weekend Challenge detection
     const dayName = new Date().toLocaleDateString('en-US', {weekday: 'long', timeZone: CONFIG.timezone || 'America/Chicago'});
-    const isWeekend = (dayName === 'Saturday' || dayName === 'Sunday');
+    const isWeekend = (dayName === 'Saturday' || dayName === 'Sunday') || true; // QA: allow any day
     if (isWeekend) {
         if (CONFIG.weekendChallengeDone) {
             html += '<div style="padding:20px;margin:10px 0;background:#1a4d1a;border:2px solid #22c55e;border-radius:15px;text-align:center">';
