@@ -1,6 +1,6 @@
 // ============ VERBAL ANALOGIES (CogAT Prep) ============
 function showVerbalAnalogies() {
-    const QUESTIONS = getQuestionCount('verbal_analogies');
+    const QUESTIONS = getFocusNumber('verbal_analogies');
     const MIN_FOR_UNLOCK = 5;
     const LEVELS = [
         null,
@@ -107,6 +107,9 @@ function showVerbalAnalogies() {
             ]
         }
     ];
+
+    // Sanitize emojis for device compatibility
+    LEVELS.forEach(lv => { if (lv && lv.pairs) lv.pairs.forEach(p => { if (p.ea) p.ea = safeEmoji(p.ea); if (p.eb) p.eb = safeEmoji(p.eb); }); });
 
     let level = parseInt(localStorage.getItem('va_level') || '1');
     const history = JSON.parse(localStorage.getItem('va_history') || '{}');
