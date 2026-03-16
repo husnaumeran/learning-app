@@ -128,6 +128,14 @@ async function startDaily() {
         return;
     }
 
+    // Archive any stale in_progress sessions before creating a new one
+    if (CONFIG.childId) {
+        await sb.from('sessions')
+            .update({ status: 'abandoned', last_activity_at: new Date().toISOString() })
+            .eq('child_id', CONFIG.childId)
+            .eq('status', 'in_progress');
+    }
+
     // Create a session in Supabase
     const { data: session, error } = await sb.from('sessions').insert({
         child_id: CONFIG.childId,
@@ -220,8 +228,11 @@ function nextWorksheet() {
         showMenu();
         return;
     }
-    const [fn, type] = worksheetQueue[queueIndex];
-    window[fn]();
+    const item = worksheetQueue[queueIndex];
+    if (!item) { console.error('Queue item missing at index', queueIndex); showMenu(); return; }
+    const [fn, type] = item;
+    if (typeof window[fn] !== 'function') { console.error('Worksheet function not found:', fn); queueIndex++; nextWorksheet(); return; }
+    try { window[fn](); } catch(e) { console.error('Worksheet crashed:', fn, e); queueIndex++; nextWorksheet(); }
 }
 
 function getToday() {
