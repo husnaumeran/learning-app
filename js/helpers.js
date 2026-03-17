@@ -261,7 +261,7 @@ async function adjustFocusNumbers(slices) {
         if (accuracy >= 0.90) {
             streakUp++;
             streakDown = 0;
-            if (streakUp >= 3) {
+            if (streakUp >= 2) {
                 diffLevel = Math.min(diffLevel + 1, 50);
                 practiceCount = Math.min(practiceCount + 1, 7);
                 streakUp = 0;
