@@ -6,7 +6,7 @@ const problems = [];
     for (let i = 0; i < focus; i++) {
         let other, askBigger, key, attempts = 0;
         do {
-            do { other = Math.floor(Math.random() * focus) + 1; } while (other === focus);
+            other = focus <= 1 ? focus + 1 + Math.floor(Math.random() * 5) : (function(){ let o; do { o = Math.floor(Math.random() * (focus + 3)) + 1; } while (o === focus); return o; })();
             askBigger = Math.random() > 0.5;
             key = (askBigger ? 'bigger:' : 'smaller:') + Math.min(focus, other) + ',' + Math.max(focus, other);
             attempts++;
