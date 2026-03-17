@@ -5,10 +5,10 @@ function showNumbersAll() {
     const count = getFocusNumber('numbers_all');
 
     // Number words for TTS
-    const URDU_WORDS = ['','ek','do','teen','chaar','paanch','chay','saat','aath','nau','das',
-        'gyaara','baara','tera','chauda','pandra','sola','satra','athara','unees','bees'];
-    const ARABIC_WORDS = ['','wahid','ithnan','thalatha','arba\'a','khamsa','sitta','sab\'a','thamania','tis\'a','ashara',
-        'ahad ashar','ithna ashar','thalatha ashar','arba\'a ashar','khamsa ashar','sitta ashar','sab\'a ashar','thamania ashar','tis\'a ashar','ishreen'];
+    const URDU_WORDS = ['','ایک','دو','تین','چار','پانچ','چھ','سات','آٹھ','نو','دس',
+        'گیارہ','بارہ','تیرہ','چودہ','پندرہ','سولہ','سترہ','اٹھارہ','انیس','بیس'];
+    const ARABIC_WORDS = ['','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة',
+        'أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر','عشرون'];
     const ENGLISH_WORDS = ['','one','two','three','four','five','six','seven','eight','nine','ten',
         'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
 
