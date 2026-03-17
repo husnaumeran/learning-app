@@ -20,10 +20,12 @@ const SUPABASE_ANON_KEY = QA_MODE
     : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3Y2lnamNscHhud3RmamhqcWdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDYyOTMsImV4cCI6MjA4ODM4MjI5M30.f1O-M128j8UD28Ts0QSRe6phkMLc_LlNdJHDbGbyvr4';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 if (QA_MODE) {
-    const b = document.createElement('div');
-    b.textContent = '🧪 QA Environment';
-    b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#FFD700;color:#333;text-align:center;padding:4px;font-weight:bold;z-index:9999;font-size:14px;';
-    document.body.prepend(b);
+    document.addEventListener('DOMContentLoaded', () => {
+        const b = document.createElement('div');
+        b.textContent = '🧪 QA Environment';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#FFD700;color:#333;text-align:center;padding:4px;font-weight:bold;z-index:9999;font-size:14px;';
+        document.body.prepend(b);
+    });
 }
 
 // ============ CONFIGURATION ============
