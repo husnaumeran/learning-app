@@ -442,7 +442,7 @@ function generateMoreLessProblems(difficulty, count) {
     for (let i = 0; i < count; i++) {
         let n, askMore, key, attempts = 0;
         do {
-            do { n = Math.floor(Math.random() * focusNum) + 1; } while (n === focusNum);
+            n = focusNum <= 1 ? focusNum + 1 + Math.floor(Math.random() * 5) : (function(){ let o; do { o = Math.floor(Math.random() * (focusNum + 3)) + 1; } while (o === focusNum); return o; })();
             askMore = Math.random() > 0.5;
             key = (askMore ? 'more:' : 'less:') + Math.min(focusNum, n) + ',' + Math.max(focusNum, n);
             attempts++;
