@@ -503,121 +503,77 @@ const DOMAINS = {
 };
 
 async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
+    const today = getToday();
+    const allSkillIds = Object.keys(SKILL_MAP);
+
+    // --- Fetch response data for scoring ---
+    let responses = [];
+    try {
+        const { data } = await sb.from('responses')
+            .select('skill_id,is_correct,created_at')
+            .eq('child_id', childId);
+        responses = data || [];
+    } catch(e) {
+        console.error('Queue fetch error:', e);
+    }
+
+    // --- Build per-skill stats ---
+    const skillStats = {};
+    const now = new Date();
+    responses.forEach(r => {
+        if (!skillStats[r.skill_id]) {
+            skillStats[r.skill_id] = { totalAttempts: 0, correctCount: 0, lastPracticed: null, timesToday: 0 };
+        }
+        const s = skillStats[r.skill_id];
+        s.totalAttempts++;
+        if (r.is_correct) s.correctCount++;
+        const rDate = r.created_at ? r.created_at.split('T')[0] : null;
+        if (rDate === today) s.timesToday++;
+        if (!s.lastPracticed || r.created_at > s.lastPracticed) s.lastPracticed = r.created_at;
+    });
+
+    // --- Score all skills ---
+    const scored = allSkillIds.map(skillId => {
+        const entry = SKILL_MAP[skillId];
+        if (!entry) return null;
+        if (doneTypes.includes(entry[1])) return null; // already done today
+
+        const s = skillStats[skillId] || { totalAttempts: 0, correctCount: 0, lastPracticed: null, timesToday: 0 };
+        const daysSincePracticed = s.lastPracticed
+            ? Math.floor((now - new Date(s.lastPracticed)) / (1000 * 60 * 60 * 24))
+            : 7; // never practiced = treat as 7 days ago
+        const accuracy = s.totalAttempts > 0 ? Math.round(s.correctCount / s.totalAttempts * 100) : -1;
+
+        const result = calculatePriority(skillId, {
+            daysSincePracticed,
+            accuracy: accuracy >= 0 ? accuracy : 100, // unknown = assume fine, new_skill_bonus handles it
+            totalAttempts: s.totalAttempts,
+            timesToday: s.timesToday
+        });
+        result.entry = entry;
+        return result;
+    }).filter(Boolean);
+
+    // --- Sort by priority (highest first), with small random tiebreaker for variety ---
+    scored.sort((a, b) => {
+        const diff = b.priority - a.priority;
+        if (Math.abs(diff) <= 1) return Math.random() - 0.5; // break ties randomly
+        return diff;
+    });
+
+    // --- Deduplicate by function name (some skills share the same worksheet function) ---
     const queue = [];
     const usedFns = new Set();
-
-    // Helper: add to queue if not already used and not done today
-    function tryAdd(skillId) {
-        const entry = SKILL_MAP[skillId];
-        if (!entry) return false;
-        if (usedFns.has(entry[0])) return false;
-        if (doneTypes.includes(entry[1])) return false;
-        queue.push(entry);
-        usedFns.add(entry[0]);
-        return true;
+    for (const item of scored) {
+        if (queue.length >= maxItems) break;
+        if (usedFns.has(item.entry[0])) continue;
+        queue.push(item.entry);
+        usedFns.add(item.entry[0]);
     }
 
-    // --- Layer 1: Fetch signals ---
-    let reviewItems = [];
-    let stats = [];
-    try {
-        const [reviewRes, statsRes] = await Promise.all([
-            sb.from('review_queue')
-                .select('skill_id,question_data')
-                .eq('child_id', childId)
-                .eq('status', 'pending')
-                .lte('next_review_at', new Date().toISOString())
-                .order('next_review_at')
-                .limit(5),
-            sb.from('skill_stats')
-                .select('skill_id,total_attempts,correct_count,first_try_correct_count')
-                .eq('child_id', childId)
-        ]);
-        reviewItems = reviewRes.data || [];
-        stats = statsRes.data || [];
-    } catch(e) {
-        console.error('Queue brain fetch error:', e);
-    }
-
-    // --- Layer 2: Score & rank challenges ---
-    const statMap = {};
-    stats.forEach(s => { statMap[s.skill_id] = s; });
-
-    // Weakness score: lower accuracy = higher priority (0-1, lower = weaker)
-    function weaknessScore(skillId) {
-        const s = statMap[skillId];
-        if (!s || s.total_attempts === 0) return 0.5; // new skill = medium priority
-        return s.correct_count / s.total_attempts;
-    }
-
-    const rankedChallenges = CHALLENGE_SKILLS
-        .filter(id => SKILL_MAP[id])
-        .sort((a, b) => weaknessScore(a) - weaknessScore(b)); // weakest first
-
-    const shuffledFun = FUN_SKILLS
-        .filter(id => SKILL_MAP[id])
-        .sort(() => Math.random() - 0.5);
-
-    // --- Layer 3: Build queue by interleaving challenge/fun ---
-
-    // Build prioritized challenge list: review items first, then domain coverage, then weakest
-    const challengePool = [];
-    const usedChallengeSkills = new Set();
-
-    function addChallenge(skillId) {
-        if (usedChallengeSkills.has(skillId)) return false;
-        const entry = SKILL_MAP[skillId];
-        if (!entry || doneTypes.includes(entry[1])) return false;
-        challengePool.push(entry);
-        usedChallengeSkills.add(skillId);
-        return true;
-    }
-
-    // Priority 1: Review items (max 2)
-    const reviewCap = Math.min(2, reviewItems.length);
-    for (let i = 0; i < reviewCap; i++) {
-        addChallenge(reviewItems[i].skill_id);
-    }
-
-    // Priority 2: Domain coverage — one weakest per domain
-    const domainOrder = Object.keys(DOMAINS).sort(() => Math.random() - 0.5);
-    for (const domain of domainOrder) {
-        const domainSkills = DOMAINS[domain]
-            .sort((a, b) => weaknessScore(a) - weaknessScore(b));
-        for (const skill of domainSkills) {
-            if (addChallenge(skill)) break;
-        }
-    }
-
-    // Priority 3: Fill with remaining weakest challenges
-    for (const skill of rankedChallenges) {
-        addChallenge(skill);
-    }
-
-    // Build fun pool
-    const funPool = [];
-    for (const skillId of shuffledFun) {
-        const entry = SKILL_MAP[skillId];
-        if (entry && !doneTypes.includes(entry[1])) funPool.push(entry);
-    }
-
-    // Interleave: challenge → fun → challenge → fun ...
-    let ci = 0, fi = 0;
-    while (queue.length < maxItems && (ci < challengePool.length || fi < funPool.length)) {
-        // Challenge turn
-        if (ci < challengePool.length) {
-            queue.push(challengePool[ci]);
-            ci++;
-            if (queue.length >= maxItems) break;
-        }
-        // Fun turn
-        if (fi < funPool.length) {
-            queue.push(funPool[fi]);
-            fi++;
-            if (queue.length >= maxItems) break;
-        }
-    }
-
+    console.log('Priority queue:', scored.slice(0, maxItems).map(s =>
+        s.skillId + '=' + s.priority + ' (bw=' + s.baseWeight + ' ru=' + s.reviewUrgency + ' ws=' + s.weaknessSignal + ' cb=' + s.cogatBoost + ' ns=' + s.newSkillBonus + ' op=' + s.overusePenalty + ')'
+    ));
     console.log('Adaptive queue built:', queue.map(q => q[1]));
     return queue;
 }
