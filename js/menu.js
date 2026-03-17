@@ -98,6 +98,9 @@ async function showMenu() {
         {title:'📖 Arabic Qaida', color:'#22c55e', items:[
             ['showArabicQaida','Arabic Qaida 📖','Arabic Qaida'],
             ['showNumbersArabic','Arabic Numbers 🔊','Numbers Arabic']
+        ]},
+        {title:'🌍 All Languages', color:'#9c27b0', items:[
+            ['showNumbersAll','Numbers All 🔢','Numbers All']
         ]}
     ];
 
@@ -467,6 +470,7 @@ const SKILL_MAP = {
     // Challenge — Arabic
     arabic_qaida:            ['showArabicQaida', 'Arabic Qaida'],
     numbers_arabic:          ['showNumbersArabic', 'Numbers Arabic'],
+    numbers_all:             ['showNumbersAll', 'Numbers All'],
     // Fun
     color_patterns:          ['showColors', 'Color Patterns'],
     connect_dots:            ['showConnectDots', 'Connect Dots'],
