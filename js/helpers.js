@@ -162,7 +162,7 @@ const BASE_WEIGHTS = {
     // Qaida (4)
     urdu_qaida: 4, arabic_qaida: 4, urdu_reading: 4, urdu_trace: 4,
     // Numbers Urdu/Arabic (3)
-    numbers_urdu: 3, numbers_arabic: 3,
+    numbers_urdu: 3, numbers_arabic: 3, numbers_all: 3,
     // Fun/Confidence (2)
     find_pairs: 2, connect_dots: 2, trace_upper: 2, trace_lower: 2, trace_numbers: 2,
     urdu_what_next: 2, urdu_2_letter: 2, urdu_videos: 2,
