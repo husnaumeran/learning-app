@@ -4,6 +4,14 @@ function showNumbersAll() {
     const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
     const count = getFocusNumber('numbers_all');
 
+    // Number words for TTS
+    const URDU_WORDS = ['','ek','do','teen','chaar','paanch','chay','saat','aath','nau','das',
+        'gyaara','baara','tera','chauda','pandra','sola','satra','athara','unees','bees'];
+    const ARABIC_WORDS = ['','wahid','ithnan','thalatha','arba\'a','khamsa','sitta','sab\'a','thamania','tis\'a','ashara',
+        'ahad ashar','ithna ashar','thalatha ashar','arba\'a ashar','khamsa ashar','sitta ashar','sab\'a ashar','thamania ashar','tis\'a ashar','ishreen'];
+    const ENGLISH_WORDS = ['','one','two','three','four','five','six','seven','eight','nine','ten',
+        'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+
     function toUrdu(n) { return String(n).split('').map(d => URDU_DIGITS[parseInt(d)]).join(''); }
     function toArabic(n) { return String(n).split('').map(d => ARABIC_DIGITS[parseInt(d)]).join(''); }
 
@@ -11,8 +19,12 @@ function showNumbersAll() {
     for (let i = 1; i <= Math.max(count, 1); i++) nums.push(i);
     let current = 0;
     let questionStartMs = Date.now();
+    let autoTimers = [];
+
+    function cancelAuto() { autoTimers.forEach(t => clearTimeout(t)); autoTimers = []; }
 
     function render() {
+        cancelAuto();
         if (current >= nums.length) {
             completeWorksheet('Numbers All', nums.length, nums.length);
             return;
@@ -58,15 +70,23 @@ function showNumbersAll() {
         document.getElementById('app').innerHTML = html;
 
         // Auto-play all three with delays
-        setTimeout(() => speak(String(n)), 300);
-        setTimeout(() => speakUrdu(String(n)), 1500);
-        setTimeout(() => speakArabic(String(n)), 2700);
+        const enWord = ENGLISH_WORDS[n] || String(n);
+        const urWord = URDU_WORDS[n] || String(n);
+        const arWord = ARABIC_WORDS[n] || String(n);
+        autoTimers.push(setTimeout(() => speak(enWord), 300));
+        autoTimers.push(setTimeout(() => speakUrdu(urWord), 1500));
+        autoTimers.push(setTimeout(() => speakArabic(arWord), 2700));
     }
 
     window.playNA = (lang, n) => {
-        if (lang === 'en') speak(String(n));
-        else if (lang === 'ur') speakUrdu(String(n));
-        else if (lang === 'ar') speakArabic(String(n));
+        cancelAuto();
+        speechSynthesis.cancel(); // stop any current speech
+        const enWord = ENGLISH_WORDS[n] || String(n);
+        const urWord = URDU_WORDS[n] || String(n);
+        const arWord = ARABIC_WORDS[n] || String(n);
+        if (lang === 'en') speak(enWord);
+        else if (lang === 'ur') speakUrdu(urWord);
+        else if (lang === 'ar') speakArabic(arWord);
     };
 
     window.nextNA = () => {
