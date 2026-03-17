@@ -148,6 +148,91 @@ function getQuestionCount(skillId, mode) {
     }
     return fallback;
 }
+// ============ PRIORITY SCORING ENGINE ============
+
+const BASE_WEIGHTS = {
+    // CogAT Core (10)
+    figure_matrices: 10, verbal_analogies: 10, which_doesnt_belong: 10,
+    // CogAT Support (8)
+    color_patterns: 8, color_patterns_l2: 8, what_comes_next: 8,
+    // Math (6)
+    addition: 6, subtraction: 6, counting: 6, more_less: 6, bigger_smaller: 6, matching: 6,
+    // Language (4)
+    two_letter_words: 4, three_letter_words: 4, numbers_english: 4,
+    // Qaida (4)
+    urdu_qaida: 4, arabic_qaida: 4, urdu_reading: 4, urdu_trace: 4,
+    // Numbers Urdu/Arabic (3)
+    numbers_urdu: 3, numbers_arabic: 3,
+    // Fun/Confidence (2)
+    find_pairs: 2, connect_dots: 2, trace_upper: 2, trace_lower: 2, trace_numbers: 2,
+    urdu_what_next: 2, urdu_2_letter: 2, urdu_videos: 2,
+};
+
+const COGAT_SKILLS = {
+    figure_matrices: 'core', verbal_analogies: 'core', which_doesnt_belong: 'core',
+    color_patterns: 'support', color_patterns_l2: 'support', what_comes_next: 'support',
+};
+
+const COGAT_TEST_DATE = new Date('2026-04-18T11:30:00-05:00');
+
+function getReviewUrgency(daysSincePracticed) {
+    if (daysSincePracticed === 0) return 0;
+    if (daysSincePracticed === 1) return 1;
+    if (daysSincePracticed === 2) return 2;
+    if (daysSincePracticed <= 4) return 3;
+    if (daysSincePracticed <= 6) return 4;
+    return 5; // 7+ days
+}
+
+function getWeaknessSignal(accuracy) {
+    if (accuracy < 50) return 5;
+    if (accuracy < 60) return 4;
+    if (accuracy < 70) return 3;
+    if (accuracy < 80) return 2;
+    if (accuracy < 90) return 1;
+    return 0; // 90%+
+}
+
+function getCogatBoost(skillId) {
+    const now = new Date();
+    if (now >= COGAT_TEST_DATE) return 0; // test is over
+    const tier = COGAT_SKILLS[skillId];
+    if (!tier) return 0;
+    const daysUntilTest = Math.ceil((COGAT_TEST_DATE - now) / (1000 * 60 * 60 * 24));
+    if (tier === 'core') return 3;
+    if (tier === 'support') return daysUntilTest <= 14 ? 3 : 2; // support rises to 3 in final 2 weeks
+    return 0;
+}
+
+function getNewSkillBonus(totalAttempts) {
+    if (totalAttempts === 0) return 2;
+    if (totalAttempts < 3) return 1;
+    return 0;
+}
+
+function getOverusePenalty(timesToday) {
+    if (timesToday <= 1) return 0;
+    if (timesToday === 2) return 1;
+    if (timesToday === 3) return 2;
+    return 3; // 4+
+}
+
+function calculatePriority(skillId, stats) {
+    const baseWeight = BASE_WEIGHTS[skillId] || 2;
+    const reviewUrgency = getReviewUrgency(stats.daysSincePracticed || 0);
+    const weaknessSignal = getWeaknessSignal(stats.accuracy != null ? stats.accuracy : 100);
+    const cogatBoost = getCogatBoost(skillId);
+    const newSkillBonus = getNewSkillBonus(stats.totalAttempts || 0);
+    const overusePenalty = getOverusePenalty(stats.timesToday || 0);
+
+    const priority = Math.max(0, baseWeight + reviewUrgency + weaknessSignal + cogatBoost + newSkillBonus - overusePenalty);
+
+    return {
+        skillId, priority, baseWeight, reviewUrgency, weaknessSignal,
+        cogatBoost, newSkillBonus, overusePenalty
+    };
+}
+
 // ============ AUTO FOCUS ADJUSTMENT ============
 async function adjustFocusNumbers(slices) {
     if (!slices || !slices.length || !CONFIG.childId) return;
