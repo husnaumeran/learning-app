@@ -21,7 +21,7 @@ const SUPABASE_ANON_KEY = QA_MODE
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 if (QA_MODE) {
     const b = document.createElement('div');
-    b.textContent = '\u🧪 QA Environment';
+    b.textContent = '🧪 QA Environment';
     b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#FFD700;color:#333;text-align:center;padding:4px;font-weight:bold;z-index:9999;font-size:14px;';
     document.body.prepend(b);
 }
