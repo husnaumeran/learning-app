@@ -1,9 +1,14 @@
 // ============ VERSION CHECK — clear stale localStorage on upgrade ============
 const APP_VERSION = '2.1';
 if (localStorage.getItem('app_version') !== APP_VERSION) {
-    const keysToKeep = ['supabase.auth.token']; // preserve auth
+    const keysToKeep = ['supabase.auth.token','fm_history','fm_level','focusNumber','qaida_unlocked','soundOn','urdu_qaida_unlocked','va_history','va_level','worksheetLimit'];
+    const prefixesToKeep = ['daily_','weekendChallenge:'];
     const saved = {};
     keysToKeep.forEach(k => { const v = localStorage.getItem(k); if (v) saved[k] = v; });
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (prefixesToKeep.some(p => k.startsWith(p))) saved[k] = localStorage.getItem(k);
+    }
     localStorage.clear();
     Object.entries(saved).forEach(([k, v]) => localStorage.setItem(k, v));
     localStorage.setItem('app_version', APP_VERSION);
