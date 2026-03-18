@@ -44,9 +44,11 @@ function showFigureMatrices() {
         let tl,tr,bl,ans;
 
         switch(lvl) {
-            case 1: // Color across
-                tl={shape:'circle',ci:ci1,si:0}; tr={shape:'circle',ci:ci2,si:0};
-                bl={shape:'circle',ci:ci1,si:0}; ans={shape:'circle',ci:ci2,si:0}; break;
+            case 1: { // Color across
+                const s1=pick(SHAPES);
+                tl={shape:s1,ci:ci1,si:0}; tr={shape:s1,ci:ci2,si:0};
+                bl={shape:s1,ci:ci1,si:0}; ans={shape:s1,ci:ci2,si:0}; break;
+            }
             case 2: // Size across
                 tl={shape:esh,ci:ci1,si:0}; tr={shape:esh,ci:ci1,si:1};
                 bl={shape:esh,ci:ci1,si:0}; ans={shape:esh,ci:ci1,si:1}; break;
