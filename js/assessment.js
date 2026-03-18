@@ -490,8 +490,10 @@ function finishAssessment(results, score, total) {
         if (vaPct >= 0.8) {
             const cur = parseInt(localStorage.getItem('va_level') || '1');
             if (cur < 6) {
-                localStorage.setItem('va_level', String(cur + 1));
-                console.log('📈 VA level → ' + (cur + 1));
+                const newLevel = cur + 1;
+                localStorage.setItem('va_level', String(newLevel));
+                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'verbal_analogies', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
+                console.log('📈 VA content_level → ' + newLevel);
             }
         }
     }
@@ -500,8 +502,10 @@ function finishAssessment(results, score, total) {
         if (fmPct >= 0.8) {
             const cur = parseInt(localStorage.getItem('fm_level') || '1');
             if (cur < 8) {
-                localStorage.setItem('fm_level', String(cur + 1));
-                console.log('📈 FM level → ' + (cur + 1));
+                const newLevel = cur + 1;
+                localStorage.setItem('fm_level', String(newLevel));
+                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'figure_matrices', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
+                console.log('📈 FM content_level → ' + newLevel);
             }
         }
     }
