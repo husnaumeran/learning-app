@@ -166,12 +166,7 @@ function showFigureMatrices() {
             h.push(score);
             history[key]=h;
             localStorage.setItem('fm_history',JSON.stringify(history));
-            const maxLevel=parseInt(localStorage.getItem('fm_level')||'1');
-            const recent=h.slice(-3);
-            const threshold=Math.ceil(QUESTIONS*0.8);
-            if(recent.length>=3 && recent.every(s=>s>=threshold) && level>=maxLevel && level<8){
-                localStorage.setItem('fm_level',String(level+1));
-            }
+            // Level-up moved to weekend challenge (assessment.js)
             completeWorksheet('Figure Matrices',score,QUESTIONS);
             return;
         }
