@@ -322,12 +322,7 @@ function showVerbalAnalogies() {
             history[key] = h;
             localStorage.setItem('va_history', JSON.stringify(history));
 
-            const maxUnlocked = parseInt(localStorage.getItem('va_level') || '1');
-            const threshold = Math.ceil(QUESTIONS * 0.8);
-            const qualifying = h.filter(s => s.qualifies).slice(-3);
-            if (qualifying.length >= 3 && qualifying.every(s => s.score >= threshold) && level >= maxUnlocked && level < 6) {
-                localStorage.setItem('va_level', String(level + 1));
-            }
+            // Level-up moved to weekend challenge (assessment.js)
             completeWorksheet('Verbal Analogies', score, QUESTIONS);
             return;
         }
