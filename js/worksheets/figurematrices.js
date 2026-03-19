@@ -224,7 +224,7 @@ function showFigureMatrices() {
         });
         html+='</div>';
 
-        html+='<div class="score">'+(current+1)+' / '+QUESTIONS+' &nbsp;⭐ '+score+'</div></div>';
+        html+='<div class="score">'+(current+1)+' / '+problems.length+' &nbsp;⭐ '+score+'</div></div>';
         document.getElementById('app').innerHTML=html;
         questionStartMs = Date.now();
     }
