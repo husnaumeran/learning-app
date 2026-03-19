@@ -233,7 +233,7 @@ function showVerbalAnalogies() {
 
     let level = parseInt(localStorage.getItem('va_level') || '1');
     const history = JSON.parse(localStorage.getItem('va_history') || '{}');
-    let problems=[], current=0, score=0, skips=0, tried=false;
+    let problems=[], problemLevels=[], current=0, score=0, skips=0, tried=false;
     let questionStartMs = null;
     const attemptCounts = {};
 
@@ -285,6 +285,19 @@ function showVerbalAnalogies() {
     function startLevel(l) {
         level = l;
         problems = generateProblems(level);
+        problemLevels = problems.map(() => l);
+        current = 0; score = 0; skips = 0; tried = false;
+        renderGame();
+    }
+
+    function startAllLevels() {
+        const maxUnlocked = parseInt(localStorage.getItem('va_level') || '1');
+        problems = [];
+        problemLevels = [];
+        for (let l = 1; l <= maxUnlocked; l++) {
+            const lProbs = generateProblems(l);
+            lProbs.forEach(p => { problems.push(p); problemLevels.push(l); });
+        }
         current = 0; score = 0; skips = 0; tried = false;
         renderGame();
     }
@@ -294,6 +307,7 @@ function showVerbalAnalogies() {
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🗣️ Verbal Analogies</div>';
         html += '<div class="inst">Pick a level!</div>';
+        if(maxUnlocked>1) html+='<div onclick="startVAAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L'+maxUnlocked+')</div>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 6; l++) {
             const unlocked = l <= maxUnlocked;
@@ -303,7 +317,7 @@ function showVerbalAnalogies() {
             html += '<div onclick="' + (unlocked ? 'startVALevel('+l+')' : '') + '" style="background:'+bg+';color:white;padding:15px;border-radius:12px;text-align:center;cursor:'+(unlocked?'pointer':'not-allowed')+';opacity:'+(unlocked?'1':'0.5')+'">';
             html += '<div style="font-size:24px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:11px;margin-top:3px">'+LEVELS[l].name+'</div>';
-            if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
+            if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+problems.length+' (×'+h.length+')</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -311,8 +325,10 @@ function showVerbalAnalogies() {
     }
 
     window.startVALevel = function(l) { startLevel(l); };
+    window.startVAAll = startAllLevels;
 
     function renderGame() {
+        if(problemLevels[current]) level=problemLevels[current];
         if (current >= problems.length) {
             const key = 'L' + level;
             const h = history[key] || [];
