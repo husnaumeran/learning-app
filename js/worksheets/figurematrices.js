@@ -115,20 +115,39 @@ function showFigureMatrices() {
         return {grid:[[tl,tr],[bl,ans]], answer:ans, choices:shuffle(choices)};
     }
 
-    let problems=[], current=0, score=0, tried=false;
+    let problems=[], problemLevels=[], current=0, score=0, tried=false;
     let questionStartMs = null;
     const attemptCounts = {};
 
     function startLevel(l) {
         level=l;
         problems=[];
+        problemLevels=[];
         const seen=new Set();
         let attempts=0;
         while(problems.length<QUESTIONS && attempts<200){
             const p=makeProblem(level);
             const key=JSON.stringify(p.grid);
-            if(!seen.has(key)){seen.add(key);problems.push(p);}
+            if(!seen.has(key)){seen.add(key);problems.push(p);problemLevels.push(l);}
             attempts++;
+        }
+        current=0; score=0; tried=false;
+        renderGame();
+    }
+
+    function startAllLevels() {
+        const maxLevel=parseInt(localStorage.getItem('fm_level')||'1');
+        problems=[];
+        problemLevels=[];
+        const seen=new Set();
+        for(let l=1;l<=maxLevel;l++){
+            let count=0,attempts=0;
+            while(count<QUESTIONS && attempts<200){
+                const p=makeProblem(l);
+                const key=JSON.stringify(p.grid);
+                if(!seen.has(key)){seen.add(key);problems.push(p);problemLevels.push(l);count++;}
+                attempts++;
+            }
         }
         current=0; score=0; tried=false;
         renderGame();
@@ -140,6 +159,7 @@ function showFigureMatrices() {
         let html='<button class="back" onclick="showMenu()">← Back</button>';
         html+='<div class="card"><div class="title">🧩 Figure Matrices</div>';
         html+='<div class="inst">Pick a level!</div>';
+        if(maxLevel>1) html+='<div onclick="fmStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L'+maxLevel+')</div>';
         html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for(let l=1;l<=8;l++){
             const unlocked=l<=maxLevel;
@@ -158,10 +178,12 @@ function showFigureMatrices() {
     }
 
     window.fmStart = startLevel;
+    window.fmStartAll = startAllLevels;
 
     // Game screen
     function renderGame() {
-        if(current>=QUESTIONS) {
+        if(problemLevels[current]) level=problemLevels[current];
+        if(current>=problems.length) {
             // Save history & check level-up
             const key='L'+level;
             const h=history[key]||[];
@@ -169,7 +191,7 @@ function showFigureMatrices() {
             history[key]=h;
             localStorage.setItem('fm_history',JSON.stringify(history));
             // Level-up moved to weekend challenge (assessment.js)
-            completeWorksheet('Figure Matrices',score,QUESTIONS);
+            completeWorksheet('Figure Matrices',score,problems.length);
             return;
         }
 
