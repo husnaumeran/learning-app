@@ -70,7 +70,7 @@ async function checkWeekendAssessment() {
     }
 }
 
-async function resumeWeekendChallenge() {
+window.resumeWeekendChallenge = async function() {
     if (!CONFIG.weekendChallengeSession) return;
     CONFIG.sessionId = CONFIG.weekendChallengeSession.id;
 
@@ -105,7 +105,7 @@ async function resumeWeekendChallenge() {
     runAssessment(finalQs, answered);
 }
 
-async function startWeekendChallenge() {
+window.startWeekendChallenge = async function() {
     // 1. Find skills practiced this week
     const weekStart = getWeekStartISO();
     const { data: practiced } = await sb.from('responses')
