@@ -356,6 +356,77 @@ function makeAssessmentQs(skillId, count) {
             }
             break;
         }
+        case 'figure_matrices': {
+            const SHAPES = ['circle','square','triangle','star','diamond'];
+            const COLORS = ['#FF0000','#0066FF','#00AA00','#FFD700','#FF6600','#FF69B4'];
+            const SIZES = [60, 30];
+            const fmLevel = Math.min(parseInt(localStorage.getItem('fm_level') || '1'), 8);
+            function pick(a) { return a[Math.floor(Math.random()*a.length)]; }
+            function pickDiff(a,x) { const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; }
+            function rci() { return Math.floor(Math.random()*COLORS.length); }
+            function rciDiff(x) { let c; do{c=rci();}while(c===x); return c; }
+            function fmSvg(shape, color, size) {
+                const s=size, h=s/2; let d;
+                switch(shape) {
+                    case 'circle': d='<circle cx="'+h+'" cy="'+h+'" r="'+(h-2)+'" fill="'+color+'" stroke="#333" stroke-width="1.5"/>'; break;
+                    case 'square': d='<rect x="2" y="2" width="'+(s-4)+'" height="'+(s-4)+'" rx="2" fill="'+color+'" stroke="#333" stroke-width="1.5"/>'; break;
+                    case 'triangle': d='<polygon points="'+h+',3 '+(s-3)+','+(s-3)+' 3,'+(s-3)+'" fill="'+color+'" stroke="#333" stroke-width="1.5"/>'; break;
+                    case 'star': { const cx=h,cy=h,or=h-3,ir=or*0.4; let p=[]; for(let i=0;i<5;i++){const a1=(i*72-90)*Math.PI/180,a2=((i*72+36)-90)*Math.PI/180; p.push((cx+or*Math.cos(a1))+','+(cy+or*Math.sin(a1)));p.push((cx+ir*Math.cos(a2))+','+(cy+ir*Math.sin(a2)));} d='<polygon points="'+p.join(' ')+'" fill="'+color+'" stroke="#333" stroke-width="1.5"/>'; break; }
+                    case 'diamond': d='<polygon points="'+h+',3 '+(s-3)+','+h+' '+h+','+(s-3)+' 3,'+h+'" fill="'+color+'" stroke="#333" stroke-width="1.5"/>'; break;
+                }
+                return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'">'+d+'</svg>';
+            }
+            function makeFMProblem(lvl) {
+                const ci1=rci(), ci2=rciDiff(ci1);
+                const sh1=pick(SHAPES), sh2=pickDiff(SHAPES,sh1);
+                const esh=pick(SHAPES);
+                let tl,tr,bl,ans;
+                switch(lvl) {
+                    case 1: { const s1=pick(SHAPES); tl={shape:s1,ci:ci1,si:0};tr={shape:s1,ci:ci2,si:0};bl={shape:s1,ci:ci1,si:0};ans={shape:s1,ci:ci2,si:0}; break; }
+                    case 2: tl={shape:esh,ci:ci1,si:0};tr={shape:esh,ci:ci1,si:1};bl={shape:esh,ci:ci1,si:0};ans={shape:esh,ci:ci1,si:1}; break;
+                    case 3: tl={shape:sh1,ci:ci1,si:0};tr={shape:sh2,ci:ci1,si:0};bl={shape:sh1,ci:ci1,si:0};ans={shape:sh2,ci:ci1,si:0}; break;
+                    case 4: { const rule=pick(['color','size','shape']); if(rule==='color'){tl={shape:esh,ci:ci1,si:0};tr={shape:esh,ci:ci1,si:0};bl={shape:esh,ci:ci2,si:0};ans={shape:esh,ci:ci2,si:0};} else if(rule==='size'){tl={shape:esh,ci:ci1,si:0};tr={shape:esh,ci:ci1,si:0};bl={shape:esh,ci:ci1,si:1};ans={shape:esh,ci:ci1,si:1};} else {tl={shape:sh1,ci:ci1,si:0};tr={shape:sh1,ci:ci1,si:0};bl={shape:sh2,ci:ci1,si:0};ans={shape:sh2,ci:ci1,si:0};} break; }
+                    case 5: if(Math.random()>0.5){tl={shape:esh,ci:ci1,si:0};tr={shape:esh,ci:ci2,si:0};bl={shape:esh,ci:ci1,si:1};ans={shape:esh,ci:ci2,si:1};} else {tl={shape:esh,ci:ci1,si:0};tr={shape:esh,ci:ci1,si:1};bl={shape:esh,ci:ci2,si:0};ans={shape:esh,ci:ci2,si:1};} break;
+                    case 6: if(Math.random()>0.5){tl={shape:sh1,ci:ci1,si:0};tr={shape:sh1,ci:ci2,si:0};bl={shape:sh2,ci:ci1,si:0};ans={shape:sh2,ci:ci2,si:0};} else {tl={shape:sh1,ci:ci1,si:0};tr={shape:sh2,ci:ci1,si:0};bl={shape:sh1,ci:ci2,si:0};ans={shape:sh2,ci:ci2,si:0};} break;
+                    case 7: if(Math.random()>0.5){tl={shape:sh1,ci:ci1,si:0};tr={shape:sh1,ci:ci1,si:1};bl={shape:sh2,ci:ci1,si:0};ans={shape:sh2,ci:ci1,si:1};} else {tl={shape:sh1,ci:ci1,si:0};tr={shape:sh2,ci:ci1,si:0};bl={shape:sh1,ci:ci1,si:1};ans={shape:sh2,ci:ci1,si:1};} break;
+                    case 8: tl={shape:sh1,ci:ci1,si:0};tr={shape:sh2,ci:ci2,si:0};bl={shape:sh1,ci:ci1,si:1};ans={shape:sh2,ci:ci2,si:1}; break;
+                    default: tl={shape:esh,ci:ci1,si:0};tr={shape:esh,ci:ci2,si:0};bl={shape:esh,ci:ci1,si:0};ans={shape:esh,ci:ci2,si:0};
+                }
+                const choices=[ans]; const tried=new Set([JSON.stringify(ans)]);
+                let att=0;
+                while(choices.length<4 && att<100) {
+                    att++; let d={...ans};
+                    const prop=pick(['shape','ci','si']);
+                    if(prop==='shape') d.shape=pickDiff(SHAPES,ans.shape);
+                    else if(prop==='ci') d.ci=rciDiff(ans.ci);
+                    else d.si=1-ans.si;
+                    const k=JSON.stringify(d);
+                    if(!tried.has(k)){tried.add(k);choices.push(d);}
+                }
+                while(choices.length<4) choices.push({shape:pick(SHAPES),ci:rci(),si:Math.floor(Math.random()*2)});
+                const shuffled = choices.sort(() => Math.random() - 0.5);
+                const ansIdx = shuffled.indexOf(ans);
+                const cell = (o) => '<div style="background:#f5f5f5;border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center">'+fmSvg(o.shape,COLORS[o.ci],SIZES[o.si])+'</div>';
+                const grid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:180px;margin:0 auto">'+cell(tl)+cell(tr)+cell(bl)+'<div style="background:#FFF8DC;border:2px dashed #FFD700;border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#FF69B4">?</div></div>';
+                const choiceLabels = shuffled.map(c => '<div style="display:flex;align-items:center;justify-content:center">'+fmSvg(c.shape,COLORS[c.ci],SIZES[c.si])+'</div>');
+                qs.push({
+                    skill_id: 'figure_matrices',
+                    prompt: 'Which one fits?',
+                    prompt_html: grid,
+                    choices: shuffled.map((c,i) => String(i)),
+                    choice_labels: choiceLabels,
+                    correct: String(ansIdx),
+                    qdata: {type:'figure_matrices', level:fmLevel}
+                });
+            }
+            const seen = new Set();
+            let attempts = 0;
+            while (qs.length < count && attempts < 200) {
+                makeFMProblem(fmLevel);
+                attempts++;
+            }
+            break;
+        }
     }
 
     return qs;
