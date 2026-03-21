@@ -79,6 +79,14 @@ async function resumeWeekendChallenge() {
         .select('id')
         .eq('session_id', CONFIG.sessionId);
     const answered = (existing || []).length;
+
+    // Get skills from session_meta
+    const { data: sess } = await sb.from('sessions')
+        .select('session_meta')
+        .eq('id', CONFIG.sessionId)
+        .single();
+    const skills = (sess && sess.session_meta && sess.session_meta.skills_tested) || ['addition', 'subtraction', 'counting'];
+
     const totalExpected = skills.reduce((sum, s) => sum + getQuestionCount(s, 'challenge'), 0);
     const remaining = Math.max(0, totalExpected - answered);
 
@@ -87,13 +95,6 @@ async function resumeWeekendChallenge() {
         await finalizeWeekendChallenge();
         return;
     }
-
-    // Get skills from session_meta
-    const { data: sess } = await sb.from('sessions')
-        .select('session_meta')
-        .eq('id', CONFIG.sessionId)
-        .single();
-    const skills = (sess && sess.session_meta && sess.session_meta.skills_tested) || ['addition', 'subtraction', 'counting'];
 
     const questions = [];
     const perSkill = Math.max(2, Math.ceil(remaining / skills.length));
