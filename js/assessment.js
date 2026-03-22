@@ -144,8 +144,13 @@ window.startWeekendChallenge = async function() {
     // 3. Generate questions — each skill gets its own challenge_question_count
     const questions = [];
     for (const skill of skills) {
-        const count = getQuestionCount(skill, 'challenge');
-        questions.push(...makeAssessmentQs(skill, count));
+        try {
+            const count = getQuestionCount(skill, 'challenge');
+            questions.push(...makeAssessmentQs(skill, count));
+        } catch(e) {
+            alert('Error on skill: ' + skill + ' — ' + e.message);
+            console.error('makeAssessmentQs failed for', skill, e);
+        }
     }
     const finalQs = questions.sort(() => Math.random() - 0.5);
 
