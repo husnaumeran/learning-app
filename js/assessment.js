@@ -149,6 +149,7 @@ window.startWeekendChallenge = async function() {
     }
     const finalQs = questions.sort(() => Math.random() - 0.5);
 
+    alert('Step 2b: questions generated: ' + finalQs.length + ' for skills: ' + skills.join(',')); // debug
     alert('Step 3: running ' + finalQs.length + ' questions'); // debug
     // 4. Run
     runAssessment(finalQs);
