@@ -137,9 +137,9 @@ window.startWeekendChallenge = async function() {
         session_meta: { week: getWeekKey(), skills_tested: skills }
     }).select('id').single();
 
-    alert('Step 2: session created'); // debug
-    if (error) { console.error('Weekend session failed:', error); alert('Session error: '+JSON.stringify(error)); return; }
+    if (error || !session) { console.error('Weekend session failed:', error); alert('Session error: '+JSON.stringify(error)); return; }
     CONFIG.sessionId = session.id;
+    alert('Step 2: session created id='+session.id); // debug
 
     // 3. Generate questions — each skill gets its own challenge_question_count
     const questions = [];
