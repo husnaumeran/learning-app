@@ -106,6 +106,7 @@ window.resumeWeekendChallenge = async function() {
 }
 
 window.startWeekendChallenge = async function() {
+    alert('Step 1: starting'); // debug
     // 1. Find skills practiced this week
     const weekStart = getWeekStartISO();
     const { data: practiced } = await sb.from('responses')
@@ -136,7 +137,8 @@ window.startWeekendChallenge = async function() {
         session_meta: { week: getWeekKey(), skills_tested: skills }
     }).select('id').single();
 
-    if (error) { console.error('Weekend session failed:', error); return; }
+    alert('Step 2: session created'); // debug
+    if (error) { console.error('Weekend session failed:', error); alert('Session error: '+JSON.stringify(error)); return; }
     CONFIG.sessionId = session.id;
 
     // 3. Generate questions — each skill gets its own challenge_question_count
@@ -147,6 +149,7 @@ window.startWeekendChallenge = async function() {
     }
     const finalQs = questions.sort(() => Math.random() - 0.5);
 
+    alert('Step 3: running ' + finalQs.length + ' questions'); // debug
     // 4. Run
     runAssessment(finalQs);
 }
