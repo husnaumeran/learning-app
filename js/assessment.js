@@ -141,6 +141,7 @@ window.startWeekendChallenge = async function() {
     CONFIG.sessionId = session.id;
     alert('Step 2: session created id='+session.id); // debug
 
+    alert('Step 2c: skills=' + skills.join(','));
     // 3. Generate questions — each skill gets its own challenge_question_count
     const questions = [];
     for (const skill of skills) {
