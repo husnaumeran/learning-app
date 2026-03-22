@@ -49,7 +49,7 @@ function getWeekStartISO() {
     return monday.toISOString();
 }
 
-async function checkWeekendAssessment() {
+window.checkWeekendAssessment = async function() {
     if (!CONFIG.childId) return;
     const weekStart = getWeekStartISO();
     const { data } = await sb.from('sessions')
@@ -107,7 +107,6 @@ window.resumeWeekendChallenge = async function() {
 
 window.startWeekendChallenge = async function() {
     try {
-    try {
     // 1. Find skills practiced this week
     const weekStart = getWeekStartISO();
     const { data: practiced } = await sb.from('responses')
@@ -151,7 +150,6 @@ window.startWeekendChallenge = async function() {
 
     // 4. Run
     runAssessment(finalQs);
-    } catch(e) { console.error('Weekend challenge error:', e); alert('Error: ' + e.message); }
 }
 
 // ============ QUESTION GENERATORS ============
