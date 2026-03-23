@@ -367,6 +367,7 @@ function makeAssessmentQs(skillId, count) {
             break;
         }
         case 'figure_matrices': {
+            alert('FM case reached');
             const SHAPES = ['circle','square','triangle','star','diamond'];
             const COLORS = ['#FF0000','#0066FF','#00AA00','#FFD700','#FF6600','#FF69B4'];
             const SIZES = [60, 30];
