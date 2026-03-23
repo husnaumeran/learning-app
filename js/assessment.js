@@ -369,10 +369,10 @@ function makeAssessmentQs(skillId, count) {
             const COLORS = ['#FF0000','#0066FF','#00AA00','#FFD700','#FF6600','#FF69B4'];
             const SIZES = [60, 30];
             const fmLevel = Math.min(parseInt(localStorage.getItem('fm_level') || '1'), 8);
-            function pick(a) { return a[Math.floor(Math.random()*a.length)]; }
-            function pickDiff(a,x) { const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; }
-            function rci() { return Math.floor(Math.random()*COLORS.length); }
-            function rciDiff(x) { let c; do{c=rci();}while(c===x); return c; }
+            const pick=(a)=>a[Math.floor(Math.random()*a.length)];
+            const pickDiff=(a,x)=>{ const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; };
+            const rci=()=>Math.floor(Math.random()*COLORS.length);
+            const rciDiff=(x)=>{ let c; do{c=rci();}while(c===x); return c; };
             function fmSvg(shape, color, size) {
                 const s=size, h=s/2; let d;
                 switch(shape) {
