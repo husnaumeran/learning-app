@@ -373,7 +373,7 @@ function makeAssessmentQs(skillId, count) {
             const pickDiff=(a,x)=>{ const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; };
             const rci=()=>Math.floor(Math.random()*COLORS.length);
             const rciDiff=(x)=>{ let c; do{c=rci();}while(c===x); return c; };
-            function fmSvg(shape, color, size) {
+            const fmSvg = (shape, color, size) => {
                 const s=size, h=s/2; let d;
                 switch(shape) {
                     case 'circle': d='<circle cx="'+h+'" cy="'+h+'" r="'+(h-2)+'" fill="'+color+'" stroke="#333" stroke-width="1.5"/>'; break;
@@ -384,7 +384,7 @@ function makeAssessmentQs(skillId, count) {
                 }
                 return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'">'+d+'</svg>';
             }
-            function makeFMProblem(lvl) {
+            const makeFMProblem = (lvl) => {
                 const ci1=rci(), ci2=rciDiff(ci1);
                 const sh1=pick(SHAPES), sh2=pickDiff(SHAPES,sh1);
                 const esh=pick(SHAPES);
