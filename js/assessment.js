@@ -148,8 +148,9 @@ window.startWeekendChallenge = async function() {
             const count = getQuestionCount(skill, 'challenge');
             questions.push(...makeAssessmentQs(skill, count));
         } catch(e) {
-            alert('Error on skill: ' + skill + ' — ' + e.message);
             console.error('makeAssessmentQs failed for', skill, e);
+            document.getElementById('app').innerHTML = '<div style="padding:20px;color:red">Error on skill: ' + skill + ' — ' + e.message + '<br>' + e.stack + '</div>';
+            return;
         }
     }
     const finalQs = questions.sort(() => Math.random() - 0.5);
