@@ -153,6 +153,7 @@ window.startWeekendChallenge = async function() {
             return;
         }
     }
+    alert('Step 2d: loop done, questions=' + questions.length);
     const finalQs = questions.sort(() => Math.random() - 0.5);
 
     // 4. Run
