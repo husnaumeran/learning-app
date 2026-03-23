@@ -309,7 +309,7 @@ function makeAssessmentQs(skillId, count) {
         case 'bigger_smaller': {
             for (let i = 0; i < count; i++) {
                 let other;
-                do { other = Math.floor(Math.random() * focus) + 1; } while (other === focus);
+                do { other = Math.floor(Math.random() * Math.max(focus, 2)) + 1; } while (other === focus);
                 const askBigger = Math.random() > 0.5;
                 const type = askBigger ? 'BIGGER' : 'SMALLER';
                 const swapped = Math.random() > 0.5;
