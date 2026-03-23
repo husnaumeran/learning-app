@@ -430,6 +430,7 @@ function makeAssessmentQs(skillId, count) {
                     qdata: {type:'figure_matrices', level:fmLevel}
                 });
             }
+            alert('FM: about to generate');
             const seen = new Set();
             let attempts = 0;
             while (qs.length < count && attempts < 200) {
