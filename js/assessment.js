@@ -447,6 +447,7 @@ function makeAssessmentQs(skillId, count) {
 // ============ ASSESSMENT UI (NO RETRIES) ============
 
 function runAssessment(questions, indexOffset) {
+    alert('runAssessment: ' + questions.length + ' questions');
     indexOffset = indexOffset || 0;
     let current = 0, score = 0;
     let questionStartMs = null;
