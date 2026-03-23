@@ -388,6 +388,7 @@ function makeAssessmentQs(skillId, count) {
                 return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+s+' '+s+'">'+d+'</svg>';
             }
             const makeFMProblem = (lvl) => {
+                alert('makeFMProblem called lvl='+lvl);
                 const ci1=rci(), ci2=rciDiff(ci1);
                 const sh1=pick(SHAPES), sh2=pickDiff(SHAPES,sh1);
                 const esh=pick(SHAPES);
