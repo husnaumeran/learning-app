@@ -5,7 +5,7 @@ function showVerbalAnalogies() {
     const LEVELS = [
         null,
         {
-            name:'Opposites', conn:' means ',
+            name:'Opposites', conn:' and ',
             pairs:[
                 {a:'big',b:'small',ea:'🐘',eb:'🐭'},
                 {a:'hot',b:'cold',ea:'🔥',eb:'❄️'},
@@ -18,7 +18,27 @@ function showVerbalAnalogies() {
                 {a:'go',b:'stop',ea:'🟢',eb:'🛑'},
                 {a:'wet',b:'dry',ea:'🌧️',eb:'☀️'},
                 {a:'full',b:'empty',ea:'🥤',eb:'📦'},
-                {a:'in',b:'out',ea:'📥',eb:'📤'}
+                {a:'in',b:'out',ea:'📥',eb:'📤'},
+                {a:'tall',b:'short',ea:'🦒',eb:'🐁'},
+                {a:'light',b:'heavy',ea:'🪶',eb:'🪨'},
+                {a:'new',b:'old',ea:'✨',eb:'🏚️'},
+                {a:'clean',b:'dirty',ea:'🧼',eb:'🟤'},
+                {a:'soft',b:'hard',ea:'🧸',eb:'🪨'},
+                {a:'long',b:'short',ea:'🐍',eb:'🐛'},
+                {a:'push',b:'pull',ea:'➡️',eb:'⬅️'},
+                {a:'young',b:'old',ea:'👶',eb:'👴'},
+                {a:'front',b:'back',ea:'🔜',eb:'🔙'},
+                {a:'sweet',b:'sour',ea:'🍬',eb:'🍋'},
+                {a:'thick',b:'thin',ea:'📗',eb:'📄'},
+                {a:'laugh',b:'cry',ea:'😂',eb:'😭'},
+                {a:'dark',b:'bright',ea:'🌑',eb:'🌕'},
+                {a:'give',b:'take',ea:'🎁',eb:'🤲'},
+                {a:'win',b:'lose',ea:'🏆',eb:'😞'},
+                {a:'asleep',b:'awake',ea:'😴',eb:'😃'},
+                {a:'top',b:'bottom',ea:'⬆️',eb:'⬇️'},
+                {a:'yes',b:'no',ea:'✅',eb:'❌'},
+                {a:'left',b:'right',ea:'⬅️',eb:'➡️'},
+                {a:'on',b:'off',ea:'💡',eb:'🌑'}
             ]
         },
         {
@@ -35,7 +55,27 @@ function showVerbalAnalogies() {
                 {a:'crayon',b:'color',ea:'🖍️',eb:'🎨'},
                 {a:'drum',b:'beat',ea:'🥁',eb:'🎵'},
                 {a:'soap',b:'wash',ea:'🧼',eb:''},
-                {a:'bell',b:'ring',ea:'🔔',eb:'🎶'}
+                {a:'bell',b:'ring',ea:'🔔',eb:'🎶'},
+                {a:'hammer',b:'hit',ea:'🔨',eb:'💥'},
+                {a:'ladder',b:'climb',ea:'🪜',eb:'⬆️'},
+                {a:'spoon',b:'eat',ea:'🥄',eb:'🍽️'},
+                {a:'pillow',b:'sleep',ea:'🛏️',eb:'😴'},
+                {a:'lamp',b:'light',ea:'🪔',eb:'💡'},
+                {a:'hose',b:'water',ea:'🪈',eb:'💦'},
+                {a:'knife',b:'cut',ea:'🔪',eb:'✂️'},
+                {a:'shovel',b:'dig',ea:'🪏',eb:'🕳️'},
+                {a:'glasses',b:'see',ea:'👓',eb:'👁️'},
+                {a:'brush',b:'paint',ea:'🖌️',eb:'🎨'},
+                {a:'clock',b:'time',ea:'⏰',eb:'🕐'},
+                {a:'basket',b:'carry',ea:'🧺',eb:'📦'},
+                {a:'net',b:'catch',ea:'🥅',eb:'🤲'},
+                {a:'whistle',b:'blow',ea:'📣',eb:'💨'},
+                {a:'magnet',b:'stick',ea:'🧲',eb:'📎'},
+                {a:'fan',b:'cool',ea:'🪭',eb:'❄️'},
+                {a:'mop',b:'clean',ea:'🧹',eb:'✨'},
+                {a:'tape',b:'stick',ea:'📏',eb:'🩹'},
+                {a:'wheel',b:'roll',ea:'🛞',eb:'🔄'},
+                {a:'cup',b:'drink',ea:'☕',eb:'🥤'}
             ]
         },
         {
@@ -52,7 +92,27 @@ function showVerbalAnalogies() {
                 {a:'bird',b:'nest',ea:'🐦',eb:'🪺'},
                 {a:'snow',b:'snowman',ea:'❄️',eb:'⛄'},
                 {a:'sun',b:'sunglasses',ea:'☀️',eb:'🕶️'},
-                {a:'dog',b:'bone',ea:'🐕',eb:'🦴'}
+                {a:'dog',b:'bone',ea:'🐕',eb:'🦴'},
+                {a:'fire',b:'smoke',ea:'🔥',eb:'💨'},
+                {a:'winter',b:'snow',ea:'❄️',eb:'⛄'},
+                {a:'morning',b:'breakfast',ea:'🌅',eb:'🥞'},
+                {a:'beach',b:'sand',ea:'🏖️',eb:'🏝️'},
+                {a:'king',b:'crown',ea:'🤴',eb:'👑'},
+                {a:'spider',b:'web',ea:'🕷️',eb:'🕸️'},
+                {a:'cow',b:'milk',ea:'🐄',eb:'🥛'},
+                {a:'hen',b:'egg',ea:'🐔',eb:'🥚'},
+                {a:'baker',b:'bread',ea:'👨‍🍳',eb:'🍞'},
+                {a:'pilot',b:'plane',ea:'👨‍✈️',eb:'✈️'},
+                {a:'farmer',b:'tractor',ea:'👨‍🌾',eb:'🚜'},
+                {a:'chef',b:'kitchen',ea:'👩‍🍳',eb:'🍳'},
+                {a:'letter',b:'mailbox',ea:'✉️',eb:'📮'},
+                {a:'star',b:'sky',ea:'⭐',eb:'🌌'},
+                {a:'paint',b:'canvas',ea:'🎨',eb:'🖼️'},
+                {a:'pirate',b:'treasure',ea:'🏴‍☠️',eb:'💰'},
+                {a:'rabbit',b:'carrot',ea:'🐰',eb:'🥕'},
+                {a:'monkey',b:'banana',ea:'🐒',eb:'🍌'},
+                {a:'bear',b:'cave',ea:'🐻',eb:'🕳️'},
+                {a:'squirrel',b:'acorn',ea:'🐿️',eb:'🌰'}
             ]
         },
         {
@@ -69,7 +129,27 @@ function showVerbalAnalogies() {
                 {a:'duckling',b:'duck',ea:'🐣',eb:'🦆'},
                 {a:'caterpillar',b:'butterfly',ea:'🐛',eb:'🦋'},
                 {a:'piglet',b:'pig',ea:'🐷',eb:'🐖'},
-                {a:'seed',b:'flower',ea:'🌱',eb:'🌸'}
+                {a:'seed',b:'flower',ea:'🌱',eb:'🌸'},
+                {a:'tadpole',b:'frog',ea:'🟢',eb:'🐸'},
+                {a:'joey',b:'kangaroo',ea:'🦘',eb:'🦘'},
+                {a:'kit',b:'fox',ea:'🦊',eb:'🦊'},
+                {a:'fawn',b:'deer',ea:'🦌',eb:'🦌'},
+                {a:'gosling',b:'goose',ea:'🪿',eb:'🪿'},
+                {a:'cub',b:'lion',ea:'🦁',eb:'🦁'},
+                {a:'pup',b:'seal',ea:'🦭',eb:'🦭'},
+                {a:'owlet',b:'owl',ea:'🦉',eb:'🦉'},
+                {a:'larva',b:'beetle',ea:'🐛',eb:'🪲'},
+                {a:'eaglet',b:'eagle',ea:'🐣',eb:'🦅'},
+                {a:'colt',b:'horse',ea:'🐴',eb:'🏇'},
+                {a:'kid',b:'goat',ea:'🐐',eb:'🐐'},
+                {a:'hatchling',b:'turtle',ea:'🥚',eb:'🐢'},
+                {a:'fingerling',b:'fish',ea:'🐟',eb:'🐠'},
+                {a:'sapling',b:'tree',ea:'🌱',eb:'🌳'},
+                {a:'egg',b:'bird',ea:'🥚',eb:'🐦'},
+                {a:'acorn',b:'oak',ea:'🌰',eb:'🌳'},
+                {a:'bud',b:'flower',ea:'🌱',eb:'🌷'},
+                {a:'bulb',b:'tulip',ea:'🧅',eb:'🌷'},
+                {a:'sprout',b:'plant',ea:'🌱',eb:'🪴'}
             ]
         },
         {
@@ -86,7 +166,27 @@ function showVerbalAnalogies() {
                 {a:'carrot',b:'vegetable',ea:'🥕',eb:'🥦'},
                 {a:'truck',b:'vehicle',ea:'🚛',eb:'🚙'},
                 {a:'bed',b:'furniture',ea:'🛏️',eb:'🛋️'},
-                {a:'orange',b:'fruit',ea:'🍊',eb:'🍏'}
+                {a:'orange',b:'fruit',ea:'🍊',eb:'🍏'},
+                {a:'piano',b:'instrument',ea:'🎹',eb:'🎵'},
+                {a:'guitar',b:'instrument',ea:'🎸',eb:'🎵'},
+                {a:'rose',b:'flower',ea:'🌹',eb:'💐'},
+                {a:'tulip',b:'flower',ea:'🌷',eb:'💐'},
+                {a:'hammer',b:'tool',ea:'🔨',eb:'🛠️'},
+                {a:'saw',b:'tool',ea:'🪚',eb:'🛠️'},
+                {a:'eagle',b:'bird',ea:'🦅',eb:'🐦'},
+                {a:'penguin',b:'bird',ea:'🐧',eb:'🐦'},
+                {a:'shark',b:'fish',ea:'🦈',eb:'🐟'},
+                {a:'salmon',b:'fish',ea:'🐟',eb:'🐠'},
+                {a:'bus',b:'vehicle',ea:'🚌',eb:'🚙'},
+                {a:'bike',b:'vehicle',ea:'🚲',eb:'🚙'},
+                {a:'grape',b:'fruit',ea:'🍇',eb:'🍏'},
+                {a:'mango',b:'fruit',ea:'🥭',eb:'🍏'},
+                {a:'corn',b:'vegetable',ea:'🌽',eb:'🥦'},
+                {a:'potato',b:'vegetable',ea:'🥔',eb:'🥦'},
+                {a:'table',b:'furniture',ea:'🪑',eb:'🛋️'},
+                {a:'sofa',b:'furniture',ea:'🛋️',eb:'🪑'},
+                {a:'lion',b:'animal',ea:'🦁',eb:'🐾'},
+                {a:'rabbit',b:'animal',ea:'🐰',eb:'🐾'}
             ]
         },
         {
@@ -103,7 +203,27 @@ function showVerbalAnalogies() {
                 {a:'leaf',b:'tree',ea:'🍃',eb:'🌳'},
                 {a:'candle',b:'cake',ea:'🕯️',eb:'🎂'},
                 {a:'seed',b:'plant',ea:'🌱',eb:'🪴'},
-                {a:'roof',b:'building',ea:'🏗️',eb:'🏢'}
+                {a:'roof',b:'building',ea:'🏗️',eb:'🏢'},
+                {a:'wing',b:'airplane',ea:'✈️',eb:'🛩️'},
+                {a:'sail',b:'boat',ea:'⛵',eb:'🚢'},
+                {a:'handle',b:'door',ea:'🚪',eb:'🏠'},
+                {a:'lace',b:'shoe',ea:'👟',eb:'👞'},
+                {a:'key',b:'piano',ea:'🎹',eb:'🎵'},
+                {a:'screen',b:'phone',ea:'📱',eb:'📲'},
+                {a:'wick',b:'candle',ea:'🕯️',eb:'🔥'},
+                {a:'leg',b:'table',ea:'🪑',eb:'🍽️'},
+                {a:'eye',b:'face',ea:'👁️',eb:'😊'},
+                {a:'fin',b:'fish',ea:'🐟',eb:'🐠'},
+                {a:'tail',b:'dog',ea:'🐕',eb:'🐶'},
+                {a:'trunk',b:'elephant',ea:'🐘',eb:'🐘'},
+                {a:'shell',b:'egg',ea:'🥚',eb:'🐣'},
+                {a:'pedal',b:'bike',ea:'🚲',eb:'🚴'},
+                {a:'string',b:'guitar',ea:'🎸',eb:'🎵'},
+                {a:'brick',b:'wall',ea:'🧱',eb:'🏗️'},
+                {a:'blade',b:'knife',ea:'🔪',eb:'🍴'},
+                {a:'horn',b:'unicorn',ea:'🦄',eb:'✨'},
+                {a:'antler',b:'deer',ea:'🦌',eb:'🦌'},
+                {a:'stripe',b:'zebra',ea:'🦓',eb:'🦓'}
             ]
         }
     ];
@@ -113,7 +233,7 @@ function showVerbalAnalogies() {
 
     let level = parseInt(localStorage.getItem('va_level') || '1');
     const history = JSON.parse(localStorage.getItem('va_history') || '{}');
-    let problems=[], current=0, score=0, skips=0, tried=false;
+    let problems=[], problemLevels=[], current=0, score=0, skips=0, tried=false;
     let questionStartMs = null;
     const attemptCounts = {};
 
@@ -122,7 +242,7 @@ function showVerbalAnalogies() {
 
     function getSpeech(lvl, exA, exB, qA) {
         switch(lvl) {
-            case 1: return exA+' means '+exB+'. '+qA+' means?';
+            case 1: return exA+' and '+exB+' are opposites. '+qA+' and?';
             case 2: return 'You use '+exA+' to '+exB+'. You use '+qA+' to?';
             case 3: return exA+' goes with '+exB+'. '+qA+' goes with?';
             case 4: return exA+' grows into '+exB+'. '+qA+' grows into?';
@@ -162,9 +282,54 @@ function showVerbalAnalogies() {
         return result;
     }
 
+    function runLearnMode(pairs, onDone) {
+        let idx = 0;
+        function showCard() {
+            if (idx >= pairs.length) { onDone(); return; }
+            const p = pairs[idx];
+            const conn = level === 1 ? ' and ' : LEVELS[level].conn;
+            let html = '<button class="back" onclick="showMenu()">← Back</button>';
+            html += '<div class="card"><div class="title">🗣️ Verbal Analogies</div>';
+            html += '<div class="inst" style="color:#FFD700">✨ Let\'s Learn! ' + (idx+1) + ' / ' + pairs.length + '</div>';
+            html += '<div style="text-align:center;padding:30px 15px;background:#1a1a2e;border-radius:16px;margin:20px 0">';
+            html += '<div style="font-size:52px;margin-bottom:8px">' + (p.ea||'') + '</div>';
+            html += '<div style="font-size:32px;font-weight:bold;color:white">' + p.a + '</div>';
+            html += '<div style="font-size:28px;color:#FFD700;margin:10px 0">' + conn + '</div>';
+            html += '<div style="font-size:52px;margin-bottom:8px">' + (p.eb||'') + '</div>';
+            html += '<div style="font-size:32px;font-weight:bold;color:white">' + p.b + '</div>';
+            html += '</div>';
+            const isLast = idx === pairs.length - 1;
+            html += '<button onclick="vaLearnNext()" style="width:100%;padding:18px;font-size:22px;background:#22c55e;color:white;border:none;border-radius:14px;cursor:pointer;margin-top:10px">' + (isLast ? '✅ Start Quiz!' : '👉 Next') + '</button>';
+            html += '</div>';
+            document.getElementById('app').innerHTML = html;
+            speak(p.ea ? p.ea + ' ' : '' + p.a + ' and ' + p.b);
+        }
+        window.vaLearnNext = function() { idx++; showCard(); };
+        showCard();
+    }
+
     function startLevel(l) {
         level = l;
         problems = generateProblems(level);
+        problemLevels = problems.map(() => l);
+        current = 0; score = 0; skips = 0; tried = false;
+        // Show learn mode for Level 1 (Opposites) only
+        if (l === 1) {
+            const quizPairs = problems.map(p => p.question);
+            runLearnMode(quizPairs, renderGame);
+        } else {
+            renderGame();
+        }
+    }
+
+    function startAllLevels() {
+        const maxUnlocked = parseInt(localStorage.getItem('va_level') || '1');
+        problems = [];
+        problemLevels = [];
+        for (let l = 1; l <= maxUnlocked; l++) {
+            const lProbs = generateProblems(l);
+            lProbs.forEach(p => { problems.push(p); problemLevels.push(l); });
+        }
         current = 0; score = 0; skips = 0; tried = false;
         renderGame();
     }
@@ -174,6 +339,7 @@ function showVerbalAnalogies() {
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🗣️ Verbal Analogies</div>';
         html += '<div class="inst">Pick a level!</div>';
+        if(maxUnlocked>1) html+='<div onclick="startVAAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L'+maxUnlocked+')</div>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 6; l++) {
             const unlocked = l <= maxUnlocked;
@@ -183,7 +349,7 @@ function showVerbalAnalogies() {
             html += '<div onclick="' + (unlocked ? 'startVALevel('+l+')' : '') + '" style="background:'+bg+';color:white;padding:15px;border-radius:12px;text-align:center;cursor:'+(unlocked?'pointer':'not-allowed')+';opacity:'+(unlocked?'1':'0.5')+'">';
             html += '<div style="font-size:24px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:11px;margin-top:3px">'+LEVELS[l].name+'</div>';
-            if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
+            if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+problems.length+' (×'+h.length+')</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -191,8 +357,10 @@ function showVerbalAnalogies() {
     }
 
     window.startVALevel = function(l) { startLevel(l); };
+    window.startVAAll = startAllLevels;
 
     function renderGame() {
+        if(problemLevels[current]) level=problemLevels[current];
         if (current >= problems.length) {
             const key = 'L' + level;
             const h = history[key] || [];
@@ -202,12 +370,7 @@ function showVerbalAnalogies() {
             history[key] = h;
             localStorage.setItem('va_history', JSON.stringify(history));
 
-            const maxUnlocked = parseInt(localStorage.getItem('va_level') || '1');
-            const threshold = Math.ceil(QUESTIONS * 0.8);
-            const qualifying = h.filter(s => s.qualifies).slice(-3);
-            if (qualifying.length >= 3 && qualifying.every(s => s.score >= threshold) && level >= maxUnlocked && level < 6) {
-                localStorage.setItem('va_level', String(level + 1));
-            }
+            // Level-up moved to weekend challenge (assessment.js)
             completeWorksheet('Verbal Analogies', score, QUESTIONS);
             return;
         }
