@@ -5,7 +5,7 @@ function showVerbalAnalogies() {
     const LEVELS = [
         null,
         {
-            name:'Opposites', conn:' means ',
+            name:'Opposites', conn:' and ',
             pairs:[
                 {a:'big',b:'small',ea:'🐘',eb:'🐭'},
                 {a:'hot',b:'cold',ea:'🔥',eb:'❄️'},
@@ -242,7 +242,7 @@ function showVerbalAnalogies() {
 
     function getSpeech(lvl, exA, exB, qA) {
         switch(lvl) {
-            case 1: return exA+' means '+exB+'. '+qA+' means?';
+            case 1: return exA+' and '+exB+' are opposites. '+qA+' and?';
             case 2: return 'You use '+exA+' to '+exB+'. You use '+qA+' to?';
             case 3: return exA+' goes with '+exB+'. '+qA+' goes with?';
             case 4: return exA+' grows into '+exB+'. '+qA+' grows into?';
@@ -282,12 +282,44 @@ function showVerbalAnalogies() {
         return result;
     }
 
+    function runLearnMode(pairs, onDone) {
+        let idx = 0;
+        function showCard() {
+            if (idx >= pairs.length) { onDone(); return; }
+            const p = pairs[idx];
+            const conn = level === 1 ? ' and ' : LEVELS[level].conn;
+            let html = '<button class="back" onclick="showMenu()">← Back</button>';
+            html += '<div class="card"><div class="title">🗣️ Verbal Analogies</div>';
+            html += '<div class="inst" style="color:#FFD700">✨ Let\'s Learn! ' + (idx+1) + ' / ' + pairs.length + '</div>';
+            html += '<div style="text-align:center;padding:30px 15px;background:#1a1a2e;border-radius:16px;margin:20px 0">';
+            html += '<div style="font-size:52px;margin-bottom:8px">' + (p.ea||'') + '</div>';
+            html += '<div style="font-size:32px;font-weight:bold;color:white">' + p.a + '</div>';
+            html += '<div style="font-size:28px;color:#FFD700;margin:10px 0">' + conn + '</div>';
+            html += '<div style="font-size:52px;margin-bottom:8px">' + (p.eb||'') + '</div>';
+            html += '<div style="font-size:32px;font-weight:bold;color:white">' + p.b + '</div>';
+            html += '</div>';
+            const isLast = idx === pairs.length - 1;
+            html += '<button onclick="vaLearnNext()" style="width:100%;padding:18px;font-size:22px;background:#22c55e;color:white;border:none;border-radius:14px;cursor:pointer;margin-top:10px">' + (isLast ? '✅ Start Quiz!' : '👉 Next') + '</button>';
+            html += '</div>';
+            document.getElementById('app').innerHTML = html;
+            speak(p.ea ? p.ea + ' ' : '' + p.a + ' and ' + p.b);
+        }
+        window.vaLearnNext = function() { idx++; showCard(); };
+        showCard();
+    }
+
     function startLevel(l) {
         level = l;
         problems = generateProblems(level);
         problemLevels = problems.map(() => l);
         current = 0; score = 0; skips = 0; tried = false;
-        renderGame();
+        // Show learn mode for Level 1 (Opposites) only
+        if (l === 1) {
+            const quizPairs = problems.map(p => p.question);
+            runLearnMode(quizPairs, renderGame);
+        } else {
+            renderGame();
+        }
     }
 
     function startAllLevels() {
