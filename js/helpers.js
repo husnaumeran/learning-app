@@ -208,13 +208,6 @@ function getWeaknessSignal(accuracy) {
 }
 
 function getCogatBoost(skillId) {
-    const now = new Date();
-    if (now >= COGAT_TEST_DATE) return 0; // test is over
-    const tier = COGAT_SKILLS[skillId];
-    if (!tier) return 0;
-    const daysUntilTest = Math.ceil((COGAT_TEST_DATE - now) / (1000 * 60 * 60 * 24));
-    if (tier === 'core') return 3;
-    if (tier === 'support') return daysUntilTest <= 14 ? 3 : 2; // support rises to 3 in final 2 weeks
     return 0;
 }
 
