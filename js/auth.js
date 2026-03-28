@@ -204,6 +204,9 @@ async function selectChild(child) {
         .eq('child_id', child.id);
     CONFIG.skillSettings = {};
     (settings || []).forEach(s => { CONFIG.skillSettings[s.skill_id] = s; });
+    
+    await loadSkills();
+
     // Sync content_level to localStorage for VA/FM
     const vaSettings = CONFIG.skillSettings['verbal_analogies'];
     if (vaSettings && vaSettings.content_level) localStorage.setItem('va_level', String(vaSettings.content_level));
