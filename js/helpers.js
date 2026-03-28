@@ -150,30 +150,44 @@ function getQuestionCount(skillId, mode) {
 }
 // ============ PRIORITY SCORING ENGINE ============
 
-const BASE_WEIGHTS = {
-    // CogAT Core (10)
-    figure_matrices: 10, verbal_analogies: 10, which_doesnt_belong: 10,
-    // CogAT Support (8)
-    color_patterns: 8, color_patterns_l2: 8, what_comes_next: 8,
-    // Math (6)
-    addition: 6, subtraction: 6, counting: 6, more_less: 6, bigger_smaller: 6, matching: 6,
-    // Language (4)
-    two_letter_words: 4, three_letter_words: 4, numbers_english: 4,
-    // Qaida (4)
-    urdu_qaida: 4, arabic_qaida: 4, urdu_reading: 4, urdu_trace: 4,
-    // Numbers Urdu/Arabic (3)
-    numbers_urdu: 3, numbers_arabic: 3, numbers_all: 3,
-    // Fun/Confidence (2)
-    find_pairs: 2, connect_dots: 2, trace_upper: 2, trace_lower: 2, trace_numbers: 2,
-    urdu_what_next: 2, urdu_2_letter: 2, urdu_videos: 2,
-};
+const SKILLS = {}; // populated from DB
 
 const COGAT_SKILLS = {
     figure_matrices: 'core', verbal_analogies: 'core', which_doesnt_belong: 'core',
-    color_patterns: 'support', color_patterns_l2: 'support', what_comes_next: 'support',
+    color_patterns: 'support', color_patterns_l2: 'support',
+    what_comes_next_numbers: 'support', what_comes_next_letters: 'support',
+
 };
 
 const COGAT_TEST_DATE = new Date('2026-04-18T11:30:00-05:00');
+
+async function loadSkills(){
+    const {data, error} = await sb
+    .from('skills')
+    .select('id, category, base_weight')
+    .eq('is_active', true);
+
+    if (error) {
+        console.error('loadSkills error: ', error);
+        return;
+    }
+
+    data.forEach(row => {SKILLS[row.id] = row;});
+}
+
+function getBaseWeight(skillId){
+    const now = new Date();
+    const skill = SKILLS[skillId];
+    if (!skill) return 2;
+
+    // After test = balanced
+    if (now >= COGAT_TEST_DATE){
+        return skill.category === 'fun' ? 4:6;
+    }
+
+    // Before test = use DB weight
+    return skill.base_weight || 2;
+}
 
 function getReviewUrgency(daysSincePracticed) {
     if (daysSincePracticed === 0) return 0;
@@ -218,7 +232,7 @@ function getOverusePenalty(timesToday) {
 }
 
 function calculatePriority(skillId, stats) {
-    const baseWeight = BASE_WEIGHTS[skillId] || 2;
+    const baseWeight = getBaseWeight(skillId);
     const reviewUrgency = getReviewUrgency(stats.daysSincePracticed || 0);
     const weaknessSignal = getWeaknessSignal(stats.accuracy != null ? stats.accuracy : 100);
     const cogatBoost = getCogatBoost(skillId);
