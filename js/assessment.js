@@ -49,9 +49,19 @@ function getWeekStartISO() {
     return monday.toISOString();
 }
 
+function getChallengeStartISO() {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun, 6=Sat
+    const diff = day === 0 ? 1 : day === 6 ? 0 : day + 1;
+    const saturday = new Date(now);
+    saturday.setDate(now.getDate() - diff);
+    saturday.setHours(0, 0, 0, 0);
+    return saturday.toISOString();
+}
+
 window.checkWeekendAssessment = async function() {
     if (!CONFIG.childId) return;
-    const weekStart = getWeekStartISO();
+    const weekStart = getChallengeStartISO();
     const { data } = await sb.from('sessions')
         .select('id,status')
         .eq('child_id', CONFIG.childId)
