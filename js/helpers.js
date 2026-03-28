@@ -655,6 +655,11 @@ function speakUrdu(text) {
     });
 }
 
+function playHarakat(lang, name, harakat) {
+    const audio = new Audio('audio/harakat/'+lang+'_'+name+'_'+harakat+'.mp3');
+    audio.play().catch(() => {});
+}
+
 function speak(text) {
     return new Promise(resolve => {
         if (typeof speechSynthesis === 'undefined') { resolve(); return; }
