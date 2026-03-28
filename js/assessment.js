@@ -57,6 +57,8 @@ window.checkWeekendAssessment = async function() {
         .eq('child_id', CONFIG.childId)
         .eq('session_type', 'weekend_assessment')
         .gte('created_at', weekStart)
+        .in('status', ['in_progress', 'completed'])
+        .order('created_at', {ascending: false})
         .limit(1);
 
     if (data && data.length > 0) {
