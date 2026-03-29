@@ -39,6 +39,16 @@ const VA_ASSESS_LEVELS = [
 
 // ============ WEEKEND ASSESSMENT ============
 
+function getWeekStartISO() {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun, 1=Mon...
+    const diff = day === 0 ? 6 : day - 1; // days since Monday
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday.toISOString();
+}
+
 function getChallengeStartISO() {
     const now = new Date();
     const day = now.getDay(); // 0=Sun, 6=Sat
