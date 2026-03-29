@@ -39,16 +39,6 @@ const VA_ASSESS_LEVELS = [
 
 // ============ WEEKEND ASSESSMENT ============
 
-function getWeekStartISO() {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun, 1=Mon...
-    const diff = day === 0 ? 6 : day - 1; // days since Monday
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - diff);
-    monday.setHours(0, 0, 0, 0);
-    return monday.toISOString();
-}
-
 function getChallengeStartISO() {
     const now = new Date();
     const day = now.getDay(); // 0=Sun, 6=Sat
@@ -59,22 +49,43 @@ function getChallengeStartISO() {
     return saturday.toISOString();
 }
 
+function getChallengeDayKey(){
+    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+function isWeekendDay(){
+    const day = new Date().getDay(); // 0=Sun, 6=Sat
+    return day === 0 || day === 6;
+}
+
 window.checkWeekendAssessment = async function() {
     if (!CONFIG.childId) return;
-    const weekStart = getChallengeStartISO();
+
+    // Mon-Fri: no weekend challenge
+    if (!isWeekendDay()) {
+        CONFIG.weekendChallengeSession = null;
+        CONFIG.weekendChallengeDone = false;
+        CONFIG.weekendChallengeInProgress = false;
+        return;
+    }
+
+    const todayKey = getChallengeDayKey();
+
     const { data } = await sb.from('sessions')
-        .select('id,status')
+        .select('id,status,session_meta,created_at')
         .eq('child_id', CONFIG.childId)
         .eq('session_type', 'weekend_assessment')
-        .gte('created_at', weekStart)
         .in('status', ['in_progress', 'completed'])
-        .order('created_at', {ascending: false})
-        .limit(1);
+        .order('created_at', { ascending: false });
 
-    if (data && data.length > 0) {
-        CONFIG.weekendChallengeSession = data[0];
-        CONFIG.weekendChallengeDone = data[0].status === 'completed';
-        CONFIG.weekendChallengeInProgress = data[0].status === 'in_progress';
+    const todaySession = (data || []).find(s =>
+        s.session_meta && s.session_meta.challenge_day === todayKey
+    );
+
+    if (todaySession) {
+        CONFIG.weekendChallengeSession = todaySession;
+        CONFIG.weekendChallengeDone = todaySession.status === 'completed';
+        CONFIG.weekendChallengeInProgress = todaySession.status === 'in_progress';
     } else {
         CONFIG.weekendChallengeSession = null;
         CONFIG.weekendChallengeDone = false;
@@ -118,8 +129,15 @@ window.resumeWeekendChallenge = async function() {
 }
 
 window.startWeekendChallenge = async function() {
+    if (!isWeekendDay()) {
+        alert('Weekend Challenge is only available on Saturday and Sunday.');
+        return;
+    }
+
+    const todayKey = getChallengeDayKey();
+    const weekStart = getChallengeStartISO();
+
     // 1. Find skills practiced this week
-    const weekStart = getWeekStartISO();
     const { data: practiced } = await sb.from('responses')
         .select('skill_id')
         .eq('child_id', CONFIG.childId)
@@ -130,42 +148,50 @@ window.startWeekendChallenge = async function() {
         if (r.skill_id) counts[r.skill_id] = (counts[r.skill_id] || 0) + 1;
     });
 
-    // Filter to enabled evaluable skills only (no cap — all practiced skills included)
     let skills = Object.entries(counts)
         .filter(([id]) => ASSESSMENT_SKILLS[id] && ASSESSMENT_SKILLS[id].enabled)
         .sort((a, b) => b[1] - a[1])
         .map(e => e[0]);
 
-    // Fallback if no practice this week
     if (skills.length === 0) {
         skills = ['addition', 'subtraction', 'counting'];
     }
 
-    // 2. Create session
+    // 2. Create session for TODAY only
     const { data: session, error } = await sb.from('sessions').insert({
         child_id: CONFIG.childId,
         session_type: 'weekend_assessment',
-        session_meta: { week: getWeekKey(), skills_tested: skills }
+        session_meta: {
+            week: getWeekKey(),
+            challenge_day: todayKey,
+            skills_tested: skills
+        }
     }).select('id').single();
 
-    if (error || !session) { console.error('Weekend session failed:', error); alert('Session error: '+JSON.stringify(error)); return; }
+    if (error || !session) {
+        console.error('Weekend session failed:', error);
+        alert('Session error: ' + JSON.stringify(error));
+        return;
+    }
+
     CONFIG.sessionId = session.id;
 
-    // 3. Generate questions — each skill gets its own challenge_question_count
+    // 3. Generate questions
     const questions = [];
     for (const skill of skills) {
         try {
             const count = getQuestionCount(skill, 'challenge');
             questions.push(...makeAssessmentQs(skill, count));
-        } catch(e) {
+        } catch (e) {
             console.error('makeAssessmentQs failed for', skill, e);
-            document.getElementById('app').innerHTML = '<div style="padding:20px;color:red">Error on skill: ' + skill + ' — ' + e.message + '<br>' + e.stack + '</div>';
+            document.getElementById('app').innerHTML =
+                '<div style="padding:20px;color:red">Error on skill: ' +
+                skill + ' — ' + e.message + '<br>' + e.stack + '</div>';
             return;
         }
     }
-    const finalQs = questions.sort(() => Math.random() - 0.5);
 
-    // 4. Run
+    const finalQs = questions.sort(() => Math.random() - 0.5);
     runAssessment(finalQs);
 }
 
@@ -565,7 +591,7 @@ function finishAssessment(results, score, total) {
     }
 
     // Mark done (keyed by child + week)
-    localStorage.setItem('weekendChallenge:' + CONFIG.childId + ':' + getWeekKey(), 'true');
+    localStorage.setItem('weekendChallenge:' + CONFIG.childId + ':' + getChallengeDayKey(), 'true');
     CONFIG.weekendChallengeDone = true;
 
     // Write to localStorage so progress view can show it
