@@ -92,7 +92,7 @@ function recordPassiveResponse(skillId, questionData, itemIndex = null) {
     _itemTimerStart = null;
 }
 
-// ============ DIFFICULTY & QUESTION COUNT ============
+// ============ DIFFICULTY / COUNT / CONTENT ============
 const FOCUS_FLOORS = {
     default: 1,
     urdu_videos: 1,
@@ -101,52 +101,48 @@ const FOCUS_FLOORS = {
     connect_dots: 1
 };
 
-function getDifficultyLevel(skillId) {
+function getSkillValue(skillId, field, fallback = 1) {
     const s = CONFIG.skillSettings && CONFIG.skillSettings[skillId];
-    if (s && s.difficulty_level != null) return Math.max(s.difficulty_level, 1);
-    if (s && s.focus_number != null) return Math.max(s.focus_number, 1); // fallback during migration
-    return Math.max(CONFIG.focusNumber, 1);
-}
+    if (!s) return fallback;
 
-function getQuestionCount(skillId, sessionType) {
-    const mode = sessionType || 'practice';
-    const s = CONFIG.skillSettings && CONFIG.skillSettings[skillId];
-    if (mode === 'challenge') {
-        if (s && s.challenge_question_count != null) return s.challenge_question_count;
-        return 5; // default challenge count
+    if (field === 'difficulty') {
+        return s.difficulty_level ?? s.focus_number ?? fallback;
     }
-    // practice
-    if (s && s.practice_question_count != null) return s.practice_question_count;
-    return 1; // default practice count — start gentle
-}
 
-// Legacy wrapper — used by worksheets not yet migrated
-function getFocusNumber(skillId) {
-    let val;
-    if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
-        val = CONFIG.skillSettings[skillId].difficulty_level ?? CONFIG.skillSettings[skillId].focus_number;
-    } else {
-        val = CONFIG.focusNumber;
+    if (field === 'count') {
+        return s.practice_question_count ?? fallback;
     }
-    const floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
-    return Math.max(val, floor);
-}
 
-
-function getDifficultyLevel(skillId) {
-    if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
-        return CONFIG.skillSettings[skillId].difficulty_level ?? 1;
+    if (field === 'challenge_count') {
+        return s.challenge_question_count ?? fallback;
     }
-    return 1;
-}
 
-function getQuestionCount(skillId, mode) {
-    const key = mode === 'challenge' ? 'challenge_question_count' : 'practice_question_count';
-    const fallback = mode === 'challenge' ? 5 : 1;
-    if (CONFIG.skillSettings && CONFIG.skillSettings[skillId]) {
-        return CONFIG.skillSettings[skillId][key] ?? fallback;
+    if (field === 'content') {
+        return s.content_level ?? fallback;
     }
+
     return fallback;
+}
+
+function getDifficultyLevel(skillId) {
+    const floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
+    return Math.max(getSkillValue(skillId, 'difficulty', CONFIG.focusNumber || 1), floor);
+}
+
+function getQuestionCount(skillId, mode = 'practice') {
+    if (mode === 'challenge') {
+        return Math.max(getSkillValue(skillId, 'challenge_count', 5), 1);
+    }
+    return Math.max(getSkillValue(skillId, 'count', 1), 1);
+}
+
+// Legacy wrapper — keep for worksheets still using it
+function getFocusNumber(skillId) {
+    return getDifficultyLevel(skillId);
+}
+
+function getContentLevel(skillId) {
+    return Math.max(getSkillValue(skillId, 'content', 1), 1);
 }
 // ============ PRIORITY SCORING ENGINE ============
 
