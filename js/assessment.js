@@ -210,7 +210,7 @@ function makeFMAssessmentQs(count) {
     const SHAPES = ['circle','square','triangle','star','diamond'];
     const COLORS = ['#FF0000','#0066FF','#00AA00','#FFD700','#FF6600','#FF69B4'];
     const SIZES = [60, 30];
-    const fmLevel = Math.min(parseInt(localStorage.getItem('fm_level') || '1'), 8);
+    const fmLevel = Math.min(getContentLevel('figure_matrices'), 8);
     const pick=(a)=>a[Math.floor(Math.random()*a.length)];
     const pickDiff=(a,x)=>{ const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; };
     const rci=()=>Math.floor(Math.random()*COLORS.length);
@@ -460,7 +460,7 @@ function makeAssessmentQs(skillId, count) {
         }
         case 'verbal_analogies': {
             // Use child's current VA level (stored in localStorage)
-            const vaLevel = Math.min(parseInt(localStorage.getItem('va_level') || '1'), VA_ASSESS_LEVELS.length - 1);
+            const vaLevel = Math.min(getContentLevel('verbal_analogies'), VA_ASSESS_LEVELS.length - 1);
             const levelData = VA_ASSESS_LEVELS[vaLevel];
             if (!levelData) break;
             const pairs = levelData.pairs;
@@ -623,10 +623,10 @@ function finishAssessment(results, score, total) {
     if (bySkill.verbal_analogies) {
         const vaPct = bySkill.verbal_analogies.correct / bySkill.verbal_analogies.total;
         if (vaPct >= 0.8) {
-            const cur = parseInt(localStorage.getItem('va_level') || '1');
+            const cur = getContentLevel('verbal_analogies');
             if (cur < 6) {
                 const newLevel = cur + 1;
-                localStorage.setItem('va_level', String(newLevel));
+                CONFIG.skillSettings['verbal_analogies'] = { ...(CONFIG.skillSettings['verbal_analogies'] || {}), content_level: newLevel };
                 sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'verbal_analogies', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
                 console.log('📈 VA content_level → ' + newLevel);
             }
@@ -635,10 +635,10 @@ function finishAssessment(results, score, total) {
     if (bySkill.figure_matrices) {
         const fmPct = bySkill.figure_matrices.correct / bySkill.figure_matrices.total;
         if (fmPct >= 0.8) {
-            const cur = parseInt(localStorage.getItem('fm_level') || '1');
+            const cur = getContentLevel('figure_matrices');
             if (cur < 8) {
                 const newLevel = cur + 1;
-                localStorage.setItem('fm_level', String(newLevel));
+                CONFIG.skillSettings['figure_matrices'] = { ...(CONFIG.skillSettings['figure_matrices'] || {}), content_level: newLevel };
                 sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'figure_matrices', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
                 console.log('📈 FM content_level → ' + newLevel);
             }
