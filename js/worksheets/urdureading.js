@@ -13,7 +13,7 @@ function showUrduReading() {
     }
 
     window.prevUrduRead = () => { if (current > 0) { current--; render(); } };
-    window.nextUrduRead = () => {
+    window.nextUrduRead = async () => {
         current++;
         if (current >= letters.length) {
             completeWorksheet('Urdu Reading', letters.length, letters.length);
@@ -21,8 +21,22 @@ function showUrduReading() {
             if (level <= 1) {
                 // Auto-advance level 1 after first completion
                 const newLevel = 2;
+                // Update local storage
                 CONFIG.skillSettings['urdu_reading'] = { ...(CONFIG.skillSettings['urdu_reading'] || {}), content_level: newLevel };
-                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'urdu_reading', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
+                // Debug LOG
+                console.log('ATTEMPT SAVE URDU LEVEL (AUTO):', newLevel);
+                // Save to db
+                const { error } = await sb.from('child_skill_settings').upsert(
+                {
+                    child_id: CONFIG.childId,
+                    skill_id: 'urdu_reading',
+                    content_level: newLevel
+                },
+                { onConflict: 'child_id,skill_id' }
+                );
+                // Debug result
+                console.log('UPSERT ERROR (AUTO):', error);
+                // UI
                 document.getElementById('app').innerHTML =
                     '<div class="card"><div class="title">Great job! 🎉</div>' +
                     '<div style="text-align:center;margin-top:10px">Urdu Reading advanced to level 2!</div>' +
