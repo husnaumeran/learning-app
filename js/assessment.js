@@ -7,6 +7,7 @@ const ASSESSMENT_SKILLS = {
     counting:                 { type: 'text',   enabled: true },
     more_less:                { type: 'text',   enabled: true },
     bigger_smaller:           { type: 'text',   enabled: true },
+    match_numbers:            { type: 'text',   enabled: true },
     which_doesnt_belong:      { type: 'text',   enabled: true },
     what_comes_next_numbers:  { type: 'text',   enabled: true },
     color_patterns:           { type: 'text',   enabled: true },
@@ -336,6 +337,20 @@ function makeAssessmentQs(skillId, count) {
                     choices: [String(ans), ...randWrongs(ans, 3, 1).map(String)].sort(() => Math.random() - 0.5),
                     correct: String(ans),
                     qdata: {type:'counting', emoji, correct_answer:ans}
+                });
+            }
+            break;
+        }
+        case 'match_numbers': {
+            const pairs = generateMatchPairs(focus, count);
+            for (const [ans, emoji] of pairs) {
+                qs.push({
+                    skill_id: 'match_numbers',
+                    prompt_emoji: emoji,
+                    prompt: 'Number Match',
+                    choices: [String(ans), ...randWrongs(ans, 3, 1).map(String)].sort(() => Math.random() - 0.5),
+                    correct: String(ans),
+                    qdata: {type:'match_numbers', number: ans, emoji_count:ans}
                 });
             }
             break;
