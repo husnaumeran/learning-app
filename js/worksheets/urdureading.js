@@ -42,7 +42,7 @@ function showUrduReading() {
                     '<div style="text-align:center;margin-top:10px">Urdu Reading advanced to level 2!</div>' +
                     '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
             } else {
-                showUrduReadingCheck(letters);
+                showUrduReadingCheck(letters, !! CONFIG.sessionId);
             }
             return;
         }
@@ -51,7 +51,7 @@ function showUrduReading() {
     render();
 }
 
-function showUrduReadingCheck(letters) {
+function showUrduReadingCheck(letters, silent = false) {
     const DISTRACTOR_POOL = URDU_LETTERS.slice(0, Math.max(10, letters.length));
     const total = Math.min(5, letters.length);
     const bank = [...letters].sort(() => Math.random() - 0.5).slice(0, total);
@@ -64,10 +64,10 @@ function showUrduReadingCheck(letters) {
     });
 
     let current = 0, score = 0;
-    const startTime = Date.now();
+    let questionStartMs = Date.now();
 
     function render() {
-        if (current >= questions.length) { finishUrduReadingCheck(score, questions.length); return; }
+        if (current >= questions.length) { finishUrduReadingCheck(score, questions.length, silent); return; }
         const q = questions[current];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
         html += '<div class="title">Urdu Reading Check ⭐</div>';
@@ -81,13 +81,14 @@ function showUrduReadingCheck(letters) {
         });
         html += '</div></div>';
         document.getElementById('app').innerHTML = html;
+        questionStartMs = Date.now();
     }
 
     window.pickUrduReadingCheck = function(i) {
         const q = questions[current];
         const correct = q.choices[i].letter === q.correct.letter;
         if (correct) score++;
-        const responseTimeMs = Date.now() - startTime;
+        const responseTimeMs = Date.now() - questionStartMs;
         recordResponse('urdu_reading_check',
             { type: 'urdu_reading_check', letter: q.correct.letter, letter_name: q.correct.name },
             q.correct.letter, q.choices[i].letter, correct, true, 1, responseTimeMs, current);
@@ -98,19 +99,42 @@ function showUrduReadingCheck(letters) {
     render();
 }
 
-function finishUrduReadingCheck(score, total) {
+async function finishUrduReadingCheck(score, total, silent = false) {
     const pct = Math.round((score / total) * 100);
     const level = getContentLevel('urdu_reading');
+
     if (pct >= 80) {
         const newLevel = Math.min(level + 1, URDU_LETTERS.length);
-        CONFIG.skillSettings['urdu_reading'] = { ...(CONFIG.skillSettings['urdu_reading'] || {}), content_level: newLevel };
-        sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'urdu_reading', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
+        CONFIG.skillSettings['urdu_reading'] = {
+            ...(CONFIG.skillSettings['urdu_reading'] || {}),
+            content_level: newLevel
+        };
+
+        await sb.from('child_skill_settings').upsert(
+            {
+                child_id: CONFIG.childId,
+                skill_id: 'urdu_reading',
+                content_level: newLevel
+            },
+            { onConflict: 'child_id,skill_id' }
+        );
+
+        if (silent) {
+            nextWorksheet();
+            return;
+        }
+
         document.getElementById('app').innerHTML =
             '<div class="card"><div class="title">Great job! 🎉</div>' +
             '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
             '<div style="text-align:center;margin-top:10px">Urdu Reading advanced to level ' + newLevel + '!</div>' +
             '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
     } else {
+        if (silent) {
+            nextWorksheet();
+            return;
+        }
+
         document.getElementById('app').innerHTML =
             '<div class="card"><div class="title">Nice try 💪</div>' +
             '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
