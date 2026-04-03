@@ -690,6 +690,7 @@ function resolveSkillId(type) {
     if (type.startsWith('Urdu Qaida')) return 'urdu_qaida';
     if (type.startsWith('Arabic Qaida')) return 'arabic_qaida';
     if (type.startsWith('Urdu Video')) return 'urdu_videos';
+    if (type.startsWith('Numbers Urdu')) return 'numbers_urdu';
     // If type is already a skill_id (e.g. 'numbers_urdu')
     return type;
 }
