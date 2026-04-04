@@ -89,7 +89,7 @@ function showUrduReadingCheck(letters, silent = false) {
         const correct = q.choices[i].letter === q.correct.letter;
         if (correct) score++;
         const responseTimeMs = Date.now() - questionStartMs;
-        recordResponse('urdu_reading_check',
+        recordResponse('urdu_reading',
             { type: 'urdu_reading_check', letter: q.correct.letter, letter_name: q.correct.name },
             q.correct.letter, q.choices[i].letter, correct, true, 1, responseTimeMs, current);
         current++;
