@@ -146,7 +146,7 @@ window.startWeekendChallenge = async function() {
     }
 
     const todayKey = getChallengeDayKey();
-    const weekStart = getChallengeStartISO();
+    const weekStart = getWeekStartISO();
 
     // 1. Find skills practiced this week
     const { data: practiced } = await sb.from('responses')
