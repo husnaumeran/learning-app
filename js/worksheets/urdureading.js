@@ -75,9 +75,9 @@ function showUrduReadingCheck(letters, silent = false) {
         html += '<div style="text-align:center;font-size:24px;margin:15px 0">Tap the correct letter</div>';
         html += '<div style="text-align:center;font-size:28px;margin:15px 0">' + q.correct.name + '</div>';
         html += '<div style="text-align:center;margin:10px 0"><button class="btn" onclick="speakUrdu(\'' + q.correct.letter + '\')">🔊 Hear</button></div>';
-        html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px">';
+        html += '<div style="display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px">';
         q.choices.forEach((choice, i) => {
-            html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:48px;font-family:serif;direction:rtl">' + choice.letter + '</button>';
+            html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:64px;padding:20px;font-family:serif;direction:rtl">' + choice.letter + '</button>';
         });
         html += '</div></div>';
         document.getElementById('app').innerHTML = html;
@@ -141,4 +141,144 @@ async function finishUrduReadingCheck(score, total, silent = false) {
             '<div style="text-align:center;margin-top:10px">Keep practicing this level.</div>' +
             '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
     }
+}
+
+async function speakUrdu(letter, harakat = 'fatha') {
+    const URDU_MAP = {
+        'ا': 'alif',
+        'ب': 'bay',
+        'پ': 'pay',
+        'ت': 'tay',
+        'ٹ': 'ttay',
+        'ث': 'say',
+        'ج': 'jeem',
+        'چ': 'chay',
+        'ح': 'hey',
+        'خ': 'khay',
+        'د': 'daal',
+        'ڈ': 'ddaal',
+        'ذ': 'zaal',
+        'ر': 'ray',
+        'ڑ': 'rray',
+        'ز': 'zay',
+        'ژ': 'zhay',
+        'س': 'seen',
+        'ش': 'sheen',
+        'ص': 'suad',
+        'ض': 'zuad',
+        'ط': 'toy',
+        'ظ': 'zoy',
+        'ع': 'ain',
+        'غ': 'ghain',
+        'ف': 'fay',
+        'ق': 'qaaf',
+        'ک': 'kaaf',
+        'گ': 'gaaf',
+        'ل': 'laam',
+        'م': 'meem',
+        'ن': 'noon',
+        'و': 'wao',
+        'ہ': 'hey',
+        'ی': 'yay'
+    };
+
+    const ARABIC_MAP = {
+        'ا': 'alif',
+        'ب': 'baa',
+        'ت': 'taa',
+        'ث': 'thaa',
+        'ج': 'jeem',
+        'ح': 'haa',
+        'خ': 'khaa',
+        'د': 'daal',
+        'ذ': 'dhaal',
+        'ر': 'raa',
+        'ز': 'zaay',
+        'س': 'seen',
+        'ش': 'sheen',
+        'ص': 'saad',
+        'ض': 'daad',
+        'ط': 'taa',
+        'ظ': 'dhaa',
+        'ع': 'ain',
+        'غ': 'ghain',
+        'ف': 'faa',
+        'ق': 'qaaf',
+        'ک': 'kaaf',
+        'ل': 'laam',
+        'م': 'meem',
+        'ن': 'noon',
+        'و': 'waaw',
+        'ی': 'yaa'
+    };
+
+    const basePath = '/learning-app/audio/harakat/';
+    const candidates = [];
+
+    const urduName = URDU_MAP[letter];
+    const arabicName = ARABIC_MAP[letter];
+
+    if (urduName) {
+        candidates.push(`${basePath}ur_${urduName}_${harakat}.mp3`);
+    }
+
+    if (arabicName) {
+        candidates.push(`${basePath}ar_${arabicName}_${harakat}.mp3`);
+    }
+
+    for (const src of candidates) {
+        try {
+            await playAudioFile(src);
+            return;
+        } catch (e) {
+            console.warn('Audio failed:', src);
+        }
+    }
+
+    try {
+        const utter = new SpeechSynthesisUtterance(letter);
+        utter.lang = 'ur-PK';
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utter);
+    } catch (e) {
+        console.error('Urdu speech fallback failed:', e);
+    }
+}
+
+function playAudioFile(src) {
+    return new Promise((resolve, reject) => {
+        const audio = new Audio(src);
+        let finished = false;
+
+        const cleanup = () => {
+            audio.onended = null;
+            audio.onerror = null;
+            audio.oncanplaythrough = null;
+        };
+
+        audio.onended = () => {
+            if (finished) return;
+            finished = true;
+            cleanup();
+            resolve();
+        };
+
+        audio.onerror = (e) => {
+            if (finished) return;
+            finished = true;
+            cleanup();
+            reject(e);
+        };
+
+        audio.oncanplaythrough = () => {
+            audio.play().catch(err => {
+                if (finished) return;
+                finished = true;
+                cleanup();
+                reject(err);
+            });
+        };
+
+        audio.load();
+    });
 }
