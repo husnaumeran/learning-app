@@ -7,7 +7,7 @@ function showUrduReading() {
         const l = letters[current];
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
         html += '<div class="title" style="direction:rtl">اردو Urdu — Read: '+l.name+'</div>';
-        html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakUrdu(\''+l.letter+'\')">'+l.letter+'</div>';
+        html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakUrduLetter(\''+l.letter+'\')">'+l.letter+'</div>';
         html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key" onclick="prevUrduRead()">← Prev</button><span class="score">'+(current+1)+' / '+letters.length+'</span><button class="key green" onclick="nextUrduRead()">Next →</button></div></div>';
         document.getElementById('app').innerHTML = html;
     }
@@ -74,7 +74,7 @@ function showUrduReadingCheck(letters, silent = false) {
         html += '<div style="text-align:center;color:#888">' + (current + 1) + ' / ' + questions.length + '</div>';
         html += '<div style="text-align:center;font-size:24px;margin:15px 0">Tap the correct letter</div>';
         html += '<div style="text-align:center;font-size:28px;margin:15px 0">' + q.correct.name + '</div>';
-        html += '<div style="text-align:center;margin:10px 0"><button class="btn" onclick="speakUrdu(\'' + q.correct.letter + '\')">🔊 Hear</button></div>';
+        html += '<div style="text-align:center;margin:10px 0"><button class="btn" onclick="speakUrduLetter(\'' + q.correct.letter + '\')">🔊 Hear</button></div>';
         html += '<div style="display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px">';
         q.choices.forEach((choice, i) => {
             html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:64px;padding:20px;font-family:serif;direction:rtl">' + choice.letter + '</button>';
@@ -143,7 +143,7 @@ async function finishUrduReadingCheck(score, total, silent = false) {
     }
 }
 
-async function speakUrdu(letter, harakat = 'fatha') {
+async function speakUrduLetter(letter, harakat = 'fatha') {
     const URDU_MAP = {
         'ا': 'alif',
         'ب': 'bay',
