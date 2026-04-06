@@ -212,7 +212,7 @@ async function speakUrduLetter(letter, harakat = 'fatha') {
         'ی': 'ya'
     };
 
-    const basePath = '/learning-app/audio/letters/';
+    const basePath = '/learning-app/learning-app/audio/letters/';
     const candidates = [];
 
     const urduName = URDU_MAP[letter];
