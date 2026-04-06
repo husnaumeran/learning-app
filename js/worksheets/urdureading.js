@@ -146,7 +146,7 @@ async function finishUrduReadingCheck(score, total, silent = false) {
 async function speakUrduLetter(letter, harakat = 'fatha') {
     const URDU_MAP = {
         'ا': 'alif',
-        'ب': 'bay',
+        'ب': 'baa',
         'پ': 'pey',
         'ت': 'ta',
         'ٹ': 'tey',
