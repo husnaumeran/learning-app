@@ -147,83 +147,83 @@ async function speakUrdu(letter, harakat = 'fatha') {
     const URDU_MAP = {
         'ا': 'alif',
         'ب': 'bay',
-        'پ': 'pay',
-        'ت': 'tay',
-        'ٹ': 'ttay',
-        'ث': 'say',
-        'ج': 'jeem',
-        'چ': 'chay',
-        'ح': 'hey',
-        'خ': 'khay',
+        'پ': 'pey',
+        'ت': 'ta',
+        'ٹ': 'tey',
+        'ث': 'tha',
+        'ج': 'jiim',
+        'چ': 'chey',
+        'ح': 'hha',
+        'خ': 'kha',
         'د': 'daal',
-        'ڈ': 'ddaal',
-        'ذ': 'zaal',
-        'ر': 'ray',
-        'ڑ': 'rray',
+        'ڈ': 'daaal',
+        'ذ': 'thaal',
+        'ر': 'ra',
+        'ڑ': 'rey',
         'ز': 'zay',
-        'ژ': 'zhay',
-        'س': 'seen',
-        'ش': 'sheen',
-        'ص': 'suad',
-        'ض': 'zuad',
-        'ط': 'toy',
-        'ظ': 'zoy',
-        'ع': 'ain',
-        'غ': 'ghain',
-        'ف': 'fay',
-        'ق': 'qaaf',
-        'ک': 'kaaf',
+        'ژ': 'zhey',
+        'س': 'siin',
+        'ش': 'shiin',
+        'ص': 'saad',
+        'ض': 'daad',
+        'ط': 'taa',
+        'ظ': 'thaa',
+        'ع': 'ayn',
+        'غ': 'ghayn',
+        'ف': 'fa',
+        'ق': 'qaf',
+        'ک': 'kaf',
         'گ': 'gaaf',
-        'ل': 'laam',
-        'م': 'meem',
-        'ن': 'noon',
-        'و': 'wao',
-        'ہ': 'hey',
-        'ی': 'yay'
+        'ل': 'lam',
+        'م': 'miim',
+        'ن': 'nuun',
+        'و': 'waw',
+        'ہ': 'he',
+        'ی': 'ya'
     };
 
     const ARABIC_MAP = {
         'ا': 'alif',
         'ب': 'baa',
-        'ت': 'taa',
-        'ث': 'thaa',
-        'ج': 'jeem',
-        'ح': 'haa',
-        'خ': 'khaa',
+        'ت': 'ta',
+        'ث': 'tha',
+        'ج': 'jiim',
+        'ح': 'hha',
+        'خ': 'kha',
         'د': 'daal',
-        'ذ': 'dhaal',
-        'ر': 'raa',
-        'ز': 'zaay',
-        'س': 'seen',
-        'ش': 'sheen',
+        'ذ': 'thaal',
+        'ر': 'ra',
+        'ز': 'zay',
+        'س': 'siin',
+        'ش': 'shiin',
         'ص': 'saad',
         'ض': 'daad',
         'ط': 'taa',
-        'ظ': 'dhaa',
-        'ع': 'ain',
-        'غ': 'ghain',
-        'ف': 'faa',
-        'ق': 'qaaf',
-        'ک': 'kaaf',
-        'ل': 'laam',
-        'م': 'meem',
-        'ن': 'noon',
-        'و': 'waaw',
-        'ی': 'yaa'
+        'ظ': 'thaa',
+        'ع': 'ayn',
+        'غ': 'ghayn',
+        'ف': 'fa',
+        'ق': 'qaf',
+        'ک': 'kaf',
+        'ل': 'lam',
+        'م': 'miim',
+        'ن': 'nuun',
+        'و': 'waw',
+        'ی': 'ya'
     };
 
-    const basePath = '/learning-app/audio/harakat/';
+    const basePath = '/learning-app/audio/letters/';
     const candidates = [];
 
     const urduName = URDU_MAP[letter];
     const arabicName = ARABIC_MAP[letter];
 
     if (urduName) {
-        candidates.push(`${basePath}ur_${urduName}_${harakat}.mp3`);
+        candidates.push(`${basePath}ur_${urduName}_letters.ogg`);
     }
 
     if (arabicName) {
-        candidates.push(`${basePath}ar_${arabicName}_${harakat}.mp3`);
+        candidates.push(`${basePath}ar_${arabicName}_letters.ogg`);
     }
 
     for (const src of candidates) {
