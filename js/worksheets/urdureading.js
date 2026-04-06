@@ -75,9 +75,9 @@ function showUrduReadingCheck(letters, silent = false) {
         html += '<div style="text-align:center;font-size:24px;margin:15px 0">Tap the correct letter</div>';
         html += '<div style="text-align:center;font-size:28px;margin:15px 0">' + q.correct.name + '</div>';
         html += '<div style="text-align:center;margin:10px 0"><button class="btn" onclick="speakUrduLetter(\'' + q.correct.letter + '\')">🔊 Hear</button></div>';
-        html += '<div style="display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px">';
+        html += '<div style="display:grid;grid-template-columns:1fr;gap:20px;margin-top:20px">';
         q.choices.forEach((choice, i) => {
-            html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:64px;padding:20px;font-family:serif;direction:rtl">' + choice.letter + '</button>';
+            html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:64px;min-height:110px;padding:24px 20px;line-height:1.4;font-family:serif;direction:rtl;display:flex;align-items:center;justify-content:center;overflow:visible">' + choice.letter + '</button>';
         });
         html += '</div></div>';
         document.getElementById('app').innerHTML = html;
