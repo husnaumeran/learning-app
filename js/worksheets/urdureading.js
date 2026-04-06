@@ -212,18 +212,18 @@ async function speakUrdu(letter, harakat = 'fatha') {
         'ی': 'ya'
     };
 
-    const basePath = '/learning-app/audio/letters';
+    const basePath = '/learning-app/audio/letters/';
     const candidates = [];
 
     const urduName = URDU_MAP[letter];
     const arabicName = ARABIC_MAP[letter];
 
     if (urduName) {
-        candidates.push(`${basePath}ur_${urduName}_letters.ogg`);
+        candidates.push(`${basePath}ur_${urduName}_letter.ogg`);
     }
 
     if (arabicName) {
-        candidates.push(`${basePath}ar_${arabicName}_letters.ogg`);
+        candidates.push(`${basePath}ar_${arabicName}_letter.ogg`);
     }
 
     for (const src of candidates) {
