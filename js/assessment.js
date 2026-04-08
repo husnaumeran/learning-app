@@ -10,6 +10,7 @@ const ASSESSMENT_SKILLS = {
     match_numbers:            { type: 'text',   enabled: true },
     which_doesnt_belong:      { type: 'text',   enabled: true },
     what_comes_next_numbers:  { type: 'text',   enabled: true },
+    find_pairs:               { type: 'Visual',   enabled: true },
     color_patterns:           { type: 'text',   enabled: true },
     color_patterns_l2:        { type: 'text',   enabled: true },
     verbal_analogies:         { type: 'text',   enabled: true },
@@ -119,7 +120,7 @@ window.resumeWeekendChallenge = async function() {
         .select('session_meta')
         .eq('id', CONFIG.sessionId)
         .single();
-    const skills = (sess && sess.session_meta && sess.session_meta.skills_tested) || ['addition', 'subtraction', 'counting'];
+    const skills = (sess && sess.session_meta && sess.session_meta.skills_tested) || ['addition', 'subtraction', 'counting', 'find_pairs'];
 
     const totalExpected = skills.reduce((sum, s) => sum + getQuestionCount(s, 'challenge'), 0);
     const remaining = Math.max(0, totalExpected - answered);
@@ -337,6 +338,20 @@ function makeAssessmentQs(skillId, count) {
                     choices: [String(ans), ...randWrongs(ans, 3, 1).map(String)].sort(() => Math.random() - 0.5),
                     correct: String(ans),
                     qdata: {type:'counting', emoji, correct_answer:ans}
+                });
+            }
+            break;
+        }
+        case 'find_pairs': {
+            const pairs = generateMatchPairs(focus, count);
+            for (const [n, emoji] of pairs) {
+                qs.push({
+                    skill_id: 'find_pairs',
+                    prompt: 'Find the matching pair',
+                    prompt_emoji: emoji,
+                    choices: [String(n), ...randWrongs(n, 3, 1).map(String)].sort(() => Math.random() - 0.5),
+                    correct: String(n),
+                    qdata: { type: 'find_pairs', number: n, emoji_count: n }
                 });
             }
             break;
