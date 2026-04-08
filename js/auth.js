@@ -156,7 +156,8 @@ function showAddChild(user) {
 
         const { error } = await sb.from('children').insert({
             parent_id: user.id,
-            name: name
+            name: name,
+            focus_number: 1
         });
 
         if (error) {
