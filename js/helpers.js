@@ -126,7 +126,10 @@ function getSkillValue(skillId, field, fallback = 1) {
 
 function getDifficultyLevel(skillId) {
     const floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
-    return Math.max(getSkillValue(skillId, 'difficulty', CONFIG.focusNumber || 1), floor);
+    const globalLevel = CONFIG.focusNumber || 1;
+    const skillLevel = getSkillValue(skillId, 'difficulty', globalLevel);
+
+    return Math.max(skillLevel, globalLevel, floor);
 }
 
 function getQuestionCount(skillId, mode = 'practice') {
@@ -144,6 +147,8 @@ function getFocusNumber(skillId) {
 function getContentLevel(skillId) {
     return Math.max(getSkillValue(skillId, 'content', 1), 1);
 }
+
+
 // ============ PRIORITY SCORING ENGINE ============
 
 const SKILLS = {}; // populated from DB
