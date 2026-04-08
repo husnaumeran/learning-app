@@ -1,9 +1,8 @@
 // ============ TRACE LOWERCASE ============
 function showTraceLower() {
-    const letters = 'abcdefghijklmnopqrstuvwxyz'.split('').slice(
-        0,
-        Math.max(1, Number(getFocusNumber('trace_lower')) || 1)
-    );
+    const letters = 'abcdefghijklmnopqrstuvwxyz'
+        .slice(0, Math.max(1, Number(getFocusNumber('trace_lower')) || 1))
+        .split('');
 
     let current = 0;
     const saved = {};
@@ -51,7 +50,7 @@ function showTraceLower() {
         current++;
 
         if (current >= letters.length) {
-            completeWorksheet('Trace Lowercase', letters.length, letters.length);
+            completeWorksheet('Trace abc', letters.length, letters.length);
             return;
         }
 
