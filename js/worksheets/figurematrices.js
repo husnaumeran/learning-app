@@ -8,8 +8,7 @@ function showFigureMatrices() {
     const QUESTIONS = getFocusNumber('figure_matrices');
     const LEVEL_NAMES = ['Color','Size','Shape','Direction','Color+Size','Color+Shape','Size+Shape','All Three'];
 
-    let level = parseInt(localStorage.getItem('fm_level') || '1');
-    const history = JSON.parse(localStorage.getItem('fm_history') || '{}');
+    let level = getContentLevel('figure_matrices');
 
     function pick(a) { return a[Math.floor(Math.random()*a.length)]; }
     function pickDiff(a,x) { const o=a.filter(v=>v!==x); return o[Math.floor(Math.random()*o.length)]; }
@@ -136,7 +135,7 @@ function showFigureMatrices() {
     }
 
     function startAllLevels() {
-        const maxLevel=parseInt(localStorage.getItem('fm_level')||'1');
+        const maxLevel=getContentLevel('figure_matrices');
         problems=[];
         problemLevels=[];
         const seen=new Set();
@@ -155,7 +154,7 @@ function showFigureMatrices() {
 
     // Level picker screen
     function renderPicker() {
-        const maxLevel=parseInt(localStorage.getItem('fm_level')||'1');
+        const maxLevel=getContentLevel('figure_matrices');
         let html='<button class="back" onclick="showMenu()">← Back</button>';
         html+='<div class="card"><div class="title">🧩 Figure Matrices</div>';
         html+='<div class="inst">Pick a level!</div>';
