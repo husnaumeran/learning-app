@@ -1,6 +1,6 @@
 // ============ 2-LETTER WORDS ============
 function showTwoLetter() {
-    const level = getFocusNumber('two_letter_words');
+    const level = Math.max(1, Number(getFocusNumber('two_letter_words')) || 1);
     const words = [...CONFIG.twoLetterWords]
         .sort(() => Math.random() - 0.5)
         .slice(0, level);
@@ -34,4 +34,3 @@ function showTwoLetter() {
 
     render();
 }
-
