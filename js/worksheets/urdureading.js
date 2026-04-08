@@ -8,7 +8,7 @@ function showUrduReading() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
         html += '<div class="title" style="direction:rtl">اردو Urdu — Read: '+l.name+'</div>';
         html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakUrduLetter(\''+l.letter+'\')">'+l.letter+'</div>';
-        html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key" onclick="prevUrduRead()">← Prev</button><span class="score">'+(current+1)+' / '+letters.length+'</span><button class="key green" onclick="nextUrduRead()">Next →</button></div></div>';
+        html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:64px;min-height:110px;padding:24px 20px;line-height:1.4;font-family:serif;direction:rtl;display:flex;align-items:center;justify-content:center;overflow:visible">' + choice.letter + '</button>';
         document.getElementById('app').innerHTML = html;
     }
 
