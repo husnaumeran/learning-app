@@ -10,7 +10,7 @@ const ASSESSMENT_SKILLS = {
     match_numbers:            { type: 'text',   enabled: true },
     which_doesnt_belong:      { type: 'text',   enabled: true },
     what_comes_next_numbers:  { type: 'text',   enabled: true },
-    find_pairs:               { type: 'Visual',   enabled: true },
+    find_pairs:               { type: 'Visual', enabled: true },
     color_patterns:           { type: 'text',   enabled: true },
     color_patterns_l2:        { type: 'text',   enabled: true },
     verbal_analogies:         { type: 'text',   enabled: true },
@@ -617,7 +617,7 @@ function runAssessment(questions, indexOffset) {
 
 // ============ RESULTS SCREEN ============
 
-function finishAssessment(results, score, total) {
+async function finishAssessment(results, score, total) {
     // Finalize session
     if (CONFIG.sessionId) {
         sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
@@ -656,21 +656,56 @@ function finishAssessment(results, score, total) {
             const cur = getContentLevel('verbal_analogies');
             if (cur < 6) {
                 const newLevel = cur + 1;
-                CONFIG.skillSettings['verbal_analogies'] = { ...(CONFIG.skillSettings['verbal_analogies'] || {}), content_level: newLevel };
-                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'verbal_analogies', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
-                console.log('📈 VA content_level → ' + newLevel);
+
+                const { error } = await sb.from('child_skill_settings').upsert(
+                    {
+                        child_id: CONFIG.childId,
+                        skill_id: 'verbal_analogies',
+                        content_level: newLevel
+                    },
+                    { onConflict: 'child_id,skill_id' }
+                );
+
+                if (error) {
+                    console.error('📈 VA content_level upsert error', error);
+                } else {
+                    CONFIG.skillSettings['verbal_analogies'] = {
+                        ...(CONFIG.skillSettings['verbal_analogies'] || {}),
+                        content_level: newLevel
+                    };
+                    localStorage.setItem('va_level', String(newLevel));
+                    console.log('📈 VA content_level → ' + newLevel);
+                }
             }
         }
     }
+
     if (bySkill.figure_matrices) {
         const fmPct = bySkill.figure_matrices.correct / bySkill.figure_matrices.total;
         if (fmPct >= 0.8) {
             const cur = getContentLevel('figure_matrices');
             if (cur < 8) {
                 const newLevel = cur + 1;
-                CONFIG.skillSettings['figure_matrices'] = { ...(CONFIG.skillSettings['figure_matrices'] || {}), content_level: newLevel };
-                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'figure_matrices', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
-                console.log('📈 FM content_level → ' + newLevel);
+
+                const { error } = await sb.from('child_skill_settings').upsert(
+                    {
+                        child_id: CONFIG.childId,
+                        skill_id: 'figure_matrices',
+                        content_level: newLevel
+                    },
+                    { onConflict: 'child_id,skill_id' }
+                );
+
+                if (error) {
+                    console.error('📈 FM content_level upsert error', error);
+                } else {
+                    CONFIG.skillSettings['figure_matrices'] = {
+                        ...(CONFIG.skillSettings['figure_matrices'] || {}),
+                        content_level: newLevel
+                    };
+                    localStorage.setItem('fm_level', String(newLevel));
+                    console.log('📈 FM content_level → ' + newLevel);
+                }
             }
         }
     }
