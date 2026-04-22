@@ -20,7 +20,7 @@ function showNumbersUrdu() {
 
     // ===== LEVEL 1: LEARN =====
     function startLearn() {
-        const nums = shuffle(Array.from({length:20},(_,i)=>i+1)).slice(0, QUESTIONS);
+        const nums = Array.from({length:QUESTIONS},(_,i)=>i+1);
         let phase = 'flash', flashIdx = 0, quizIdx = 0, score = 0, tried = false;
         const quizNums = shuffle([...nums]);
 
