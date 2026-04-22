@@ -3,12 +3,10 @@ function showNumbersUrdu() {
     const QUESTIONS = getFocusNumber('numbers_urdu');
     const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
-    const STORAGE_KEY = 'nu_level';
-    const HISTORY_KEY = 'nu_history';
     const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 
-    let level = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
+    let level = Math.max(1, getContentLevel('numbers_urdu'));
+    const inDailySession = !! CONFIG.sessionId;
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
     function randNum() { return Math.floor(Math.random() * 100) + 1; }
