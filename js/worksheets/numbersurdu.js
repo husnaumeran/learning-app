@@ -70,20 +70,7 @@ function showNumbersUrdu() {
 
         function renderQuiz() {
             if (quizIdx >= quizNums.length) {
-                const key = 'L1';
-                const h = history[key] || [];
-                h.push({score, qualifies: true});
-                history[key] = h;
-                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-                const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-                if (maxLevel < 2) {
-                    const recent = h.slice(-3);
-                    const threshold = Math.ceil(QUESTIONS * 0.8);
-                    if (recent.length >= 3 && recent.every(s => s.score >= threshold)) {
-                        localStorage.setItem(STORAGE_KEY, '2');
-                    }
-                }
-                completeWorksheet('Numbers Urdu L1', score, quizNums.length);
+                finishUrduNumbersL1(score, quizNums.length);
                 return;
             }
             const n = quizNums[quizIdx];
@@ -177,7 +164,7 @@ function showNumbersUrdu() {
         return problems;
     }
 
-    let problems=[], current=0, score=0, skips=0, tried=false;
+    let problems=[], problemLevels=[], current=0, score=0, skips=0, tried=false;
     let questionStartMs = null;
     const attemptCounts = {};
 
@@ -199,13 +186,10 @@ function showNumbersUrdu() {
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 5; l++) {
             const unlocked = l <= maxLevel;
-            const h = history['L'+l] || [];
-            const best = h.length ? Math.max(...h.map(s=>s.score)) : 0;
             const bg = !unlocked ? '#666' : (l === maxLevel ? '#22c55e' : '#0099FF');
             html += '<div onclick="'+(unlocked?'startNULevel('+l+')':'')+'" style="background:'+bg+';color:white;padding:15px;border-radius:12px;text-align:center;cursor:'+(unlocked?'pointer':'not-allowed')+';opacity:'+(unlocked?1:0.5)+'">';
             html += '<div style="font-size:22px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:13px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
-            if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -216,24 +200,7 @@ function showNumbersUrdu() {
 
     function renderGame() {
         if (current >= problems.length) {
-            const key = 'L'+level;
-            const h = history[key] || [];
-            const answered = problems.length - skips;
-            const skipRate = problems.length > 0 ? skips / problems.length : 1;
-            const qualifies = answered >= MIN_FOR_UNLOCK && skipRate <= 0.25;
-            h.push({score, qualifies});
-            history[key] = h;
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-            if (qualifies && level >= maxLevel && level < 5) {
-                const recent = h.slice(-3);
-                const threshold = Math.ceil(QUESTIONS * 0.8);
-                if (recent.length >= 3 && recent.every(s => s.qualifies && s.score >= threshold)) {
-                    localStorage.setItem(STORAGE_KEY, String(level + 1));
-                }
-            }
-            completeWorksheet('Numbers Urdu', score, problems.length);
-            return;
+            
         }
 
         const p = problems[current];
