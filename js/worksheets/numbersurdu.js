@@ -163,7 +163,7 @@ function showNumbersUrdu() {
     }
 
     function renderPicker() {
-        const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
+        const maxLevel = Math.max(1, getContentLevel('numbers_urdu'));
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
         html += '<div class="inst">Pick a level!</div>';
