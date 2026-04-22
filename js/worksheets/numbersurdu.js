@@ -18,6 +18,33 @@ function showNumbersUrdu() {
     function displayNum(n) { return String(n).split('').map(d => URDU_DIGITS[parseInt(d)]).join(''); }
     function sayNum(n) { new Audio('audio/numbers/ur_' + n + '.mp3').play().catch(() => speakUrdu(String(n))); }
 
+    // ===== ALL LEVELS =====
+    function startAllLevels() {
+        const maxLevel = Math.max(1, getContentLevel('numbers_urdu'));
+        const oldLevel = level;
+
+        problems = [];
+        problemLevels = [];
+
+        for (let l = 1; l <= maxLevel; l++) {
+            const old = level;
+            level = l;
+            const levelProblems = makeProblems(l);
+            problems = problems.concat(levelProblems);
+            problemLevels = problemLevels.concat(Array(levelProblems.length).fill(l));
+            level = old;
+        }
+
+        level = oldLevel;
+        current = 0;
+        score = 0;
+        skips = 0;
+        tried = false;
+        renderGame();
+    }
+
+    window.nuStartAll = startAllLevels;
+
     // ===== LEVEL 1: LEARN =====
     function startLearn() {
         const nums = Array.from({length:QUESTIONS},(_,i)=>i+1);
