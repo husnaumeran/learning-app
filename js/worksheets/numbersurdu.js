@@ -166,7 +166,9 @@ function showNumbersUrdu() {
         const maxLevel = Math.max(1, getContentLevel('numbers_urdu'));
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
-        html += '<div class="inst">Pick a level!</div>';
+        if (maxLevel > 1) {
+            html += '<div onclick="nuStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L' + maxLevel + ')</div>';
+        }
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 5; l++) {
             const unlocked = l <= maxLevel;
