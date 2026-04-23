@@ -35,7 +35,7 @@ function showNumbersUrdu() {
             level = old;
         }
 
-        for (problems.length === 0){
+        if (problems.length === 0) {
             startLearn();
             return;
         }
