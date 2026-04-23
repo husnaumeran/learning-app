@@ -26,13 +26,18 @@ function showNumbersUrdu() {
         problems = [];
         problemLevels = [];
 
-        for (let l = 1; l <= maxLevel; l++) {
+        for (let l = 2; l <= maxLevel; l++) {
             const old = level;
             level = l;
             const levelProblems = makeProblems(l);
             problems = problems.concat(levelProblems);
             problemLevels = problemLevels.concat(Array(levelProblems.length).fill(l));
             level = old;
+        }
+
+        for (problems.length === 0){
+            startLearn();
+            return;
         }
 
         level = oldLevel;
@@ -181,7 +186,7 @@ function showNumbersUrdu() {
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
         if (maxLevel > 1) {
-            html += '<div onclick="nuStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L' + maxLevel + ')</div>';
+            html += '<div onclick="nuStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L2-L' + maxLevel + ')</div>';
         }
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 5; l++) {
@@ -199,12 +204,22 @@ function showNumbersUrdu() {
     window.startNULevel = startLevel;
 
     function renderGame() {
+        if (problemLevels[current]){
+            level = problemLevels[current];
+        }
+
         if (current >= problems.length) {
             finishUrduNumbersLevel(score, problems.length, level);
             return;
         }
 
         const p = problems[current];
+        if (!p || !Array.isArray(p.choices)){
+            console.error('Bad Urdu Numbers problem:', p, 'at index', current, 'level', level);
+            current++;
+            renderGame();
+            return;
+        }
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
         html += '<div class="inst" style="direction:rtl">'+p.instruction+'</div>';
