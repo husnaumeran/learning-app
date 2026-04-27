@@ -29,31 +29,25 @@ function showNumbersUrdu() {
     // ===== ALL LEVELS =====
     function startAllLevels() {
         const maxLevel = Math.max(1, getContentLevel('numbers_urdu'));
-        const oldLevel = level;
 
-        problems = [];
-        problemLevels = [];
+        // After L1 finishes, run L2+ quiz problems
+        window.nuAfterLearn = function() {
+            problems = [];
+            problemLevels = [];
+            const oldLevel = level;
+            for (let l = 2; l <= maxLevel; l++) {
+                level = l;
+                const lp = makeProblems(l);
+                problems = problems.concat(lp);
+                problemLevels = problemLevels.concat(Array(lp.length).fill(l));
+            }
+            level = oldLevel;
+            current = 0; score = 0; skips = 0; tried = false;
+            if (problems.length > 0) renderGame();
+            else showMenu();
+        };
 
-        for (let l = 2; l <= maxLevel; l++) {
-            const old = level;
-            level = l;
-            const levelProblems = makeProblems(l);
-            problems = problems.concat(levelProblems);
-            problemLevels = problemLevels.concat(Array(levelProblems.length).fill(l));
-            level = old;
-        }
-
-        if (problems.length === 0) {
-            startLearn();
-            return;
-        }
-
-        level = oldLevel;
-        current = 0;
-        score = 0;
-        skips = 0;
-        tried = false;
-        renderGame();
+        startLearn();
     }
 
     window.nuStartAll = startAllLevels;
@@ -348,6 +342,13 @@ async function finishUrduNumbersL1(score, total) {
                 return;
             }
 
+            if (window.nuAfterLearn) {
+                const cb = window.nuAfterLearn;
+                window.nuAfterLearn = null;
+                cb();
+                return;
+            }
+
             document.getElementById('app').innerHTML =
                 '<div class="card"><div class="title">Great job! 🎉</div>' +
                 '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
@@ -361,6 +362,14 @@ async function finishUrduNumbersL1(score, total) {
         completeWorksheet('Numbers Urdu', score, total);
         return;
     }
+
+    if (window.nuAfterLearn) {
+        const cb = window.nuAfterLearn;
+        window.nuAfterLearn = null;
+        cb();
+        return;
+    }
+
 
     document.getElementById('app').innerHTML =
         '<div class="card"><div class="title">Nice try 💪</div>' +
