@@ -19,6 +19,9 @@ function showNumbersUrdu() {
         while (s.size < count) { const offset = Math.floor(Math.random()*20)-10; const v=n+offset; if(v>=1&&v<=100&&v!==n) s.add(v); }
         return [...s];
     }
+    function pick(a){
+        return a[Math.floor(Math.random()*a.length)];
+    }
     function displayNum(n) { return String(n).split('').map(d => URDU_DIGITS[parseInt(d)]).join(''); }
     function sayNum(n) { new Audio('audio/numbers/ur_' + n + '.mp3').play().catch(() => speakUrdu(String(n))); }
 
@@ -130,46 +133,67 @@ function showNumbersUrdu() {
     function makeProblems(lvl) {
         const problems = [];
         const used = new Set();
+        const max = getLearnedNumberMax();
         let attempts = 0;
-        while (problems.length < QUESTIONS && attempts < 200) {
-            const n = randNum();
-            if (used.has(n)) { attempts++; continue; }
-            used.add(n);
-            let choices, correct, instruction;
-            switch(lvl) {
-                case 2: {
-                    const wrong = nearNums(n, 3);
-                    choices = shuffle([n, ...wrong]); correct = n;
-                    instruction = 'جو نمبر سنو وہ تھپتھپاؤ!'; break;
-                }
-                case 3: {
-                    const target = n + (Math.random()>0.5?1:-1)*(Math.floor(Math.random()*3)+1);
-                    const close = Math.min(100, Math.max(1, target));
-                    const wrong = nearNums(n, 3).filter(w => Math.abs(w-n) > Math.abs(close-n));
-                    while(wrong.length<3){const w=randNum();if(w!==close&&w!==n&&!wrong.includes(w))wrong.push(w);}
-                    choices = shuffle([close, ...wrong.slice(0,3)]); correct = close;
-                    instruction = 'سب سے قریب نمبر تھپتھپاؤ!'; break;
-                }
-                case 4: {
-                    const bigger = n + Math.floor(Math.random()*10)+1;
-                    const b = Math.min(100, bigger);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.max(1,n-Math.floor(Math.random()*15)-1);if(w<n&&!wrong.includes(w)&&w!==b)wrong.push(w);}
-                    choices = shuffle([b, ...wrong.slice(0,3)]); correct = b;
-                    instruction = 'بڑا نمبر تھپتھپاؤ!'; break;
-                }
-                case 5: {
-                    const smaller = n - Math.floor(Math.random()*10)-1;
-                    const s = Math.max(1, smaller);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.min(100,n+Math.floor(Math.random()*15)+1);if(w>n&&!wrong.includes(w)&&w!==s)wrong.push(w);}
-                    choices = shuffle([s, ...wrong.slice(0,3)]); correct = s;
-                    instruction = 'چھوٹا نمبر تھپتھپاؤ!'; break;
-                }
+
+        function safeChoices(correct, pool) {
+            const wrongs = shuffle(pool.filter(x => x !== correct)).slice(0, 3);
+            const fallback = [];
+
+            for (let v = 1; v <= max; v++) {
+                if (v !== correct && !wrongs.includes(v)) fallback.push(v);
             }
-            problems.push({n, choices, correct, instruction});
-            attempts++;
+
+            return shuffle([correct, ...wrongs, ...shuffle(fallback).slice(0, 3 - wrongs.length)]).slice(0, 4);
         }
+
+        while (problems.length < QUESTIONS && attempts < 200) {
+            attempts++;
+
+            const n = randNum();
+            if (used.has(n)) continue;
+            used.add(n);
+
+            let choices, correct, instruction;
+
+            if (lvl === 2) {
+                correct = n;
+                choices = safeChoices(correct, Array.from({ length: max }, (_, i) => i + 1));
+                instruction = 'جو نمبر سنو وہ تھپتھپاؤ!';
+            }
+
+            else if (lvl === 3) {
+                correct = Math.min(max, Math.max(1, n + (Math.random() > 0.5 ? 1 : -1)));
+                if (correct === n) correct = n > 1 ? n - 1 : Math.min(max, n + 1);
+                choices = safeChoices(correct, Array.from({ length: max }, (_, i) => i + 1));
+                instruction = 'سب سے قریب نمبر تھپتھپاؤ!';
+            }
+
+            else if (lvl === 4) {
+                const biggerPool = [];
+                for (let v = n + 1; v <= max; v++) biggerPool.push(v);
+                if (biggerPool.length === 0) continue;
+
+                correct = pick(biggerPool);
+                choices = safeChoices(correct, Array.from({ length: max }, (_, i) => i + 1));
+                instruction = 'بڑا نمبر تھپتھپاؤ!';
+            }
+
+            else if (lvl === 5) {
+                const smallerPool = [];
+                for (let v = 1; v < n; v++) smallerPool.push(v);
+                if (smallerPool.length === 0) continue;
+
+                correct = pick(smallerPool);
+                choices = safeChoices(correct, Array.from({ length: max }, (_, i) => i + 1));
+                instruction = 'چھوٹا نمبر تھپتھپاؤ!';
+            }
+
+            if (choices && choices.length > 1) {
+                problems.push({ n, choices, correct, instruction });
+            }
+        }
+
         return problems;
     }
 
