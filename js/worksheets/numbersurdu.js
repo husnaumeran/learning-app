@@ -1,12 +1,10 @@
 // ============ NUMBERS URDU ============
 function showNumbersUrdu() {
     const QUESTIONS = Math.max(3, getFocusNumber('numbers_urdu'));
-    const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
     const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 
     let level = Math.max(1, getContentLevel('numbers_urdu'));
-    const inDailySession = !! CONFIG.sessionId;
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
     function randNum() { 
@@ -149,28 +147,56 @@ function showNumbersUrdu() {
                     instruction = 'جو نمبر سنو وہ تھپتھپاؤ!'; break;
                 }
                 case 3: {
-                    const target = n + (Math.random()>0.5?1:-1)*(Math.floor(Math.random()*3)+1);
-                    const close = Math.min(100, Math.max(1, target));
-                    const wrong = nearNums(n, 3).filter(w => Math.abs(w-n) > Math.abs(close-n));
-                    while(wrong.length<3){const w=randNum();if(w!==close&&w!==n&&!wrong.includes(w))wrong.push(w);}
-                    choices = shuffle([close, ...wrong.slice(0,3)]); correct = close;
-                    instruction = 'سب سے قریب نمبر تھپتھپاؤ!'; break;
+                    const max = getLearnedNumberMax();
+                    let close = n > 1 ? n - 1 : Math.min(max, n + 1);
+
+                    const pool = [];
+                    for (let v = 1; v <= max; v++) {
+                        if (v !== close) pool.push(v);
+                    }
+
+                    choices = shuffle([close, ...shuffle(pool).slice(0, 3)]);
+                    correct = close;
+                    instruction = 'سب سے قریب نمبر تھپتھپاؤ!';
+                    break;
                 }
                 case 4: {
-                    const bigger = n + Math.floor(Math.random()*10)+1;
-                    const b = Math.min(100, bigger);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.max(1,n-Math.floor(Math.random()*15)-1);if(w<n&&!wrong.includes(w)&&w!==b)wrong.push(w);}
-                    choices = shuffle([b, ...wrong.slice(0,3)]); correct = b;
-                    instruction = 'بڑا نمبر تھپتھپاؤ!'; break;
+                    const max = getLearnedNumberMax();
+
+                    const biggerPool = [];
+                    for (let v = n + 1; v <= max; v++) biggerPool.push(v);
+
+                    if (biggerPool.length === 0) continue;
+
+                    const correct = pick(biggerPool);
+
+                    const pool = [];
+                    for (let v = 1; v <= max; v++) {
+                        if (v !== correct) pool.push(v);
+                    }
+
+                    choices = shuffle([correct, ...shuffle(pool).slice(0, 3)]);
+                    instruction = 'بڑا نمبر تھپتھپاؤ!';
+                    break;
                 }
                 case 5: {
-                    const smaller = n - Math.floor(Math.random()*10)-1;
-                    const s = Math.max(1, smaller);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.min(100,n+Math.floor(Math.random()*15)+1);if(w>n&&!wrong.includes(w)&&w!==s)wrong.push(w);}
-                    choices = shuffle([s, ...wrong.slice(0,3)]); correct = s;
-                    instruction = 'چھوٹا نمبر تھپتھپاؤ!'; break;
+                    const max = getLearnedNumberMax();
+
+                    const smallerPool = [];
+                    for (let v = 1; v < n; v++) smallerPool.push(v);
+
+                    if (smallerPool.length === 0) continue;
+
+                    const correct = pick(smallerPool);
+
+                    const pool = [];
+                    for (let v = 1; v <= max; v++) {
+                        if (v !== correct) pool.push(v);
+                    }
+
+                    choices = shuffle([correct, ...shuffle(pool).slice(0, 3)]);
+                    instruction = 'چھوٹا نمبر تھپتھپاؤ!';
+                    break;
                 }
             }
             problems.push({n, choices, correct, instruction});
