@@ -2,7 +2,7 @@
 function showVerbalAnalogies() {
     const QUESTIONS = getFocusNumber('verbal_analogies');
     const MIN_FOR_UNLOCK = 5;
-    const LEVELS = window.VA_Levels;
+    const LEVELS = window.VA_LEVELS;
 
     // Sanitize emojis for device compatibility
     LEVELS.forEach(lv => { if (lv && lv.pairs) lv.pairs.forEach(p => { if (p.ea) p.ea = safeEmoji(p.ea); if (p.eb) p.eb = safeEmoji(p.eb); }); });
