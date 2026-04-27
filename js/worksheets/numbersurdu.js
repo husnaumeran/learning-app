@@ -168,7 +168,7 @@ function showNumbersUrdu() {
 
                     if (biggerPool.length === 0) continue;
 
-                    const correct = pick(biggerPool);
+                    correct = pick(biggerPool);
 
                     const pool = [];
                     for (let v = 1; v <= max; v++) {
@@ -187,7 +187,7 @@ function showNumbersUrdu() {
 
                     if (smallerPool.length === 0) continue;
 
-                    const correct = pick(smallerPool);
+                    correct = pick(smallerPool);
 
                     const pool = [];
                     for (let v = 1; v <= max; v++) {
