@@ -311,7 +311,7 @@ async function finishUrduNumbersL1(score, total) {
                 ...(CONFIG.skillSettings['numbers_urdu'] || {}),
                 content_level: newLevel
             };
-            
+
             if (CONFIG.sessionId) {
                 completeWorksheet('Numbers Urdu', score, total);
                 return;
@@ -327,7 +327,7 @@ async function finishUrduNumbersL1(score, total) {
     }
 
     if (CONFIG.sessionId) {
-        nextWorksheet();
+        completeWorksheet('Numbers Urdu', score, total);
         return;
     }
 
