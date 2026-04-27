@@ -9,7 +9,11 @@ function showNumbersUrdu() {
     const inDailySession = !! CONFIG.sessionId;
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
-    function randNum() { return Math.floor(Math.random() * 100) + 1; }
+    function getLearnedNumberMax(){ 
+        return Math.max(QUESTIONS, getFocusNumber('numbers_urdu'));}
+    function randNum() { 
+        const max = getLearnedNumberMax();
+        return Math.floor(Math.random() * max) + 1; }
     function nearNums(n, count) {
         const s = new Set();
         while (s.size < count) { const offset = Math.floor(Math.random()*20)-10; const v=n+offset; if(v>=1&&v<=100&&v!==n) s.add(v); }
