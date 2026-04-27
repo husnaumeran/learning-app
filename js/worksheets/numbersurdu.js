@@ -1,7 +1,7 @@
 // ============ NUMBERS URDU ============
 function showNumbersUrdu() {
     console.log('NUMBERS URDU LEVEL:', getContentLevel('numbers_urdu'), CONFIG.skillSettings['numbers_urdu']);
-    const QUESTIONS = getFocusNumber('numbers_urdu');
+    const QUESTIONS = MATH.MAX(3, getFocusNumber('numbers_urdu'));
     const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
     const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
@@ -16,9 +16,12 @@ function showNumbersUrdu() {
         const max = getLearnedNumberMax();
         return Math.floor(Math.random() * max) + 1; }
     function nearNums(n, count) {
-        const s = new Set();
-        while (s.size < count) { const offset = Math.floor(Math.random()*20)-10; const v=n+offset; if(v>=1&&v<=100&&v!==n) s.add(v); }
-        return [...s];
+        const max = getLearnedNumberMax();
+        const pool = [];
+        for (let v=1; v <= max; v++){
+            if (v !== n) pool.push(v);
+        }
+        return shuffle(pool).slice(0, count);
     }
     function pick(a){
         return a[Math.floor(Math.random()*a.length)];
