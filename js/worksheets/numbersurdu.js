@@ -7,6 +7,9 @@ function showNumbersUrdu() {
     let level = Math.max(1, getContentLevel('numbers_urdu'));
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+    function pick(a) {
+        return a[Math.floor(Math.random() * a.length)];
+    }
     function randNum() { 
         const max = getLearnedNumberMax();
         return Math.floor(Math.random() * max) + 1; }
