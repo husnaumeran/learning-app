@@ -337,15 +337,15 @@ async function finishUrduNumbersL1(score, total) {
                 content_level: newLevel
             };
 
-            if (CONFIG.sessionId) {
-                completeWorksheet('Numbers Urdu', score, total);
-                return;
-            }
-
             if (window.nuAfterLearn) {
                 const cb = window.nuAfterLearn;
                 window.nuAfterLearn = null;
                 cb();
+                return;
+            }
+
+            if (CONFIG.sessionId) {
+                completeWorksheet('Numbers Urdu', score, total);
                 return;
             }
 
@@ -358,15 +358,15 @@ async function finishUrduNumbersL1(score, total) {
         }
     }
 
-    if (CONFIG.sessionId) {
-        completeWorksheet('Numbers Urdu', score, total);
-        return;
-    }
-
     if (window.nuAfterLearn) {
         const cb = window.nuAfterLearn;
         window.nuAfterLearn = null;
         cb();
+        return;
+    }
+
+    if (CONFIG.sessionId) {
+        completeWorksheet('Numbers Urdu', score, total);
         return;
     }
 
