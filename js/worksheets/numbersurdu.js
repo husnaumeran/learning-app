@@ -1,7 +1,7 @@
 // ============ NUMBERS URDU ============
 function showNumbersUrdu() {
     const QUESTIONS = Math.max(3, getFocusNumber('numbers_urdu'));
-    const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
+    const LEVEL_NAMES = ['Learn','Hear & Tap','What Comes Next','More Than','Less Than'];
     const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 
     let level = Math.max(1, getContentLevel('numbers_urdu'));
@@ -151,7 +151,7 @@ function showNumbersUrdu() {
 
                     choices = shuffle([close, ...shuffle(pool).slice(0, 3)]);
                     correct = close;
-                    instruction = 'سب سے قریب نمبر تھپتھپاؤ!';
+                    instruction = 'اگلا نمبر کون سا ہے؟';
                     break;
                 }
                 case 4: {
@@ -255,7 +255,22 @@ function showNumbersUrdu() {
         html += '<div class="inst" style="direction:rtl">'+p.instruction+'</div>';
         html += '<div style="text-align:center;font-size:18px;color:#888;margin-bottom:8px">'+(current+1)+' / '+problems.length+'</div>';
         html += '<div style="text-align:center;margin:20px 0">';
-        html += '<button onclick="playNUSound()" style="font-size:60px;background:none;border:none;cursor:pointer;padding:15px">🔊</button>';
+        if (level === 2) {
+            html += '<button onclick="playNUSound()" style="font-size:60px;background:none;border:none;cursor:pointer;padding:15px">🔊</button>';
+        }
+        else if (level === 3) {
+            const prev = Math.max(1, p.n - 1);
+
+            html += '<div style="font-size:50px;font-weight:bold;direction:rtl">';
+            html += displayNum(prev) + '   ' + displayNum(p.n) + '   ؟';
+            html += '</div>';
+        }
+        else {
+            html += '<div style="font-size:70px;font-weight:bold;direction:rtl">';
+            html += displayNum(p.n);
+            html += '</div>';
+        }
+
         html += '</div>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px">';
         p.choices.forEach((ch, i) => {
