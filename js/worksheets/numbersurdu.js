@@ -145,14 +145,18 @@ function showNumbersUrdu() {
                 }
                 case 3: {
                     const max = getLearnedNumberMax();
-                    let close = n > 1 ? n - 1 : Math.min(max, n + 1);
+                    let n = randNum();
+                    if (n >= max) n = max - 1;
+                    if (n < 1) n = 1;
+                    p.n = n;
+                    correct = n + 1;
 
                     const pool = [];
                     for (let v = 1; v <= max; v++) {
-                        if (v !== close) pool.push(v);
+                        if (v !== correct) pool.push(v);
                     }
 
-                    choices = shuffle([close, ...shuffle(pool).slice(0, 3)]);
+                    choices = shuffle([correct, ...shuffle(pool).slice(0, 3)]);
                     correct = close;
                     instruction = 'اگلا نمبر کون سا ہے؟';
                     break;
@@ -219,7 +223,7 @@ function showNumbersUrdu() {
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
         if (maxLevel > 1) {
-            html += '<div onclick="nuStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L2-L' + maxLevel + ')</div>';
+            html += '<div onclick="nuStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L' + maxLevel + ')</div>';
         }
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 5; l++) {
@@ -262,10 +266,8 @@ function showNumbersUrdu() {
             html += '<button onclick="playNUSound()" style="font-size:60px;background:none;border:none;cursor:pointer;padding:15px">🔊</button>';
         }
         else if (level === 3) {
-            const prev = Math.max(1, p.n - 1);
-
-            html += '<div style="font-size:50px;font-weight:bold;direction:rtl">';
-            html += displayNum(prev) + '   ' + displayNum(p.n) + '   ؟';
+            html += '<div style="font-size:50px;font-weight:bold;direction:ltr">';
+            html += displayNum(p.n) + '   ?';
             html += '</div>';
         }
         else {
