@@ -145,10 +145,7 @@ function showNumbersUrdu() {
                 }
                 case 3: {
                     const max = getLearnedNumberMax();
-                    let n = randNum();
-                    if (n >= max) n = max - 1;
-                    if (n < 1) n = 1;
-                    p.n = n;
+                    if (n >= max) continue;
                     correct = n + 1;
 
                     const pool = [];
