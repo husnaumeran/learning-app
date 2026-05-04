@@ -174,7 +174,7 @@ function showNumbersUrdu() {
                     }
 
                     choices = shuffle([correct, ...shuffle(pool).slice(0, 3)]);
-                    instruction = 'بڑا نمبر تھپتھپاؤ!';
+                    instruction = displayNum(n) + ' سے بڑا نمبر تھپتھپاؤ!';
                     break;
                 }
                 case 5: {
@@ -193,7 +193,7 @@ function showNumbersUrdu() {
                     }
 
                     choices = shuffle([correct, ...shuffle(pool).slice(0, 3)]);
-                    instruction = 'چھوٹا نمبر تھپتھپاؤ!';
+                    instruction = displayNum(n) + ' سے چھوٹا نمبر تھپتھپاؤ!';
                     break;
                 }
             }
