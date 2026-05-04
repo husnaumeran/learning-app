@@ -23,7 +23,7 @@ const ASSESSMENT_SKILLS = {
 };
 
 // Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
-const VA_ASSESS_LEVELS = window.VA_Levels;
+const VA_ASSESS_LEVELS = window.VA_LEVELS;
 
 // ============ WEEKEND ASSESSMENT ============
 
