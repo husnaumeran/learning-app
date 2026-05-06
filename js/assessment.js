@@ -23,7 +23,7 @@ const ASSESSMENT_SKILLS = {
 };
 
 // Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
-const VA_ASSESS_LEVELS = window.VA_LEVELS;
+const VA_ASSESS_LEVELS = window.VA_Levels;
 
 // ============ WEEKEND ASSESSMENT ============
 
@@ -53,7 +53,7 @@ function getChallengeDayKey(){
 
 function isWeekendDay(){
     const day = new Date().getDay(); // 0=Sun, 6=Sat
-    return day === 0 || day === 1 || day === 6; // temp: Mon allowed
+    return day === 0 || day === 6;
 }
 
 window.checkWeekendAssessment = async function() {
