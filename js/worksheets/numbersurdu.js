@@ -154,7 +154,7 @@ function showNumbersUrdu() {
                     }
 
                     choices = shuffle([correct, ...shuffle(pool).slice(0, 3)]);
-                    correct = close;
+                    
                     instruction = 'اگلا نمبر کون سا ہے؟';
                     break;
                 }
