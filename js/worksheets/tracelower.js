@@ -1,7 +1,7 @@
 // ============ TRACE LOWERCASE ============
 function showTraceLower() {
     const ALL = 'abcdefghijklmnopqrstuvwxyz'.split('');
-    const focus = Math.max(1, Math.min(26, Number(getFocusNumber('trace_lower')) || 1));
+    const focus = Math.max(1, Math.min(26, Number(getContentLevel('trace_lower')) || 1));
 
     function generatePracticeSet(f) {
         if (f <= 7) return ALL.slice(0, f);
