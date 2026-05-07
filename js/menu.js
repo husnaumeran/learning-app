@@ -480,6 +480,7 @@ const SKILL_MAP = {
     trace_lower:             ['showTraceLower', 'Trace abc'],
     trace_numbers:           ['showTraceNumbers', 'Trace Numbers'],
     urdu_trace:              ['showUrduTrace', 'Urdu Trace'],
+    arabic_trace:            ['showArabicTrace', 'Arabic Trace'],
     urdu_videos:             ['showUrduVideos', 'Urdu Videos'],
 };
 
@@ -494,7 +495,7 @@ const CHALLENGE_SKILLS = [
 
 const FUN_SKILLS = [
     'color_patterns','connect_dots','find_pairs','which_doesnt_belong',
-    'trace_upper','trace_lower','trace_numbers','urdu_trace','urdu_videos'
+    'trace_upper','trace_lower','trace_numbers','urdu_trace', 'arabic_trace','urdu_videos'
 ];
 
 const DOMAINS = {
