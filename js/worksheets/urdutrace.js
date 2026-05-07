@@ -1,7 +1,7 @@
 // ============ URDU TRACE ============
 function showUrduTrace() {
     const ALL = URDU_LETTERS;
-    const focus = Math.max(1, Math.min(ALL.length, Number(getFocusNumber('urdu_trace')) || 1));
+    const focus = Math.max(1, Math.min(ALL.length, Number(getContentLevel('urdu_trace')) || 1));
 
     function generatePracticeSet(f) {
         if (f <= 7) return ALL.slice(0, f);
