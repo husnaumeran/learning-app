@@ -1,32 +1,21 @@
 // ============ URDU TRACE ============
-function showUrduTrace() {
+async function showUrduTrace() {
     const ALL = URDU_LETTERS;
     const focus = Math.max(1, Math.min(ALL.length, Number(getContentLevel('urdu_trace')) || 1));
+    const allKeys = ALL.slice(0, focus).map(l => l.letter);
 
-    function generatePracticeSet(f) {
-        if (f <= 7) return ALL.slice(0, f);
-        const idxSet = new Set();
-        // Newest 3
-        idxSet.add(f - 1);
-        if (f > 1) idxSet.add(f - 2);
-        if (f > 2) idxSet.add(f - 3);
-        // Medium 2
-        const midStart = Math.ceil(f * 0.4);
-        const midEnd = Math.ceil(f * 0.7);
-        let attempts = 0;
-        while ([...idxSet].filter(n => n >= midStart && n < midEnd).length < 2 && attempts < 50) {
-            idxSet.add(midStart + Math.floor(Math.random() * (midEnd - midStart)));
-            attempts++;
-        }
-        // Review 2
-        const revEnd = Math.max(1, midStart);
-        attempts = 0;
-        while ([...idxSet].filter(n => n < revEnd).length < 2 && attempts < 50) {
-            idxSet.add(Math.floor(Math.random() * revEnd));
-            attempts++;
-        }
-        return [...idxSet].sort((a, b) => a - b).map(i => ALL[i]);
-    }
+    const strengthMap = CONFIG.childId
+        ? await getItemStrengths(CONFIG.childId, 'urdu_trace')
+        : new Map();
+
+    const pickedKeys = pickPracticeSet(allKeys, strengthMap, {
+        maxItems: 7, newestCount: 3, midCount: 2, reviewCount: 2
+    });
+
+    // Map keys back to letter objects
+    const keyToObj = {};
+    ALL.forEach(l => { keyToObj[l.letter] = l; });
+    const letters = pickedKeys.map(k => keyToObj[k]);
 
     function getIncrement(f) {
         if (f <= 10) return 1;
@@ -34,7 +23,6 @@ function showUrduTrace() {
         return 2;
     }
 
-    const letters = generatePracticeSet(focus);
     let current = 0;
     const saved = {};
 
@@ -74,6 +62,12 @@ function showUrduTrace() {
 
     window.nextUrduTrace = () => {
         recordPassiveResponse('urdu_trace', { symbol: letters[current].letter }, current);
+
+        if (CONFIG.childId) {
+            updateItemStrength(CONFIG.childId, 'urdu_trace', letters[current].letter, 'letter',
+                { correct: null, skipped: false, firstTry: null });
+        }
+
         saveCanvas();
         current++;
         if (current >= letters.length) {
