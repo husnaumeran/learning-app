@@ -783,3 +783,163 @@ function formatQuestion(skillId, qd) {
         return s.length > 60 ? s.slice(0, 57) + '...' : s;
     } catch(e) { return '—'; }
 }
+
+// ============ LEARNING ITEM STRENGTH HELPERS ============
+
+// Fetch strength scores for a child + skill, with lazy decay applied
+async function getItemStrengths(childId, skillKey) {
+    const { data, error } = await sb.from('learning_item_strength')
+        .select('*')
+        .eq('child_id', childId)
+        .eq('skill_key', skillKey);
+
+    if (error) {
+        console.error('getItemStrengths error:', error);
+        return new Map();
+    }
+
+    const now = new Date();
+    const map = new Map();
+
+    for (const row of (data || [])) {
+        // Lazy decay: -1 per day since last_decay_at
+        if (row.last_decay_at) {
+            const daysSince = Math.floor((now - new Date(row.last_decay_at)) / 86400000);
+            if (daysSince > 0) {
+                row.strength_score = Math.max(0, row.strength_score - daysSince);
+                row._decayed = true;
+            }
+        }
+        map.set(row.item_key, row);
+    }
+
+    return map;
+}
+
+// Pick a practice set weighted toward weak items
+// allItems: array of item keys (strings) in unlock order
+// strengthMap: Map from getItemStrengths
+// options: { maxItems: 7, newestCount: 3, midCount: 2, reviewCount: 2 }
+function pickPracticeSet(allItems, strengthMap, options) {
+    const max = options.maxItems || 7;
+    const newestCount = options.newestCount || 3;
+    const midCount = options.midCount || 2;
+    const reviewCount = options.reviewCount || 2;
+
+    if (allItems.length <= max) return [...allItems];
+
+    const total = allItems.length;
+    const picked = new Set();
+
+    // 1. Newest items (from the end of the unlocked list)
+    for (let i = total - 1; i >= 0 && picked.size < newestCount; i--) {
+        picked.add(i);
+    }
+
+    // 2. Find weakest items from the remaining pool for mid + review slots
+    const remaining = [];
+    for (let i = 0; i < total - newestCount; i++) {
+        if (picked.has(i)) continue;
+        const key = allItems[i];
+        const row = strengthMap.get(key);
+        const score = row ? row.strength_score : 0;
+        remaining.push({ idx: i, score: score });
+    }
+
+    // Sort by strength (weakest first)
+    remaining.sort((a, b) => a.score - b.score);
+
+    // Pick weakest for review + mid slots
+    const slotsLeft = midCount + reviewCount;
+    for (let i = 0; i < Math.min(slotsLeft, remaining.length); i++) {
+        picked.add(remaining[i].idx);
+    }
+
+    // If still need more, pick random from unpicked
+    const unpicked = [];
+    for (let i = 0; i < total; i++) {
+        if (!picked.has(i)) unpicked.push(i);
+    }
+    while (picked.size < max && unpicked.length > 0) {
+        const r = Math.floor(Math.random() * unpicked.length);
+        picked.add(unpicked.splice(r, 1)[0]);
+    }
+
+    // Return in order
+    return [...picked].sort((a, b) => a - b).map(i => allItems[i]);
+}
+
+// Update strength score after completing an item
+// result: { correct: bool|null, skipped: bool, firstTry: bool|null }
+//   - For passive activities (tracing): correct=null, skipped=false
+//   - For quiz activities: correct=true/false, firstTry=true/false
+async function updateItemStrength(childId, skillKey, itemKey, itemType, result) {
+    // Calculate score delta
+    let delta = 0;
+    if (result.skipped) {
+        delta = -5;
+    } else if (result.correct === null) {
+        // Passive activity (tracing) — small positive
+        delta = 3;
+    } else if (result.correct && result.firstTry) {
+        delta = 15;
+    } else if (result.correct) {
+        delta = 5;
+    } else {
+        delta = -10;
+    }
+
+    const now = new Date().toISOString();
+
+    // Try to fetch existing row
+    const { data: existing } = await sb.from('learning_item_strength')
+        .select('id, strength_score, attempts_count, correct_count, skip_count, last_decay_at')
+        .eq('child_id', childId)
+        .eq('skill_key', skillKey)
+        .eq('item_key', itemKey)
+        .maybeSingle();
+
+    if (existing) {
+        // Apply lazy decay first
+        let currentScore = existing.strength_score;
+        if (existing.last_decay_at) {
+            const daysSince = Math.floor((new Date() - new Date(existing.last_decay_at)) / 86400000);
+            if (daysSince > 0) currentScore = Math.max(0, currentScore - daysSince);
+        }
+
+        const newScore = Math.max(0, Math.min(100, currentScore + delta));
+
+        const { error } = await sb.from('learning_item_strength')
+            .update({
+                strength_score: newScore,
+                last_practiced_at: now,
+                last_decay_at: now,
+                attempts_count: existing.attempts_count + (result.skipped ? 0 : 1),
+                correct_count: existing.correct_count + (result.correct ? 1 : 0),
+                skip_count: existing.skip_count + (result.skipped ? 1 : 0),
+                updated_at: now
+            })
+            .eq('id', existing.id);
+
+        if (error) console.error('updateItemStrength update error:', error);
+    } else {
+        // Insert new row
+        const newScore = Math.max(0, Math.min(100, delta));
+
+        const { error } = await sb.from('learning_item_strength')
+            .insert({
+                child_id: childId,
+                skill_key: skillKey,
+                item_key: itemKey,
+                item_type: itemType,
+                strength_score: newScore,
+                last_practiced_at: now,
+                last_decay_at: now,
+                attempts_count: result.skipped ? 0 : 1,
+                correct_count: result.correct ? 1 : 0,
+                skip_count: result.skipped ? 1 : 0
+            });
+
+        if (error) console.error('updateItemStrength insert error:', error);
+    }
+}
