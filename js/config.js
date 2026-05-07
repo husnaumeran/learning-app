@@ -64,8 +64,8 @@ const CONFIG = {
         faces: ['😀','😂','😍','😎','🥳','😴','🤔','😱','🤗','🥰'],
         hands: ['👍','👏','🙌','👋','✌️','🤞','👊','🤝','💪','🖐️']
     },
-    twoLetterWords: ['IN','AT','ON','OF','SO','TO','GO','UP','ME','IT'],
-    threeLetterWords: ['CAT','DOG','SUN','BIG','RED','RUN','SIT','HAT','PEN','CUP'],
+    twoLetterWords: ['IN','AT','ON','OF','SO','TO','GO','UP','ME','IT','AM','AS','IF','OR','US','BY','HE','WE','BE','DO','HI','AN','MY','NO','OH','AD','AG','AH','AL','AW','AX'],
+    threeLetterWords: ['CAT','DOG','SUN','BIG','RED','RUN','SIT','HAT','PEN','CUP','ANT','APE','ARM','ASK','AXE','ALL','AND','ANY','ADD','ACT','ACE','AGE','AIR','ALE','BAD','BAG','BAT','BED','BET','BIG','BIT','BOX','BOY','BUG','BUN','BUS','CAN','CAP','CAR','COW','CUT','DAD','DEN','DIG','DUG','EGG','FAN','FAR','FAT','FIG','FIN','FOX','FUN','HAD','HAS','HAT','HAY','HID','HIM','HIP','HIT','HOT','HUG','HUT','JAM','JAR','JET','JOB','JOY','KEY','KID','LAB','LAP','LAW','LEG','LET','LID','LIP','LOG','LOT','MAN','MAP','MAT','MEN','MET','MIX','MOM','MUD','NAP','NET','NOD','NUT','OIL','ONE','PAD','PAL','PAN','PAT','PAW','PAY','PET','PIG','PIN','PIT','POT','PUP','PUT','RAG','RAM','RAN','RAP','RAT','RID','RIM','RIP','ROB','ROD','ROW','RUB','RUG','RUN','SAD','SAW','SAY','SEE','SET','SIT','SIX','SKY','SON','TAB','TAG','TAN','TAP','TAX','TEA','TEN','TIE','TIN','TIP','TOE','TOY','TRY','TUB','VAN','VET','WAR','WAS','WAX','WAY','WEB','WED','WET','WIN','YES','YET','ZIP','ZOO'],
     traceUppercase: ['A','B','C','D','E'],
     traceLowercase: ['a','b','c','d','e'],
     traceNumbers: ['1','2','3','4','5','6','7']
@@ -135,7 +135,28 @@ const URDU_WORDS = [
     {word:'ہَم', sound:'hum', meaning:'we'},
     {word:'تُم', sound:'tum', meaning:'you (plural)'},
     {word:'دَم', sound:'dam', meaning:'breath'},
-    {word:'رَب', sound:'rab', meaning:'lord'}
+    {word:'رَب', sound:'rab', meaning:'lord'},
+    {word:'بَچ', sound:'bach', meaning:'child'},
+    {word:'گَر', sound:'gar', meaning:'but'},
+    {word:'شَد', sound:'shad', meaning:'became'},
+    {word:'کَم', sound:'kam', meaning:'less'},
+    {word:'زَر', sound:'zar', meaning:'gold'},
+    {word:'پَل', sound:'pal', meaning:'moment'},
+    {word:'تَک', sound:'tak', meaning:'until'},
+    {word:'سَد', sound:'sad', meaning:'century'},
+    {word:'ہَر', sound:'har', meaning:'every'},
+    {word:'یَر', sound:'yar', meaning:'friend'},
+    {word:'بِل', sound:'bil', meaning:'cat'},
+    {word:'تِل', sound:'til', meaning:'sesame'},
+    {word:'پَک', sound:'pak', meaning:'pure'},
+    {word:'جَگ', sound:'jag', meaning:'world'},
+    {word:'سَم', sound:'sam', meaning:'poison'},
+    {word:'دَن', sound:'dan', meaning:'day'},
+    {word:'کِر', sound:'kir', meaning:'ray'},
+    {word:'مَت', sound:'mat', meaning:'opinion'},
+    {word:'رَت', sound:'rat', meaning:'night'},
+    {word:'تَر', sound:'tar', meaning:'swim'},
+    {word:'بَد', sound:'bad', meaning:'after'}
 ];
 
 // Arabic Letters (28 letters with harakat and connection forms)
@@ -180,7 +201,27 @@ const ARABIC_2LETTER = [
     {word:'إِنْ', sound:'in', meaning:'if'},
     {word:'بَلْ', sound:'bal', meaning:'rather'},
     {word:'قَدْ', sound:'qad', meaning:'already'},
-    {word:'هَلْ', sound:'hal', meaning:'is it?'}
+    {word:'هَلْ', sound:'hal', meaning:'is it?'},
+    {word:'بَابْ', sound:'bab', meaning:'door'},
+    {word:'كِتَابْ', sound:'kitab', meaning:'book'},
+    {word:'قَلْبْ', sound:'qalb', meaning:'heart'},
+    {word:'بَيْتْ', sound:'bayt', meaning:'house'},
+    {word:'وَلَدْ', sound:'walad', meaning:'boy'},
+    {word:'بِنْتْ', sound:'bint', meaning:'girl'},
+    {word:'شَمْسْ', sound:'shams', meaning:'sun'},
+    {word:'قَمَرْ', sound:'qamar', meaning:'moon'},
+    {word:'مَاءْ', sound:'maa', meaning:'water'},
+    {word:'نَجْمْ', sound:'najm', meaning:'star'},
+    {word:'جَبَلْ', sound:'jabal', meaning:'mountain'},
+    {word:'بَحْرْ', sound:'bahr', meaning:'sea'},
+    {word:'شَجَرْ', sound:'shajar', meaning:'tree'},
+    {word:'وَرْدْ', sound:'ward', meaning:'rose'},
+    {word:'حِصَانْ', sound:'hisan', meaning:'horse'},
+    {word:'كَلْبْ', sound:'kalb', meaning:'dog'},
+    {word:'قِطّْ', sound:'qitt', meaning:'cat'},
+    {word:'طَائِرْ', sound:'tair', meaning:'bird'},
+    {word:'سَمَكْ', sound:'samak', meaning:'fish'},
+    {word:'تُفَّاحْ', sound:'tuffah', meaning:'apple'}
 ];
 
 const ARABIC_3LETTER = [
@@ -192,6 +233,26 @@ const ARABIC_3LETTER = [
     {word:'نَظَرَ', sound:'nadhara', meaning:'he looked'},
     {word:'سَمِعَ', sound:'samia', meaning:'he heard'},
     {word:'قَرَأَ', sound:'qaraa', meaning:'he read'},
-    {word:'وَلَدْ', sound:'walad', meaning:'boy'},
-    {word:'بِنْتْ', sound:'bint', meaning:'girl'}
+    {word:'أَكَلَ', sound:'akala', meaning:'he ate'},
+    {word:'شَرِبَ', sound:'shariba', meaning:'he drank'},
+    {word:'لَعِبَ', sound:'laiba', meaning:'he played'},
+    {word:'رَكِبَ', sound:'rakiba', meaning:'he rode'},
+    {word:'دَخَلَ', sound:'dakhala', meaning:'he entered'},
+    {word:'خَرَجَ', sound:'karaja', meaning:'he exited'},
+    {word:'نَامَ', sound:'nama', meaning:'he slept'},
+    {word:'صَارَ', sound:'sara', meaning:'he became'},
+    {word:'حَصَلَ', sound:'hasala', meaning:'he got'},
+    {word:'وَجَدَ', sound:'wajada', meaning:'he found'},
+    {word:'ضَحِكَ', sound:'dahika', meaning:'he laughed'},
+    {word:'بَكَى', sound:'baka', meaning:'he cried'},
+    {word:'جَاءَ', sound:'ja-a', meaning:'he came'},
+    {word:'رَجَعَ', sound:'raja-a', meaning:'he returned'},
+    {word:'قَالَ', sound:'qala', meaning:'he said'},
+    {word:'سَأَلَ', sound:'s-ala', meaning:'he asked'},
+    {word:'فَهِمَ', sound:'fahima', meaning:'he understood'},
+    {word:'عَمِلَ', sound:'amila', meaning:'he worked'},
+    {word:'فَعَلَ', sound:'fa-ala', meaning:'he did'},
+    {word:'حَفِظَ', sound:'hafiza', meaning:'he memorized'},
+    {word:'كَسَبَ', sound:'kasaba', meaning:'he earned'},
+    {word:'غَسَلَ', sound:'gasala', meaning:'he washed'}
 ];
