@@ -1,6 +1,6 @@
 // ============ TRACE NUMBERS ============
 async function showTraceNumbers() {
-    const focus = Math.max(1, Number(getFocusNumber('trace_numbers')) || 1);
+    const focus = Math.max(1, Number(getContentLevel('trace_numbers')) || 1);
     const allItems = Array.from({length: focus}, (_, i) => String(i + 1));
 
     // Fetch strength scores and pick smart practice set
