@@ -1,7 +1,7 @@
 // ============ TRACE ABC ============
 function showTraceABC() {
     const ALL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const focus = Math.max(1, Math.min(26, Number(getFocusNumber('trace_abc')) || 1));
+    const focus = Math.max(1, Math.min(26, Number(getFocusNumber('trace_upper')) || 1));
 
     function generatePracticeSet(f) {
         if (f <= 7) return ALL.slice(0, f);
@@ -62,19 +62,19 @@ function showTraceABC() {
     window.prevABC = () => { if (current > 0) { saveCanvas(); current--; render(); } };
 
     window.nextABC = () => {
-        recordPassiveResponse('trace_abc', { symbol: letters[current] }, current);
+        recordPassiveResponse('trace_upper', { symbol: letters[current] }, current);
         saveCanvas();
         current++;
         if (current >= letters.length) {
             const newFocus = Math.min(26, focus + getIncrement(focus));
             if (newFocus > focus && CONFIG.childId) {
                 sb.from('child_skill_settings').upsert(
-                    { child_id: CONFIG.childId, skill_id: 'trace_abc', content_level: newFocus },
+                    { child_id: CONFIG.childId, skill_id: 'trace_upper', content_level: newFocus },
                     { onConflict: 'child_id,skill_id' }
                 ).then(({ error }) => {
                     if (error) console.error('trace_abc advance error', error);
                     else {
-                        CONFIG.skillSettings['trace_abc'] = { ...(CONFIG.skillSettings['trace_abc'] || {}), content_level: newFocus };
+                        CONFIG.skillSettings['trace_upper'] = { ...(CONFIG.skillSettings['trace_upper'] || {}), content_level: newFocus };
                         console.log('Trace ABC advanced to', ALL[newFocus - 1]);
                     }
                 });
