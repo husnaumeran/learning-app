@@ -97,6 +97,7 @@ async function showMenu() {
         ]},
         {title:'📖 Arabic Qaida', color:'#22c55e', items:[
             ['showArabicQaida','Arabic Qaida 📖','Arabic Qaida'],
+            ['showArabicTrace','Arabic Trace ✏️','Arabic Trace'],
             ['showNumbersArabic','Arabic Numbers 🔊','Numbers Arabic']
         ]},
         {title:'🌍 All Languages', color:'#9c27b0', items:[
