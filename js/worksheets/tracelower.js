@@ -1,36 +1,22 @@
 // ============ TRACE LOWERCASE ============
-function showTraceLower() {
+async function showTraceLower() {
     const ALL = 'abcdefghijklmnopqrstuvwxyz'.split('');
     const focus = Math.max(1, Math.min(26, Number(getContentLevel('trace_lower')) || 1));
+    const allItems = ALL.slice(0, focus);
 
-    function generatePracticeSet(f) {
-        if (f <= 7) return ALL.slice(0, f);
-        const idxSet = new Set();
-        idxSet.add(f - 1);
-        if (f > 1) idxSet.add(f - 2);
-        if (f > 2) idxSet.add(f - 3);
-        const midStart = Math.ceil(f * 0.4);
-        const midEnd = Math.ceil(f * 0.7);
-        let attempts = 0;
-        while ([...idxSet].filter(n => n >= midStart && n < midEnd).length < 2 && attempts < 50) {
-            idxSet.add(midStart + Math.floor(Math.random() * (midEnd - midStart)));
-            attempts++;
-        }
-        const revEnd = Math.max(1, midStart);
-        attempts = 0;
-        while ([...idxSet].filter(n => n < revEnd).length < 2 && attempts < 50) {
-            idxSet.add(Math.floor(Math.random() * revEnd));
-            attempts++;
-        }
-        return [...idxSet].sort((a, b) => a - b).map(i => ALL[i]);
-    }
+    const strengthMap = CONFIG.childId
+        ? await getItemStrengths(CONFIG.childId, 'trace_lower')
+        : new Map();
+
+    const letters = pickPracticeSet(allItems, strengthMap, {
+        maxItems: 7, newestCount: 3, midCount: 2, reviewCount: 2
+    });
 
     function getIncrement(f) {
         if (f <= 13) return 1;
         return 2;
     }
 
-    const letters = generatePracticeSet(focus);
     let current = 0;
     const saved = {};
 
@@ -60,6 +46,12 @@ function showTraceLower() {
 
     window.nextLower = () => {
         recordPassiveResponse('trace_lower', { symbol: letters[current] }, current);
+
+        if (CONFIG.childId) {
+            updateItemStrength(CONFIG.childId, 'trace_lower', letters[current], 'letter',
+                { correct: null, skipped: false, firstTry: null });
+        }
+
         saveCanvas();
         current++;
         if (current >= letters.length) {
