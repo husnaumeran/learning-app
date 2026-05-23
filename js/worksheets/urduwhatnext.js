@@ -10,7 +10,7 @@ async function showUrduWhatNext() {
             .select('question_data')
             .eq('child_id', CONFIG.childId)
             .eq('skill_id', 'urdu_what_next')
-            .eq('correct', false)
+            .eq('is_correct', false)
             .order('created_at', { ascending: false })
             .limit(10);
         wrongSequences = (data || []).map(r => r.question_data?.sequence?.join(',')).filter(Boolean);
