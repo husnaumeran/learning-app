@@ -1,8 +1,8 @@
 // ============ URDU WHAT COMES NEXT ============
 function showUrduWhatNext() {
-    const letters = URDU_LETTERS;
+    const letters = URDU_LETTERS.slice(0, getContentLevel('urdu_reading'));
     const problems = [];
-    for (let i = 0; i < getQuestionCount('urdu_what_next') && i < letters.length - 4; i++) {
+    for (let i = 0; i < getFocusNumber('urdu_what_next') && i < letters.length - 4; i++) {
         const start = Math.floor(Math.random() * (letters.length - 4));
         const seq = letters.slice(start, start+3);
         const ans = letters[start+3];
@@ -35,33 +35,19 @@ function showUrduWhatNext() {
         questionStartMs = Date.now();
     }
 
-    window.pickUrduNext = async (choice) => {
+    window.pickUrduNext = (choice) => {
         const responseTimeMs = Date.now() - questionStartMs;
-        const p = problems[current];
-        const correct = choice === p.ans.letter;
-        currentAnswers.push({q: p.seq.map(l=>l.letter).join('→')+'→?', answer: choice, correct: correct});
-
-        // Disable all choice boxes immediately
-        const boxes = document.querySelectorAll('.card .prob');
-        boxes.forEach(b => { b.onclick = null; b.style.pointerEvents = 'none'; });
-
-        // Highlight correct/wrong
+        const correct = choice === problems[current].ans.letter;
+        currentAnswers.push({q: problems[current].seq.map(l=>l.letter).join('→')+'→?', answer: choice, correct: correct});
+        const boxes = document.querySelectorAll('.card div[onclick]');
         boxes.forEach(b => {
-            if (b.textContent === p.ans.letter) b.style.background = '#22c55e';
+            if (b.textContent === problems[current].ans.letter) b.style.background = '#22c55e';
             else if (b.textContent === choice && !correct) b.style.background = '#ef4444';
         });
 
-        recordResponse('urdu_what_next', {type:'urdu_what_next', sequence: p.seq.map(l=>l.letter), correct_answer: p.ans.letter}, p.ans.letter, choice, correct, true, 1, responseTimeMs, current);
+        recordResponse('urdu_what_next', {type:'urdu_what_next', sequence:problems[current].seq.map(l=>l.letter), correct_answer:problems[current].ans.letter}, problems[current].ans.letter, choice, correct, true, 1, responseTimeMs, current);
 
-        if (correct) {
-            score++;
-            showFeedback(true, () => { current++; render(); });
-        } else {
-            const title = document.querySelector('.title');
-            if (title) { title.innerHTML = '❌ ' + p.ans.letter + ' ← ' + p.seq.map(l=>l.letter).join(' '); title.style.color = '#ef4444'; }
-            await speakUrdu(p.ans.name || p.ans.letter);
-            current++; render();
-        }
+        showFeedback(correct, () => { if (correct) score++; current++; render(); });
     };
     render();
 }
