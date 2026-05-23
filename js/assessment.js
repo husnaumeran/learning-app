@@ -7,8 +7,10 @@ const ASSESSMENT_SKILLS = {
     counting:                 { type: 'text',   enabled: true },
     more_less:                { type: 'text',   enabled: true },
     bigger_smaller:           { type: 'text',   enabled: true },
+    match_numbers:            { type: 'text',   enabled: true },
     which_doesnt_belong:      { type: 'text',   enabled: true },
     what_comes_next_numbers:  { type: 'text',   enabled: true },
+    find_pairs:               { type: 'Visual', enabled: true },
     color_patterns:           { type: 'text',   enabled: true },
     color_patterns_l2:        { type: 'text',   enabled: true },
     verbal_analogies:         { type: 'text',   enabled: true },
@@ -21,21 +23,7 @@ const ASSESSMENT_SKILLS = {
 };
 
 // Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
-const VA_ASSESS_LEVELS = [
-    null,
-    { name:'Opposites', conn:' means ',
-      pairs:[{a:'big',b:'small'},{a:'hot',b:'cold'},{a:'up',b:'down'},{a:'happy',b:'sad'},{a:'fast',b:'slow'},{a:'day',b:'night'},{a:'open',b:'close'},{a:'loud',b:'quiet'},{a:'go',b:'stop'},{a:'wet',b:'dry'},{a:'full',b:'empty'},{a:'in',b:'out'},{a:'tall',b:'short'},{a:'light',b:'heavy'},{a:'new',b:'old'},{a:'clean',b:'dirty'},{a:'soft',b:'hard'},{a:'long',b:'short'},{a:'push',b:'pull'},{a:'young',b:'old'},{a:'front',b:'back'},{a:'sweet',b:'sour'},{a:'thick',b:'thin'},{a:'laugh',b:'cry'},{a:'dark',b:'bright'},{a:'give',b:'take'},{a:'win',b:'lose'},{a:'asleep',b:'awake'},{a:'top',b:'bottom'},{a:'yes',b:'no'},{a:'left',b:'right'},{a:'on',b:'off'}] },
-    { name:'Function', conn:' is for ',
-      pairs:[{a:'pen',b:'write'},{a:'scissors',b:'cut'},{a:'oven',b:'cook'},{a:'broom',b:'sweep'},{a:'phone',b:'call'},{a:'camera',b:'photo'},{a:'toothbrush',b:'brush'},{a:'key',b:'unlock'},{a:'crayon',b:'color'},{a:'drum',b:'beat'},{a:'soap',b:'wash'},{a:'bell',b:'ring'},{a:'hammer',b:'hit'},{a:'ladder',b:'climb'},{a:'spoon',b:'eat'},{a:'pillow',b:'sleep'},{a:'lamp',b:'light'},{a:'hose',b:'water'},{a:'knife',b:'cut'},{a:'shovel',b:'dig'},{a:'glasses',b:'see'},{a:'brush',b:'paint'},{a:'clock',b:'time'},{a:'basket',b:'carry'},{a:'net',b:'catch'},{a:'whistle',b:'blow'},{a:'magnet',b:'stick'},{a:'fan',b:'cool'},{a:'mop',b:'clean'},{a:'tape',b:'stick'},{a:'wheel',b:'roll'},{a:'cup',b:'drink'}] },
-    { name:'Associations', conn:' → ',
-      pairs:[{a:'rain',b:'umbrella'},{a:'cold',b:'coat'},{a:'night',b:'moon'},{a:'bee',b:'honey'},{a:'teacher',b:'school'},{a:'doctor',b:'hospital'},{a:'baby',b:'bottle'},{a:'fish',b:'water'},{a:'bird',b:'nest'},{a:'snow',b:'snowman'},{a:'sun',b:'sunglasses'},{a:'dog',b:'bone'},{a:'fire',b:'smoke'},{a:'winter',b:'snow'},{a:'morning',b:'breakfast'},{a:'beach',b:'sand'},{a:'king',b:'crown'},{a:'spider',b:'web'},{a:'cow',b:'milk'},{a:'hen',b:'egg'},{a:'baker',b:'bread'},{a:'pilot',b:'plane'},{a:'farmer',b:'tractor'},{a:'chef',b:'kitchen'},{a:'letter',b:'mailbox'},{a:'star',b:'sky'},{a:'paint',b:'canvas'},{a:'pirate',b:'treasure'},{a:'rabbit',b:'carrot'},{a:'monkey',b:'banana'},{a:'bear',b:'cave'},{a:'squirrel',b:'acorn'}] },
-    { name:'Relational', conn:' → ',
-      pairs:[{a:'kitten',b:'cat'},{a:'puppy',b:'dog'},{a:'baby',b:'adult'},{a:'cub',b:'bear'},{a:'chick',b:'chicken'},{a:'lamb',b:'sheep'},{a:'foal',b:'horse'},{a:'calf',b:'cow'},{a:'duckling',b:'duck'},{a:'caterpillar',b:'butterfly'},{a:'piglet',b:'pig'},{a:'seed',b:'flower'},{a:'tadpole',b:'frog'},{a:'joey',b:'kangaroo'},{a:'kit',b:'fox'},{a:'fawn',b:'deer'},{a:'gosling',b:'goose'},{a:'cub',b:'lion'},{a:'pup',b:'seal'},{a:'owlet',b:'owl'},{a:'larva',b:'beetle'},{a:'eaglet',b:'eagle'},{a:'colt',b:'horse'},{a:'kid',b:'goat'},{a:'hatchling',b:'turtle'},{a:'fingerling',b:'fish'},{a:'sapling',b:'tree'},{a:'egg',b:'bird'},{a:'acorn',b:'oak'},{a:'bud',b:'flower'},{a:'bulb',b:'tulip'},{a:'sprout',b:'plant'}] },
-    { name:'Categories', conn:' → ',
-      pairs:[{a:'dog',b:'animal'},{a:'apple',b:'fruit'},{a:'car',b:'vehicle'},{a:'shirt',b:'clothing'},{a:'chair',b:'furniture'},{a:'banana',b:'fruit'},{a:'cat',b:'animal'},{a:'shoe',b:'clothing'},{a:'carrot',b:'vegetable'},{a:'truck',b:'vehicle'},{a:'bed',b:'furniture'},{a:'orange',b:'fruit'},{a:'piano',b:'instrument'},{a:'guitar',b:'instrument'},{a:'rose',b:'flower'},{a:'tulip',b:'flower'},{a:'hammer',b:'tool'},{a:'saw',b:'tool'},{a:'eagle',b:'bird'},{a:'penguin',b:'bird'},{a:'shark',b:'fish'},{a:'salmon',b:'fish'},{a:'bus',b:'vehicle'},{a:'bike',b:'vehicle'},{a:'grape',b:'fruit'},{a:'mango',b:'fruit'},{a:'corn',b:'vegetable'},{a:'potato',b:'vegetable'},{a:'table',b:'furniture'},{a:'sofa',b:'furniture'},{a:'lion',b:'animal'},{a:'rabbit',b:'animal'}] },
-    { name:'Parts', conn:' → ',
-      pairs:[{a:'wheel',b:'car'},{a:'page',b:'book'},{a:'petal',b:'flower'},{a:'branch',b:'tree'},{a:'door',b:'house'},{a:'feather',b:'bird'},{a:'button',b:'shirt'},{a:'window',b:'house'},{a:'leaf',b:'tree'},{a:'candle',b:'cake'},{a:'seed',b:'plant'},{a:'roof',b:'building'},{a:'wing',b:'airplane'},{a:'sail',b:'boat'},{a:'handle',b:'door'},{a:'lace',b:'shoe'},{a:'key',b:'piano'},{a:'screen',b:'phone'},{a:'wick',b:'candle'},{a:'leg',b:'table'},{a:'eye',b:'face'},{a:'fin',b:'fish'},{a:'tail',b:'dog'},{a:'trunk',b:'elephant'},{a:'shell',b:'egg'},{a:'pedal',b:'bike'},{a:'string',b:'guitar'},{a:'brick',b:'wall'},{a:'blade',b:'knife'},{a:'horn',b:'unicorn'},{a:'antler',b:'deer'},{a:'stripe',b:'zebra'}] }
-];
+const VA_ASSESS_LEVELS = window.VA_LEVELS;
 
 // ============ WEEKEND ASSESSMENT ============
 
@@ -49,20 +37,53 @@ function getWeekStartISO() {
     return monday.toISOString();
 }
 
+function getChallengeStartISO() {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun, 6=Sat
+    const diff = day === 0 ? 1 : day === 6 ? 0 : day + 1;
+    const saturday = new Date(now);
+    saturday.setDate(now.getDate() - diff);
+    saturday.setHours(0, 0, 0, 0);
+    return saturday.toISOString();
+}
+
+function getChallengeDayKey(){
+    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+function isWeekendDay(){
+    const day = new Date().getDay(); // 0=Sun, 6=Sat
+    return true; // TEMP: was day === 0 || day === 6;
+}
+
 window.checkWeekendAssessment = async function() {
     if (!CONFIG.childId) return;
-    const weekStart = getWeekStartISO();
+
+    // Mon-Fri: no weekend challenge
+    if (!isWeekendDay()) {
+        CONFIG.weekendChallengeSession = null;
+        CONFIG.weekendChallengeDone = false;
+        CONFIG.weekendChallengeInProgress = false;
+        return;
+    }
+
+    const todayKey = getChallengeDayKey();
+
     const { data } = await sb.from('sessions')
-        .select('id,status')
+        .select('id,status,session_meta,created_at')
         .eq('child_id', CONFIG.childId)
         .eq('session_type', 'weekend_assessment')
-        .gte('created_at', weekStart)
-        .limit(1);
+        .in('status', ['in_progress', 'completed'])
+        .order('created_at', { ascending: false });
 
-    if (data && data.length > 0) {
-        CONFIG.weekendChallengeSession = data[0];
-        CONFIG.weekendChallengeDone = data[0].status === 'completed';
-        CONFIG.weekendChallengeInProgress = data[0].status === 'in_progress';
+    const todaySession = (data || []).find(s =>
+        s.session_meta && s.session_meta.challenge_day === todayKey
+    );
+
+    if (todaySession) {
+        CONFIG.weekendChallengeSession = todaySession;
+        CONFIG.weekendChallengeDone = todaySession.status === 'completed';
+        CONFIG.weekendChallengeInProgress = todaySession.status === 'in_progress';
     } else {
         CONFIG.weekendChallengeSession = null;
         CONFIG.weekendChallengeDone = false;
@@ -85,7 +106,7 @@ window.resumeWeekendChallenge = async function() {
         .select('session_meta')
         .eq('id', CONFIG.sessionId)
         .single();
-    const skills = (sess && sess.session_meta && sess.session_meta.skills_tested) || ['addition', 'subtraction', 'counting'];
+    const skills = (sess && sess.session_meta && sess.session_meta.skills_tested) || ['addition', 'subtraction', 'counting', 'find_pairs'];
 
     const totalExpected = skills.reduce((sum, s) => sum + getQuestionCount(s, 'challenge'), 0);
     const remaining = Math.max(0, totalExpected - answered);
@@ -106,8 +127,15 @@ window.resumeWeekendChallenge = async function() {
 }
 
 window.startWeekendChallenge = async function() {
-    // 1. Find skills practiced this week
+    if (!isWeekendDay()) {
+        alert('Weekend Challenge is only available on Saturday and Sunday.');
+        return;
+    }
+
+    const todayKey = getChallengeDayKey();
     const weekStart = getWeekStartISO();
+
+    // 1. Find skills practiced this week
     const { data: practiced } = await sb.from('responses')
         .select('skill_id')
         .eq('child_id', CONFIG.childId)
@@ -118,42 +146,50 @@ window.startWeekendChallenge = async function() {
         if (r.skill_id) counts[r.skill_id] = (counts[r.skill_id] || 0) + 1;
     });
 
-    // Filter to enabled evaluable skills only (no cap — all practiced skills included)
     let skills = Object.entries(counts)
         .filter(([id]) => ASSESSMENT_SKILLS[id] && ASSESSMENT_SKILLS[id].enabled)
         .sort((a, b) => b[1] - a[1])
         .map(e => e[0]);
 
-    // Fallback if no practice this week
     if (skills.length === 0) {
         skills = ['addition', 'subtraction', 'counting'];
     }
 
-    // 2. Create session
+    // 2. Create session for TODAY only
     const { data: session, error } = await sb.from('sessions').insert({
         child_id: CONFIG.childId,
         session_type: 'weekend_assessment',
-        session_meta: { week: getWeekKey(), skills_tested: skills }
+        session_meta: {
+            week: getWeekKey(),
+            challenge_day: todayKey,
+            skills_tested: skills
+        }
     }).select('id').single();
 
-    if (error || !session) { console.error('Weekend session failed:', error); alert('Session error: '+JSON.stringify(error)); return; }
+    if (error || !session) {
+        console.error('Weekend session failed:', error);
+        alert('Session error: ' + JSON.stringify(error));
+        return;
+    }
+
     CONFIG.sessionId = session.id;
 
-    // 3. Generate questions — each skill gets its own challenge_question_count
+    // 3. Generate questions
     const questions = [];
     for (const skill of skills) {
         try {
             const count = getQuestionCount(skill, 'challenge');
             questions.push(...makeAssessmentQs(skill, count));
-        } catch(e) {
+        } catch (e) {
             console.error('makeAssessmentQs failed for', skill, e);
-            document.getElementById('app').innerHTML = '<div style="padding:20px;color:red">Error on skill: ' + skill + ' — ' + e.message + '<br>' + e.stack + '</div>';
+            document.getElementById('app').innerHTML =
+                '<div style="padding:20px;color:red">Error on skill: ' +
+                skill + ' — ' + e.message + '<br>' + e.stack + '</div>';
             return;
         }
     }
-    const finalQs = questions.sort(() => Math.random() - 0.5);
 
-    // 4. Run
+    const finalQs = questions.sort(() => Math.random() - 0.5);
     runAssessment(finalQs);
 }
 
@@ -162,7 +198,7 @@ function makeFMAssessmentQs(count) {
     const SHAPES = ['circle','square','triangle','star','diamond'];
     const COLORS = ['#FF0000','#0066FF','#00AA00','#FFD700','#FF6600','#FF69B4'];
     const SIZES = [60, 30];
-    const fmLevel = Math.min(parseInt(localStorage.getItem('fm_level') || '1'), 8);
+    const fmLevel = Math.min(getContentLevel('figure_matrices'), 8);
     const pick=(a)=>a[Math.floor(Math.random()*a.length)];
     const pickDiff=(a,x)=>{ const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; };
     const rci=()=>Math.floor(Math.random()*COLORS.length);
@@ -292,6 +328,34 @@ function makeAssessmentQs(skillId, count) {
             }
             break;
         }
+        case 'find_pairs': {
+            const pairs = generateMatchPairs(focus, count);
+            for (const [n, emoji] of pairs) {
+                qs.push({
+                    skill_id: 'find_pairs',
+                    prompt: 'Find the matching pair',
+                    prompt_emoji: emoji,
+                    choices: [String(n), ...randWrongs(n, 3, 1).map(String)].sort(() => Math.random() - 0.5),
+                    correct: String(n),
+                    qdata: { type: 'find_pairs', number: n, emoji_count: n }
+                });
+            }
+            break;
+        }
+        case 'match_numbers': {
+            const pairs = generateMatchPairs(focus, count);
+            for (const [ans, emoji] of pairs) {
+                qs.push({
+                    skill_id: 'match_numbers',
+                    prompt_emoji: emoji,
+                    prompt: 'Number Match',
+                    choices: [String(ans), ...randWrongs(ans, 3, 1).map(String)].sort(() => Math.random() - 0.5),
+                    correct: String(ans),
+                    qdata: {type:'match_numbers', number: ans, emoji_count:ans}
+                });
+            }
+            break;
+        }
         case 'more_less': {
             const probs = generateMoreLessProblems(focus, count);
             for (const [a, b, type, ans] of probs) {
@@ -412,7 +476,7 @@ function makeAssessmentQs(skillId, count) {
         }
         case 'verbal_analogies': {
             // Use child's current VA level (stored in localStorage)
-            const vaLevel = Math.min(parseInt(localStorage.getItem('va_level') || '1'), VA_ASSESS_LEVELS.length - 1);
+            const vaLevel = Math.min(getContentLevel('verbal_analogies'), VA_ASSESS_LEVELS.length - 1);
             const levelData = VA_ASSESS_LEVELS[vaLevel];
             if (!levelData) break;
             const pairs = levelData.pairs;
@@ -539,7 +603,7 @@ function runAssessment(questions, indexOffset) {
 
 // ============ RESULTS SCREEN ============
 
-function finishAssessment(results, score, total) {
+async function finishAssessment(results, score, total) {
     // Finalize session
     if (CONFIG.sessionId) {
         sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
@@ -553,7 +617,7 @@ function finishAssessment(results, score, total) {
     }
 
     // Mark done (keyed by child + week)
-    localStorage.setItem('weekendChallenge:' + CONFIG.childId + ':' + getWeekKey(), 'true');
+    localStorage.setItem('weekendChallenge:' + CONFIG.childId + ':' + getChallengeDayKey(), 'true');
     CONFIG.weekendChallengeDone = true;
 
     // Write to localStorage so progress view can show it
@@ -575,24 +639,59 @@ function finishAssessment(results, score, total) {
     if (bySkill.verbal_analogies) {
         const vaPct = bySkill.verbal_analogies.correct / bySkill.verbal_analogies.total;
         if (vaPct >= 0.8) {
-            const cur = parseInt(localStorage.getItem('va_level') || '1');
+            const cur = getContentLevel('verbal_analogies');
             if (cur < 6) {
                 const newLevel = cur + 1;
-                localStorage.setItem('va_level', String(newLevel));
-                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'verbal_analogies', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
-                console.log('📈 VA content_level → ' + newLevel);
+
+                const { error } = await sb.from('child_skill_settings').upsert(
+                    {
+                        child_id: CONFIG.childId,
+                        skill_id: 'verbal_analogies',
+                        content_level: newLevel
+                    },
+                    { onConflict: 'child_id,skill_id' }
+                );
+
+                if (error) {
+                    console.error('📈 VA content_level upsert error', error);
+                } else {
+                    CONFIG.skillSettings['verbal_analogies'] = {
+                        ...(CONFIG.skillSettings['verbal_analogies'] || {}),
+                        content_level: newLevel
+                    };
+                    localStorage.setItem('va_level', String(newLevel));
+                    console.log('📈 VA content_level → ' + newLevel);
+                }
             }
         }
     }
+
     if (bySkill.figure_matrices) {
         const fmPct = bySkill.figure_matrices.correct / bySkill.figure_matrices.total;
         if (fmPct >= 0.8) {
-            const cur = parseInt(localStorage.getItem('fm_level') || '1');
+            const cur = getContentLevel('figure_matrices');
             if (cur < 8) {
                 const newLevel = cur + 1;
-                localStorage.setItem('fm_level', String(newLevel));
-                sb.from('child_skill_settings').upsert({ child_id: CONFIG.childId, skill_id: 'figure_matrices', content_level: newLevel }, { onConflict: 'child_id,skill_id' });
-                console.log('📈 FM content_level → ' + newLevel);
+
+                const { error } = await sb.from('child_skill_settings').upsert(
+                    {
+                        child_id: CONFIG.childId,
+                        skill_id: 'figure_matrices',
+                        content_level: newLevel
+                    },
+                    { onConflict: 'child_id,skill_id' }
+                );
+
+                if (error) {
+                    console.error('📈 FM content_level upsert error', error);
+                } else {
+                    CONFIG.skillSettings['figure_matrices'] = {
+                        ...(CONFIG.skillSettings['figure_matrices'] || {}),
+                        content_level: newLevel
+                    };
+                    localStorage.setItem('fm_level', String(newLevel));
+                    console.log('📈 FM content_level → ' + newLevel);
+                }
             }
         }
     }
