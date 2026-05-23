@@ -53,7 +53,7 @@ function getChallengeDayKey(){
 
 function isWeekendDay(){
     const day = new Date().getDay(); // 0=Sun, 6=Sat
-    return day === 0 || day === 6;
+    return true; // TEMP: was day === 0 || day === 6;
 }
 
 window.checkWeekendAssessment = async function() {
