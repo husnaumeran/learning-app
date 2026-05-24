@@ -104,7 +104,7 @@ async function showMenu() {
             ['showNumbersAll','Numbers All 🔢','Numbers All']
         ]},
         {title:'📚 Books', color:'#FF6B9D', items:[
-            ['showBabyUniversity','Baby University 📚','Baby University']
+            ['showBabyUniversity','Quantum Physics for Babies 📚','Baby University']
         ]}
     ];
 
