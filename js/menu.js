@@ -102,6 +102,9 @@ async function showMenu() {
         ]},
         {title:'🌍 All Languages', color:'#9c27b0', items:[
             ['showNumbersAll','Numbers All 🔢','Numbers All']
+        ]},
+        {title:'📚 Books', color:'#FF6B9D', items:[
+            ['showBabyUniversity','Baby University 📚','Baby University']
         ]}
     ];
 
