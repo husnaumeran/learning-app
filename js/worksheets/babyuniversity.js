@@ -9,7 +9,7 @@ const BABY_UNIVERSITY_BOOKS = [
     {
         id: 'newtonian_physics',
         title: 'Newtonian Physics for Babies',
-        pages: 26,
+        pages: 25,
         path: 'books/newtonian_physics'
     }
 ];
