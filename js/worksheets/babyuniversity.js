@@ -4,13 +4,22 @@ const BABY_UNIVERSITY_BOOKS = [
         id: 'quantum_physics',
         title: 'Quantum Physics for Babies',
         pages: 25,
-        path: 'books/quantum_physics'
+        path: 'books/quantum_physics',
+        ext: 'jpeg'
     },
     {
         id: 'newtonian_physics',
         title: 'Newtonian Physics for Babies',
         pages: 25,
-        path: 'books/newtonian_physics'
+        path: 'books/newtonian_physics',
+        ext: 'jpeg'
+    },
+    {
+        id: 'quantum_information',
+        title: 'Quantum Information for Babies',
+        pages: 24,
+        path: 'books/quantum_information',
+        ext: 'png'
     }
 ];
 
@@ -19,8 +28,9 @@ function showBabyUniversity() {
     html += '<div class="title">📚 Baby University</div>';
     html += '<div style="display:grid;grid-template-columns:1fr;gap:15px;margin-top:15px">';
     BABY_UNIVERSITY_BOOKS.forEach(book => {
+        const ext = book.ext || 'jpeg';
         html += '<div class="prob" style="cursor:pointer;padding:20px;text-align:center" onclick="openBook(\'' + book.id + '\')">';
-        html += '<img src="' + book.path + '/page_01.jpeg" style="width:120px;border-radius:8px;margin-bottom:10px"><br>';
+        html += '<img src="' + book.path + '/page_01.' + ext + '" style="width:120px;border-radius:8px;margin-bottom:10px"><br>';
         html += '<div style="font-size:18px;font-weight:bold">' + book.title + '</div>';
         html += '</div>';
     });
@@ -31,6 +41,7 @@ function showBabyUniversity() {
 function openBook(bookId) {
     const book = BABY_UNIVERSITY_BOOKS.find(b => b.id === bookId);
     if (!book) return;
+    const ext = book.ext || 'jpeg';
     let current = 0;
 
     function render() {
@@ -39,7 +50,7 @@ function openBook(bookId) {
         html += '<div class="card" style="padding:10px">';
         html += '<div class="title" style="font-size:18px;margin-bottom:5px">📚 ' + book.title + '</div>';
         html += '<div style="text-align:center;margin:5px 0">';
-        html += '<img src="' + book.path + '/page_' + String(pageNum).padStart(2, '0') + '.jpeg" style="max-width:100%;max-height:60vh;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.3)">';
+        html += '<img src="' + book.path + '/page_' + String(pageNum).padStart(2, '0') + '.' + ext + '" style="max-width:100%;max-height:60vh;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.3)">';
         html += '</div>';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">';
         html += '<button class="key" onclick="prevBUPage()" ' + (current === 0 ? 'disabled style="opacity:0.3"' : '') + '>← Prev</button>';
