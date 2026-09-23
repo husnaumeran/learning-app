@@ -59,6 +59,7 @@ function showNumbersUrdu() {
     function startLearn() {
         const nums = Array.from({length:QUESTIONS},(_,i)=>i+1);
         let phase = 'flash', flashIdx = 0, quizIdx = 0, score = 0, tried = false;
+        let quizStartMs = null, quizAttempts = 0;
         const quizNums = shuffle([...nums]);
 
         function renderFlash() {
@@ -98,6 +99,8 @@ function showNumbersUrdu() {
             html += '</div></div>';
             document.getElementById('app').innerHTML = html;
             tried = false;
+            quizAttempts = 0;
+            quizStartMs = Date.now();
             setTimeout(() => sayNum(n), 400);
         }
 
@@ -110,8 +113,12 @@ function showNumbersUrdu() {
         };
 
         window.pickNUQuiz = function(i, chosen, target) {
+            const responseTimeMs = quizStartMs ? Date.now() - quizStartMs : null;
+            quizAttempts++;
             const el = document.getElementById('nuq'+i);
-            if (chosen === target) {
+            const correct = chosen === target;
+            recordResponse('numbers_urdu', {type:'numbers_urdu', number:target, instruction:'match'}, String(target), String(chosen), correct, quizAttempts===1, quizAttempts, responseTimeMs, quizIdx, false, 1);
+            if (correct) {
                 if (!tried) score++;
                 currentAnswers.push({q: displayNum(target)+' = ?', answer: chosen, correct: true, firstTry: !tried});
                 el.style.borderColor = '#22c55e'; el.style.background = '#dcfce7';
@@ -217,6 +224,8 @@ function showNumbersUrdu() {
 
     function renderPicker() {
         const maxLevel = Math.max(1, getContentLevel('numbers_urdu'));
+        let progressHtml = '';
+        try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('numbers_urdu') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
         if (maxLevel > 1) {
@@ -229,6 +238,7 @@ function showNumbersUrdu() {
             html += '<div onclick="'+(unlocked?'startNULevel('+l+')':'')+'" style="background:'+bg+';color:white;padding:15px;border-radius:12px;text-align:center;cursor:'+(unlocked?'pointer':'not-allowed')+';opacity:'+(unlocked?1:0.5)+'">';
             html += '<div style="font-size:22px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:13px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
+            if (l === maxLevel && progressHtml) html += '<div style="font-size:11px;margin-top:2px;opacity:0.9">'+progressHtml+'</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -332,48 +342,6 @@ function showNumbersUrdu() {
 
 async function finishUrduNumbersL1(score, total) {
     const pct = Math.round((score / total) * 100);
-    const cur = Math.max(1, getContentLevel('numbers_urdu'));
-
-    if (pct >= 80 && cur < 5) {
-        const newLevel = 2;
-
-        const { error } = await sb.from('child_skill_settings').upsert(
-            {
-                child_id: CONFIG.childId,
-                skill_id: 'numbers_urdu',
-                content_level: newLevel
-            },
-            { onConflict: 'child_id,skill_id' }
-        );
-
-        if (error) {
-            console.error('Numbers Urdu L1 upsert error', error);
-        } else {
-            CONFIG.skillSettings['numbers_urdu'] = {
-                ...(CONFIG.skillSettings['numbers_urdu'] || {}),
-                content_level: newLevel
-            };
-
-            if (window.nuAfterLearn) {
-                const cb = window.nuAfterLearn;
-                window.nuAfterLearn = null;
-                cb();
-                return;
-            }
-
-            if (CONFIG.sessionId) {
-                completeWorksheet('Numbers Urdu', score, total);
-                return;
-            }
-
-            document.getElementById('app').innerHTML =
-                '<div class="card"><div class="title">Great job! 🎉</div>' +
-                '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
-                '<div style="text-align:center;margin-top:10px">Urdu Numbers advanced to level 2!</div>' +
-                '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
-            return;
-        }
-    }
 
     if (window.nuAfterLearn) {
         const cb = window.nuAfterLearn;
@@ -387,51 +355,14 @@ async function finishUrduNumbersL1(score, total) {
         return;
     }
 
-
     document.getElementById('app').innerHTML =
-        '<div class="card"><div class="title">Nice try 💪</div>' +
+        '<div class="card"><div class="title">' + (pct >= 80 ? 'Great job! 🎉' : 'Nice try 💪') + '</div>' +
         '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
-        '<div style="text-align:center;margin-top:10px">Keep practicing level 1.</div>' +
         '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
 }
 
 async function finishUrduNumbersLevel(score, total, level) {
     const pct = Math.round((score / total) * 100);
-    const cur = Math.max(1, getContentLevel('numbers_urdu'));
-
-    if (pct >= 80 && level >= cur && cur < 5) {
-        const newLevel = cur + 1;
-
-        const { error } = await sb.from('child_skill_settings').upsert(
-            {
-                child_id: CONFIG.childId,
-                skill_id: 'numbers_urdu',
-                content_level: newLevel
-            },
-            { onConflict: 'child_id,skill_id' }
-        );
-
-        if (error) {
-            console.error('Numbers Urdu level upsert error', error);
-        } else {
-            CONFIG.skillSettings['numbers_urdu'] = {
-                ...(CONFIG.skillSettings['numbers_urdu'] || {}),
-                content_level: newLevel
-            };
-
-            if (CONFIG.sessionId) {
-                completeWorksheet('Numbers Urdu', score, total);
-                return;
-            }
-
-            document.getElementById('app').innerHTML =
-                '<div class="card"><div class="title">Great job! 🎉</div>' +
-                '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
-                '<div style="text-align:center;margin-top:10px">Urdu Numbers advanced to level ' + newLevel + '!</div>' +
-                '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
-            return;
-        }
-    }
 
     if (CONFIG.sessionId) {
         completeWorksheet('Numbers Urdu', score, total);
@@ -439,8 +370,7 @@ async function finishUrduNumbersLevel(score, total, level) {
     }
 
     document.getElementById('app').innerHTML =
-        '<div class="card"><div class="title">Nice try 💪</div>' +
+        '<div class="card"><div class="title">' + (pct >= 80 ? 'Great job! 🎉' : 'Nice try 💪') + '</div>' +
         '<div style="text-align:center;font-size:28px">' + score + ' / ' + total + '</div>' +
-        '<div style="text-align:center;margin-top:10px">Keep practicing this level.</div>' +
         '<button class="btn green" style="margin-top:20px" onclick="showMenu()">Back to Menu</button></div>';
 }

@@ -1,6 +1,6 @@
 // ============ URDU WHAT COMES NEXT (Smart Sequencing + Spaced Repetition) ============
 async function showUrduWhatNext() {
-    const letters = URDU_LETTERS.slice(0, getContentLevel('urdu_reading'));
+    const letters = URDU_LETTERS.slice(0, Math.max(4, getContentLevel('urdu_reading')));
     const questionCount = getFocusNumber('urdu_what_next');
     
     // 1. Fetch previous wrong answers for spaced repetition
@@ -70,7 +70,9 @@ async function showUrduWhatNext() {
 
 function makeProblem(seq, ans, letters, isReview) {
     const choices = [ans];
-    while (choices.length < 4) {
+    let attempts = 0;
+    while (choices.length < 4 && choices.length < letters.length && attempts < 100) {
+        attempts++;
         const r = letters[Math.floor(Math.random() * letters.length)];
         if (!choices.some(c => c.letter === r.letter)) choices.push(r);
     }

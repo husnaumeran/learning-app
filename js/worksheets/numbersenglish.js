@@ -1,12 +1,10 @@
 // ============ NUMBERS ENGLISH ============
 function showNumbersEnglish() {
     const QUESTIONS = getFocusNumber('numbers_english');
-    const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Hear & Tap','Closest','More Than','Less Than'];
-    const STORAGE_KEY = 'ne_level';
     const HISTORY_KEY = 'ne_history';
 
-    let level = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
+    let level = getContentLevel('numbers_english');
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
@@ -56,21 +54,27 @@ function showNumbersEnglish() {
                     break;
                 }
                 case 3: { // More Than
-                    const bigger = n + Math.floor(Math.random() * 10) + 1;
-                    const b = Math.min(100, bigger);
-                    const wrong = [];
-                    while (wrong.length < 3) { const w = Math.max(1, n - Math.floor(Math.random() * 15) - 1); if (w < n && !wrong.includes(w) && w !== b) wrong.push(w); }
-                    choices = shuffle([b, ...wrong.slice(0,3)]);
+                    const biggerPool = [];
+                    for (let v = n + 1; v <= 100; v++) biggerPool.push(v);
+                    if (biggerPool.length === 0) { attempts++; continue; }
+                    const b = biggerPool[Math.floor(Math.random() * biggerPool.length)];
+                    const wrongPool = [];
+                    for (let v = Math.max(1, n - 15); v < n; v++) if (v !== b) wrongPool.push(v);
+                    if (wrongPool.length < 3) { attempts++; continue; }
+                    choices = shuffle([b, ...shuffle(wrongPool).slice(0,3)]);
                     correct = b;
                     instruction = 'Tap a number MORE than what you hear!';
                     break;
                 }
                 case 4: { // Less Than
-                    const smaller = n - Math.floor(Math.random() * 10) - 1;
-                    const s = Math.max(1, smaller);
-                    const wrong = [];
-                    while (wrong.length < 3) { const w = Math.min(100, n + Math.floor(Math.random() * 15) + 1); if (w > n && !wrong.includes(w) && w !== s) wrong.push(w); }
-                    choices = shuffle([s, ...wrong.slice(0,3)]);
+                    const smallerPool = [];
+                    for (let v = 1; v < n; v++) smallerPool.push(v);
+                    if (smallerPool.length === 0) { attempts++; continue; }
+                    const s = smallerPool[Math.floor(Math.random() * smallerPool.length)];
+                    const wrongPool = [];
+                    for (let v = n + 1; v <= Math.min(100, n + 15); v++) if (v !== s) wrongPool.push(v);
+                    if (wrongPool.length < 3) { attempts++; continue; }
+                    choices = shuffle([s, ...shuffle(wrongPool).slice(0,3)]);
                     correct = s;
                     instruction = 'Tap a number LESS than what you hear!';
                     break;
@@ -94,7 +98,9 @@ function showNumbersEnglish() {
     }
 
     function renderPicker() {
-        const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
+        const maxLevel = getContentLevel('numbers_english');
+        let progressHtml = '';
+        try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('numbers_english') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 Numbers — English</div>';
         html += '<div class="inst">Pick a level!</div>';
@@ -108,6 +114,7 @@ function showNumbersEnglish() {
             html += '<div style="font-size:22px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:13px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
             if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
+            if (l === maxLevel && progressHtml) html += '<div style="font-size:11px;margin-top:2px;opacity:0.9">'+progressHtml+'</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -120,21 +127,10 @@ function showNumbersEnglish() {
         if (current >= problems.length) {
             const key = 'L'+level;
             const h = history[key] || [];
-            const answered = problems.length - skips;
-            const skipRate = problems.length > 0 ? skips / problems.length : 1;
-            const qualifies = answered >= MIN_FOR_UNLOCK && skipRate <= 0.25;
-            h.push({score, qualifies});
+            h.push({score});
             history[key] = h;
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 
-            const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-            if (qualifies && level >= maxLevel && level < 4) {
-                const recent = h.slice(-3);
-                const threshold = Math.ceil(QUESTIONS * 0.8);
-                if (recent.length >= 3 && recent.every(s => s.qualifies && s.score >= threshold)) {
-                    localStorage.setItem(STORAGE_KEY, String(level + 1));
-                }
-            }
             completeWorksheet('Numbers English', score, problems.length);
             return;
         }

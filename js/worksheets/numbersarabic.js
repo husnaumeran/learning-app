@@ -1,13 +1,11 @@
 // ============ NUMBERS ARABIC ============
 function showNumbersArabic() {
     const QUESTIONS = getFocusNumber('numbers_arabic');
-    const MIN_FOR_UNLOCK = 5;
     const LEVEL_NAMES = ['Learn','Hear & Tap','Closest','More Than','Less Than'];
-    const STORAGE_KEY = 'na_level';
     const HISTORY_KEY = 'na_history';
     const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 
-    let level = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
+    let level = getContentLevel('numbers_arabic');
     const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
@@ -24,6 +22,7 @@ function showNumbersArabic() {
     function startLearn() {
         const nums = shuffle(Array.from({length:20},(_,i)=>i+1)).slice(0, QUESTIONS);
         let phase = 'flash', flashIdx = 0, quizIdx = 0, score = 0, tried = false;
+        let quizStartMs = null, quizAttempts = 0;
         const quizNums = shuffle([...nums]);
 
         function renderFlash() {
@@ -47,17 +46,9 @@ function showNumbersArabic() {
             if (quizIdx >= quizNums.length) {
                 const key = 'L1';
                 const h = history[key] || [];
-                h.push({score, qualifies: true});
+                h.push({score});
                 history[key] = h;
                 localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-                const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-                if (maxLevel < 2) {
-                    const recent = h.slice(-3);
-                    const threshold = Math.ceil(QUESTIONS * 0.8);
-                    if (recent.length >= 3 && recent.every(s => s.score >= threshold)) {
-                        localStorage.setItem(STORAGE_KEY, '2');
-                    }
-                }
                 completeWorksheet('Numbers Arabic L1', score, quizNums.length);
                 return;
             }
@@ -76,6 +67,8 @@ function showNumbersArabic() {
             html += '</div></div>';
             document.getElementById('app').innerHTML = html;
             tried = false;
+            quizAttempts = 0;
+            quizStartMs = Date.now();
             setTimeout(() => sayNum(n), 400);
         }
 
@@ -88,8 +81,12 @@ function showNumbersArabic() {
         };
 
         window.pickNAQuiz = function(i, chosen, target) {
+            const responseTimeMs = quizStartMs ? Date.now() - quizStartMs : null;
+            quizAttempts++;
             const el = document.getElementById('naq'+i);
-            if (chosen === target) {
+            const correct = chosen === target;
+            recordResponse('numbers_arabic', {type:'numbers_arabic', number:target, instruction:'match'}, String(target), String(chosen), correct, quizAttempts===1, quizAttempts, responseTimeMs, quizIdx, false, 1);
+            if (correct) {
                 if (!tried) score++;
                 currentAnswers.push({q: displayNum(target)+' = ?', answer: chosen, correct: true, firstTry: !tried});
                 el.style.borderColor = '#22c55e'; el.style.background = '#dcfce7';
@@ -130,19 +127,25 @@ function showNumbersArabic() {
                     instruction = 'اضغط الرقم الأقرب!'; break;
                 }
                 case 4: {
-                    const bigger = n + Math.floor(Math.random()*10)+1;
-                    const b = Math.min(100, bigger);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.max(1,n-Math.floor(Math.random()*15)-1);if(w<n&&!wrong.includes(w)&&w!==b)wrong.push(w);}
-                    choices = shuffle([b, ...wrong.slice(0,3)]); correct = b;
+                    const biggerPool = [];
+                    for (let v = n + 1; v <= 100; v++) biggerPool.push(v);
+                    if (biggerPool.length === 0) { attempts++; continue; }
+                    const b = biggerPool[Math.floor(Math.random() * biggerPool.length)];
+                    const wrongPool = [];
+                    for (let v = Math.max(1, n - 15); v < n; v++) if (v !== b) wrongPool.push(v);
+                    if (wrongPool.length < 3) { attempts++; continue; }
+                    choices = shuffle([b, ...shuffle(wrongPool).slice(0,3)]); correct = b;
                     instruction = 'اضغط الرقم الأكبر!'; break;
                 }
                 case 5: {
-                    const smaller = n - Math.floor(Math.random()*10)-1;
-                    const s = Math.max(1, smaller);
-                    const wrong = [];
-                    while(wrong.length<3){const w=Math.min(100,n+Math.floor(Math.random()*15)+1);if(w>n&&!wrong.includes(w)&&w!==s)wrong.push(w);}
-                    choices = shuffle([s, ...wrong.slice(0,3)]); correct = s;
+                    const smallerPool = [];
+                    for (let v = 1; v < n; v++) smallerPool.push(v);
+                    if (smallerPool.length === 0) { attempts++; continue; }
+                    const s = smallerPool[Math.floor(Math.random() * smallerPool.length)];
+                    const wrongPool = [];
+                    for (let v = n + 1; v <= Math.min(100, n + 15); v++) if (v !== s) wrongPool.push(v);
+                    if (wrongPool.length < 3) { attempts++; continue; }
+                    choices = shuffle([s, ...shuffle(wrongPool).slice(0,3)]); correct = s;
                     instruction = 'اضغط الرقم الأصغر!'; break;
                 }
             }
@@ -165,7 +168,9 @@ function showNumbersArabic() {
     }
 
     function renderPicker() {
-        const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
+        const maxLevel = getContentLevel('numbers_arabic');
+        let progressHtml = '';
+        try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('numbers_arabic') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title" style="color:#22c55e">🔢 عربی Arabic — Numbers</div>';
         html += '<div class="inst">Pick a level!</div>';
@@ -179,6 +184,7 @@ function showNumbersArabic() {
             html += '<div style="font-size:22px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:13px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
             if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
+            if (l === maxLevel && progressHtml) html += '<div style="font-size:11px;margin-top:2px;opacity:0.9">'+progressHtml+'</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -191,20 +197,9 @@ function showNumbersArabic() {
         if (current >= problems.length) {
             const key = 'L'+level;
             const h = history[key] || [];
-            const answered = problems.length - skips;
-            const skipRate = problems.length > 0 ? skips / problems.length : 1;
-            const qualifies = answered >= MIN_FOR_UNLOCK && skipRate <= 0.25;
-            h.push({score, qualifies});
+            h.push({score});
             history[key] = h;
             localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-            const maxLevel = parseInt(localStorage.getItem(STORAGE_KEY) || '1');
-            if (qualifies && level >= maxLevel && level < 5) {
-                const recent = h.slice(-3);
-                const threshold = Math.ceil(QUESTIONS * 0.8);
-                if (recent.length >= 3 && recent.every(s => s.qualifies && s.score >= threshold)) {
-                    localStorage.setItem(STORAGE_KEY, String(level + 1));
-                }
-            }
             completeWorksheet('Numbers Arabic', score, problems.length);
             return;
         }

@@ -1,20 +1,39 @@
 // ============  What Comes Next ============
 function showWhatNext() {
     const difficulty = getDifficultyLevel('what_comes_next_numbers');
+    const seqBase = Math.max(1, difficulty - 4);
     const problems = [
         [[1,2,3,4], 5],
         [[2,4,6,8], 10],
         [['A','B','C','D'], 'E'],
-        [[difficulty-4,difficulty-3,difficulty-2,difficulty-1], difficulty],
-        [[difficulty,difficulty-1,difficulty-2,difficulty-3], difficulty-4]
+        [[seqBase,seqBase+1,seqBase+2,seqBase+3], seqBase+4],
+        [[seqBase+4,seqBase+3,seqBase+2,seqBase+1], seqBase]
     ];
     let current = 0, score = 0;
     let questionStartMs = null;
 
+    function makeOptions(ans) {
+        const isLetter = typeof ans === 'string';
+        const val = isLetter ? ans.charCodeAt(0) : ans;
+        const toOut = v => isLetter ? String.fromCharCode(v) : v;
+        const inRange = v => isLetter ? (v >= 65 && v <= 90) : (v >= 1);
+        const offsets = [1, -1, 2, -2, 3, -3];
+        const seen = new Set([val]);
+        const options = [ans];
+        for (const off of offsets) {
+            if (options.length >= 4) break;
+            const v = val + off;
+            if (!inRange(v) || seen.has(v)) continue;
+            seen.add(v);
+            options.push(toOut(v));
+        }
+        return options.sort(() => Math.random() - 0.5);
+    }
+
     function render() {
         if (current >= problems.length) { completeWorksheet('What Comes Next', score, problems.length); return; }
         const [seq, ans] = problems[current];
-        const options = [ans, ans+1, ans-1, ans+2].filter(x => x !== ans).slice(0,3).concat(ans).sort(() => Math.random()-0.5);
+        const options = makeOptions(ans);
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">What Comes Next?</div>';
         html += '<div class="prob" style="justify-content:center;font-size:32px;gap:10px">'+seq.join(' → ')+' → <span style="color:#FF6B35;font-weight:bold">?</span></div>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px">';

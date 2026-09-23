@@ -48,12 +48,12 @@ function getChallengeStartISO() {
 }
 
 function getChallengeDayKey(){
-    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    return localDayKey(); // YYYY-MM-DD
 }
 
 function isWeekendDay(){
     const day = new Date().getDay(); // 0=Sun, 6=Sat
-    return true; // TEMP: was day === 0 || day === 6;
+    return day === 0 || day === 6;
 }
 
 window.checkWeekendAssessment = async function() {
@@ -120,7 +120,7 @@ window.resumeWeekendChallenge = async function() {
     const questions = [];
     const perSkill = Math.max(2, Math.ceil(remaining / skills.length));
     for (const skill of skills) {
-        questions.push(...makeAssessmentQs(skill, perSkill));
+        questions.push(...buildAssessmentQuestions(skill, perSkill));
     }
     const finalQs = questions.sort(() => Math.random() - 0.5).slice(0, remaining);
     runAssessment(finalQs, answered);
@@ -179,9 +179,9 @@ window.startWeekendChallenge = async function() {
     for (const skill of skills) {
         try {
             const count = getQuestionCount(skill, 'challenge');
-            questions.push(...makeAssessmentQs(skill, count));
+            questions.push(...buildAssessmentQuestions(skill, count));
         } catch (e) {
-            console.error('makeAssessmentQs failed for', skill, e);
+            console.error('buildAssessmentQuestions failed for', skill, e);
             document.getElementById('app').innerHTML =
                 '<div style="padding:20px;color:red">Error on skill: ' +
                 skill + ' — ' + e.message + '<br>' + e.stack + '</div>';
@@ -194,11 +194,11 @@ window.startWeekendChallenge = async function() {
 }
 
 // ============ FM ASSESSMENT HELPER ============
-function makeFMAssessmentQs(count) {
+function makeFMAssessmentQs(count, levelOverride) {
     const SHAPES = ['circle','square','triangle','star','diamond'];
     const COLORS = ['#FF0000','#0066FF','#00AA00','#FFD700','#FF6600','#FF69B4'];
     const SIZES = [60, 30];
-    const fmLevel = Math.min(getContentLevel('figure_matrices'), 8);
+    const fmLevel = Math.min(levelOverride != null ? levelOverride : getContentLevel('figure_matrices'), 8);
     const pick=(a)=>a[Math.floor(Math.random()*a.length)];
     const pickDiff=(a,x)=>{ const o=a.filter(v=>v!==x); return o.length?o[Math.floor(Math.random()*o.length)]:a[0]; };
     const rci=()=>Math.floor(Math.random()*COLORS.length);
@@ -271,8 +271,8 @@ function makeFMAssessmentQs(count) {
 
 // ============ QUESTION GENERATORS ============
 
-function makeAssessmentQs(skillId, count) {
-    const focus = getDifficultyLevel(skillId);
+function makeAssessmentQs(skillId, count, overrides) {
+    const focus = (overrides && overrides.difficulty != null) ? overrides.difficulty : getDifficultyLevel(skillId);
     const qs = [];
 
     function randWrongs(correct, n, min) {
@@ -475,8 +475,7 @@ function makeAssessmentQs(skillId, count) {
             break;
         }
         case 'verbal_analogies': {
-            // Use child's current VA level (stored in localStorage)
-            const vaLevel = Math.min(getContentLevel('verbal_analogies'), VA_ASSESS_LEVELS.length - 1);
+            const vaLevel = Math.min((overrides && overrides.level != null) ? overrides.level : getContentLevel('verbal_analogies'), VA_ASSESS_LEVELS.length - 1);
             const levelData = VA_ASSESS_LEVELS[vaLevel];
             if (!levelData) break;
             const pairs = levelData.pairs;
@@ -504,12 +503,79 @@ function makeAssessmentQs(skillId, count) {
             break;
         }
         case 'figure_matrices': {
-            qs.push(...makeFMAssessmentQs(count));
+            qs.push(...makeFMAssessmentQs(count, overrides && overrides.level));
             break;
         }
     }
 
     return qs;
+}
+
+// ============ RE-TEST EARLIER MATERIAL (RETENTION REVIEW) ============
+
+function buildAssessmentQuestions(skillId, count) {
+    if (!count || count < 1) return makeAssessmentQs(skillId, count);
+
+    const isMasterySkill = skillId === 'verbal_analogies' || skillId === 'figure_matrices';
+    const difficultyReviewSkills = ['addition', 'subtraction', 'counting', 'find_pairs', 'match_numbers', 'more_less', 'bigger_smaller', 'what_comes_next_numbers'];
+
+    let earlierMaterialExists = false;
+    let currentLevel, floor, currentDifficulty;
+
+    if (isMasterySkill) {
+        currentLevel = getContentLevel(skillId);
+        if (skillId === 'figure_matrices') currentLevel = Math.min(currentLevel, 8);
+        if (skillId === 'verbal_analogies') currentLevel = Math.min(currentLevel, VA_ASSESS_LEVELS.length - 1);
+        earlierMaterialExists = currentLevel > 1;
+    } else if (difficultyReviewSkills.indexOf(skillId) !== -1) {
+        floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
+        currentDifficulty = getDifficultyLevel(skillId);
+        earlierMaterialExists = currentDifficulty > floor;
+    }
+
+    const reviewCount = earlierMaterialExists
+        ? Math.min(Math.max(1, Math.floor(count / 3)), count - 1)
+        : 0;
+    const currentCount = count - reviewCount;
+
+    const currentQs = makeAssessmentQs(skillId, currentCount);
+    if (isMasterySkill) currentQs.forEach(q => { q.level = currentLevel; });
+
+    let reviewQs = [];
+    if (reviewCount > 0) {
+        try {
+            if (isMasterySkill) {
+                const needing = getSkillProgress(skillId)?.levels_needing_review || [];
+                const flagged = needing.filter(l => l >= 1 && l < currentLevel);
+                const pool = flagged.length ? flagged : Array.from({length: currentLevel - 1}, (_, i) => i + 1);
+                for (let i = 0; i < reviewCount; i++) {
+                    const level = pool[Math.floor(Math.random() * pool.length)];
+                    const [q] = makeAssessmentQs(skillId, 1, { level });
+                    if (q) {
+                        q.level = level;
+                        q.qdata.purpose = 'review';
+                        q.qdata.review_of_level = level;
+                        reviewQs.push(q);
+                    }
+                }
+            } else {
+                for (let i = 0; i < reviewCount; i++) {
+                    const difficulty = floor + Math.floor(Math.random() * (currentDifficulty - floor));
+                    const [q] = makeAssessmentQs(skillId, 1, { difficulty });
+                    if (q) {
+                        q.qdata.purpose = 'review';
+                        q.qdata.review_difficulty = difficulty;
+                        reviewQs.push(q);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('review question generation failed for', skillId, e);
+            reviewQs = [];
+        }
+    }
+
+    return currentQs.concat(reviewQs).sort(() => Math.random() - 0.5);
 }
 
 // ============ ASSESSMENT UI (NO RETRIES) ============
@@ -589,10 +655,11 @@ function runAssessment(questions, indexOffset) {
         });
 
         if (correct) score++;
-        results.push({ skill_id: q.skill_id, chosen, correct, responseTimeMs, prompt: q.prompt, choices: q.choices, correctAnswer: q.correct });
+        const isReview = !!(q.qdata && q.qdata.purpose === 'review');
+        results.push({ skill_id: q.skill_id, chosen, correct, responseTimeMs, prompt: q.prompt, choices: q.choices, correctAnswer: q.correct, isReview });
 
         // Record to Supabase
-        recordResponse(q.skill_id, q.qdata, q.correct, chosen, correct, true, 1, responseTimeMs, indexOffset + current, false);
+        recordResponse(q.skill_id, q.qdata, q.correct, chosen, correct, true, 1, responseTimeMs, indexOffset + current, false, q.level);
 
         // Auto-advance
         setTimeout(() => { current++; render(); }, 1200);
@@ -606,14 +673,23 @@ function runAssessment(questions, indexOffset) {
 async function finishAssessment(results, score, total) {
     // Finalize session
     if (CONFIG.sessionId) {
-        sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
-          .then(({data, error}) => {
-            if (error) console.error('finalize_session error:', error);
-            else {
+        try {
+            const { data, error } = await sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId });
+            if (error) {
+                console.error('finalize_session error:', error);
+            } else {
                 console.log('finalize_session OK:', data);
-                if (data && data.slices) adjustFocusNumbers(data.slices);
+                if (data && data.slices) await adjustFocusNumbers(data.slices);
+                await refreshSkillProgress();
+                if (data && data.levels_unlocked) {
+                    Object.entries(data.levels_unlocked).forEach(([skillId, level]) => {
+                        celebrateLevelUnlock(skillId, level);
+                    });
+                }
             }
-          });
+        } catch (e) {
+            console.error('finishAssessment finalize step failed:', e);
+        }
     }
 
     // Mark done (keyed by child + week)
@@ -621,80 +697,23 @@ async function finishAssessment(results, score, total) {
     CONFIG.weekendChallengeDone = true;
 
     // Write to localStorage so progress view can show it
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDayKey();
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const answers = results.map(r => ({q: r.prompt || r.skill_id.replace(/_/g,' '), answer: r.chosen, correct: r.correct, choices: r.choices, correctAnswer: r.correctAnswer, type: r.skill_id.replace(/_/g,' ')}));
     todayProgress.push({type: '⭐ Weekend Challenge', score: score+'/'+total, answers: answers, time: new Date().toISOString()});
     localStorage.setItem('daily_'+today, JSON.stringify(todayProgress));
 
-    // Per-skill breakdown
+    // Per-skill breakdown — current material vs. retention (review) material
     const bySkill = {};
     results.forEach(r => {
-        if (!bySkill[r.skill_id]) bySkill[r.skill_id] = {correct: 0, total: 0};
-        bySkill[r.skill_id].total++;
-        if (r.correct) bySkill[r.skill_id].correct++;
+        if (!bySkill[r.skill_id]) bySkill[r.skill_id] = {
+            current: {correct: 0, total: 0},
+            review: {correct: 0, total: 0}
+        };
+        const bucket = r.isReview ? bySkill[r.skill_id].review : bySkill[r.skill_id].current;
+        bucket.total++;
+        if (r.correct) bucket.correct++;
     });
-
-    // Level-up VA/FM based on weekend challenge performance
-    if (bySkill.verbal_analogies) {
-        const vaPct = bySkill.verbal_analogies.correct / bySkill.verbal_analogies.total;
-        if (vaPct >= 0.8) {
-            const cur = getContentLevel('verbal_analogies');
-            if (cur < 6) {
-                const newLevel = cur + 1;
-
-                const { error } = await sb.from('child_skill_settings').upsert(
-                    {
-                        child_id: CONFIG.childId,
-                        skill_id: 'verbal_analogies',
-                        content_level: newLevel
-                    },
-                    { onConflict: 'child_id,skill_id' }
-                );
-
-                if (error) {
-                    console.error('📈 VA content_level upsert error', error);
-                } else {
-                    CONFIG.skillSettings['verbal_analogies'] = {
-                        ...(CONFIG.skillSettings['verbal_analogies'] || {}),
-                        content_level: newLevel
-                    };
-                    localStorage.setItem('va_level', String(newLevel));
-                    console.log('📈 VA content_level → ' + newLevel);
-                }
-            }
-        }
-    }
-
-    if (bySkill.figure_matrices) {
-        const fmPct = bySkill.figure_matrices.correct / bySkill.figure_matrices.total;
-        if (fmPct >= 0.8) {
-            const cur = getContentLevel('figure_matrices');
-            if (cur < 8) {
-                const newLevel = cur + 1;
-
-                const { error } = await sb.from('child_skill_settings').upsert(
-                    {
-                        child_id: CONFIG.childId,
-                        skill_id: 'figure_matrices',
-                        content_level: newLevel
-                    },
-                    { onConflict: 'child_id,skill_id' }
-                );
-
-                if (error) {
-                    console.error('📈 FM content_level upsert error', error);
-                } else {
-                    CONFIG.skillSettings['figure_matrices'] = {
-                        ...(CONFIG.skillSettings['figure_matrices'] || {}),
-                        content_level: newLevel
-                    };
-                    localStorage.setItem('fm_level', String(newLevel));
-                    console.log('📈 FM content_level → ' + newLevel);
-                }
-            }
-        }
-    }
 
     const pct = Math.round(score / total * 100);
     const emoji = pct >= 90 ? '🏆' : pct >= 80 ? '🌟' : pct >= 60 ? '👍' : '💪';
@@ -706,16 +725,28 @@ async function finishAssessment(results, score, total) {
     html += '<div style="text-align:center;font-size:36px;color:#333;font-weight:bold">' + score + ' / ' + total + ' (' + pct + '%)</div>';
     html += '<div style="text-align:center;font-size:24px;color:#FFD700;margin:10px">' + msg + '</div>';
 
-    // Per-skill bars
+    // Per-skill bars — current material, plus a retention bar when review questions ran
     html += '<div style="margin:20px 0">';
     Object.entries(bySkill).forEach(([skill, data]) => {
-        const skillPct = Math.round(data.correct / data.total * 100);
-        const barColor = skillPct >= 80 ? '#22c55e' : skillPct >= 60 ? '#FFD700' : '#ef4444';
         const displayName = skill.replace(/_/g, ' ');
-        html += '<div style="display:flex;align-items:center;margin:8px 0;color:#333;font-size:16px">';
+        const cur = data.current;
+        const curPct = cur.total ? Math.round(cur.correct / cur.total * 100) : 0;
+        const curColor = curPct >= 80 ? '#22c55e' : curPct >= 60 ? '#FFD700' : '#ef4444';
+        html += '<div style="margin:8px 0">';
+        html += '<div style="display:flex;align-items:center;color:#333;font-size:16px">';
         html += '<span style="min-width:130px;text-transform:capitalize">' + displayName + '</span>';
-        html += '<div style="background:#333;border-radius:5px;height:12px;flex:1;margin:0 10px"><div style="background:' + barColor + ';border-radius:5px;height:12px;width:' + skillPct + '%"></div></div>';
-        html += '<span>' + data.correct + '/' + data.total + '</span>';
+        html += '<div style="background:#333;border-radius:5px;height:12px;flex:1;margin:0 10px"><div style="background:' + curColor + ';border-radius:5px;height:12px;width:' + curPct + '%"></div></div>';
+        html += '<span>' + cur.correct + '/' + cur.total + '</span>';
+        html += '</div>';
+        if (data.review.total) {
+            const revPct = Math.round(data.review.correct / data.review.total * 100);
+            const revColor = revPct >= 80 ? '#22c55e' : revPct >= 60 ? '#FFD700' : '#ef4444';
+            html += '<div style="display:flex;align-items:center;color:#888;font-size:13px;margin-top:2px">';
+            html += '<span style="min-width:130px">⭐ remembers it</span>';
+            html += '<div style="background:#333;border-radius:5px;height:8px;flex:1;margin:0 10px"><div style="background:' + revColor + ';border-radius:5px;height:8px;width:' + revPct + '%"></div></div>';
+            html += '<span>' + data.review.correct + '/' + data.review.total + '</span>';
+            html += '</div>';
+        }
         html += '</div>';
     });
     html += '</div>';

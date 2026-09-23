@@ -6,6 +6,7 @@ function showAddition() {
     const answers = {};
     const attemptCounts = {};
     let questionStartMs = null;
+    const MAX_DIGITS = 3;
 
     function render() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+getFocusNumber('addition')+'!</div>';
@@ -15,25 +16,40 @@ function showAddition() {
         });
         html += '</div><div class="keypad">';
         for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey('+n+')">'+n+'</button>';
-        html += '<button class="key red" onclick="clearKey()">✕</button><button class="key green" onclick="checkKey()">✓</button></div>';
+        html += '<button class="key red" onclick="clearKey()">⌫</button><button class="key green" onclick="checkKey()">✓</button></div>';
         html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
         document.getElementById('app').innerHTML = html;
         questionStartMs = Date.now();
     }
 
     window.setCurrent = (i) => { if (!solved.has(i)) { current = i; render(); } };
-    window.pressKey = (n) => { if (!solved.has(current)) { answers[current] = n;
-    document.getElementById('ans'+current).textContent = n; } };
-    window.clearKey = () => { document.getElementById('ans'+current).textContent = '?'; };
+    window.pressKey = (n) => {
+        if (solved.has(current)) return;
+        const box = document.getElementById('ans'+current);
+        const base = (box.textContent === '?' ? '' : box.textContent);
+        if (base.length >= MAX_DIGITS) return;
+        const next = base + n;
+        answers[current] = next;
+        box.textContent = next;
+    };
+    window.clearKey = () => {
+        if (solved.has(current)) return;
+        const box = document.getElementById('ans'+current);
+        const base = (box.textContent === '?' ? '' : box.textContent);
+        const next = base.slice(0, -1);
+        answers[current] = next;
+        box.textContent = next === '' ? '?' : next;
+    };
     window.checkKey = () => {
         const ans = document.getElementById('ans'+current).textContent;
-        if (ans === '?' || solved.has(current)) return;
+        if (ans === '?' || ans === '' || solved.has(current)) return;
         const responseTimeMs = Date.now() - questionStartMs;
         attemptCounts[current] = (attemptCounts[current] || 0) + 1;
-        const correct = parseInt(ans) === problems[current][2];
-        if (attemptCounts[current] === 1) currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], answer: ans, correct: correct});
+        const ansNum = parseInt(ans, 10);
+        const correct = ansNum === problems[current][2];
+        if (attemptCounts[current] === 1) currentAnswers.push({q: problems[current][0]+'+'+problems[current][1], answer: ansNum, correct: correct});
 
-        recordResponse('addition', {type:'addition', a:problems[current][0], b:problems[current][1], sum:problems[current][2]}, String(problems[current][2]), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+        recordResponse('addition', {type:'addition', a:problems[current][0], b:problems[current][1], sum:problems[current][2]}, String(problems[current][2]), ansNum, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
 
         showFeedback(correct, () => {
             if (correct) {

@@ -27,7 +27,7 @@ async function showMenu() {
 
     // Weekend Challenge detection
     const dayName = new Date().toLocaleDateString('en-US', {weekday: 'long', timeZone: CONFIG.timezone || 'America/Chicago'});
-    const isWeekend = true; // TEMP: was (dayName === 'Saturday' || dayName === 'Sunday');
+    const isWeekend = (dayName === 'Saturday' || dayName === 'Sunday');
     if (isWeekend) {
         if (CONFIG.weekendChallengeDone) {
             html += '<div style="padding:20px;margin:10px 0;background:#1a4d1a;border:2px solid #22c55e;border-radius:15px;text-align:center">';
@@ -53,7 +53,7 @@ async function showMenu() {
     }
 
     if (activeSession) {
-        const sessionDay = activeSession.started_at ? activeSession.started_at.split('T')[0] : null;
+        const sessionDay = activeSession.started_at ? localDayKey(activeSession.started_at) : null;
         const isToday = sessionDay === today;
         const remaining = (activeSession.queue_json.length || 0) - (activeSession.queue_index || 0);
         if (isToday) {
@@ -128,6 +128,15 @@ async function showMenu() {
     document.getElementById('app').innerHTML = html;
 }
 
+function showSaveWarningBanner() {
+    if (document.getElementById('saveWarningBanner')) return;
+    const b = document.createElement('div');
+    b.id = 'saveWarningBanner';
+    b.textContent = '⚠️ Progress is not being saved — check your internet connection';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:white;text-align:center;padding:8px;font-weight:bold;z-index:9999;font-size:14px;';
+    document.body.prepend(b);
+}
+
 async function startDaily() {
     // If session already in progress, resume the queue
     if (CONFIG.sessionId && worksheetQueue.length > 0 && queueIndex < worksheetQueue.length) {
@@ -143,13 +152,23 @@ async function startDaily() {
             .eq('status', 'in_progress');
     }
 
-    // Create a session in Supabase
-    const { data: session, error } = await sb.from('sessions').insert({
+    // Create a session in Supabase (retry once on failure)
+    let { data: session, error } = await sb.from('sessions').insert({
         child_id: CONFIG.childId,
         session_type: 'daily_practice'
     }).select('id').single();
 
-    if (error) { console.error('Session creation failed:', error); }
+    if (error) {
+        console.error('Session creation failed:', error);
+        ({ data: session, error } = await sb.from('sessions').insert({
+            child_id: CONFIG.childId,
+            session_type: 'daily_practice'
+        }).select('id').single());
+        if (error) {
+            console.error('Session creation retry failed:', error);
+            showSaveWarningBanner();
+        }
+    }
     CONFIG.sessionId = session ? session.id : null;
 
     const today = getToday();
@@ -215,11 +234,17 @@ function nextWorksheet() {
         // Finalize session in Supabase
         if (CONFIG.sessionId) {
             sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
-              .then(({data, error}) => {
+              .then(async ({data, error}) => {
                 if (error) console.error('finalize_session error:', error);
                 else {
                     console.log('finalize_session OK:', data);
                     // Daily practice: no difficulty adjustment (weekend challenge only)
+                    await refreshSkillProgress();
+                    if (data && data.levels_unlocked) {
+                        Object.keys(data.levels_unlocked).forEach(skillId => {
+                            celebrateLevelUnlock(skillId, data.levels_unlocked[skillId]);
+                        });
+                    }
                 }
               });
         }
@@ -243,7 +268,7 @@ function nextWorksheet() {
 }
 
 function getToday() {
-    return new Date().toISOString().split('T')[0];
+    return localDayKey();
 }
 
 function getWeekKey() {
@@ -312,7 +337,7 @@ async function showExport() {
             .limit(30);
         if (data) {
             for (const s of data) {
-                const day = s.started_at.split('T')[0];
+                const day = localDayKey(s.started_at);
                 if (!localDays.has(day) && s.progress_json && s.progress_json.length > 0) {
                     remoteDays[day] = s.progress_json;
                 }
@@ -464,7 +489,6 @@ const SKILL_MAP = {
     // Challenge — Literacy
     two_letter_words:        ['showTwoLetter', '2-Letter Words'],
     three_letter_words:      ['showThreeLetter', '3-Letter Words'],
-    what_comes_next_letters: ['showWhatNext', 'What Comes Next'],
     // Challenge — Urdu
     urdu_reading:            ['showUrduReading', 'Urdu Reading'],
     urdu_2letter:            ['showUrdu2Letter', 'Urdu 2-Letter Words'],
@@ -503,12 +527,12 @@ const FUN_SKILLS = [
 ];
 
 const DOMAINS = {
-    quantitative: ['addition','subtraction','counting','match_numbers','more_less','bigger_smaller','what_comes_next_numbers','numbers_english'],
-    nonverbal:    ['figure_matrices','color_patterns_l2'],
+    quantitative: ['addition','subtraction','counting','match_numbers','more_less','bigger_smaller','what_comes_next_numbers','numbers_english','numbers_all','trace_numbers','connect_dots'],
+    nonverbal:    ['figure_matrices','color_patterns','color_patterns_l2','which_doesnt_belong','find_pairs'],
     verbal:       ['verbal_analogies'],
-    literacy:     ['two_letter_words','three_letter_words'],
-    urdu:         ['urdu_what_next','urdu_qaida','numbers_urdu'],
-    arabic:       ['arabic_qaida','numbers_arabic'],
+    literacy:     ['two_letter_words','three_letter_words','trace_upper','trace_lower'],
+    urdu:         ['urdu_what_next','urdu_qaida','numbers_urdu','urdu_reading','urdu_2letter','urdu_trace','urdu_videos'],
+    arabic:       ['arabic_qaida','numbers_arabic','arabic_trace'],
 };
 
 async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
@@ -518,9 +542,17 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
     // --- Fetch response data for scoring ---
     let responses = [];
     try {
-        const { data } = await sb.from('responses')
-            .select('skill_id,is_correct,created_at')
+        let { data, error } = await sb.from('responses')
+            .select('skill_id,is_correct,created_at,is_passive')
             .eq('child_id', childId);
+        if (error) {
+            // Pre-migration: is_passive doesn't exist yet. Retry without it so the queue is never empty.
+            console.error('Queue fetch with is_passive failed, retrying without it:', error);
+            ({ data, error } = await sb.from('responses')
+                .select('skill_id,is_correct,created_at')
+                .eq('child_id', childId));
+            if (error) console.error('Queue fetch retry error:', error);
+        }
         responses = data || [];
     } catch(e) {
         console.error('Queue fetch error:', e);
@@ -534,9 +566,11 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
             skillStats[r.skill_id] = { totalAttempts: 0, correctCount: 0, lastPracticed: null, timesToday: 0 };
         }
         const s = skillStats[r.skill_id];
-        s.totalAttempts++;
-        if (r.is_correct) s.correctCount++;
-        const rDate = r.created_at ? r.created_at.split('T')[0] : null;
+        if (r.is_passive !== true) {
+            s.totalAttempts++;
+            if (r.is_correct) s.correctCount++;
+        }
+        const rDate = r.created_at ? localDayKey(r.created_at) : null;
         if (rDate === today) s.timesToday++;
         if (!s.lastPracticed || r.created_at > s.lastPracticed) s.lastPracticed = r.created_at;
     });
@@ -570,20 +604,42 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
         return diff;
     });
 
-    // --- Deduplicate by function name (some skills share the same worksheet function) ---
+    // --- Map each skill to its domain (for coverage phase + diagnostics) ---
+    const domainNames = Object.keys(DOMAINS);
+    const skillDomain = {};
+    domainNames.forEach(d => DOMAINS[d].forEach(id => { skillDomain[id] = d; }));
+
+    // --- Phase 1: guarantee coverage — each domain's highest-priority eligible skill ---
     const queue = [];
     const usedFns = new Set();
+    const queueDomains = [];
+
+    const domainCandidates = domainNames
+        .map(domain => scored.find(s => skillDomain[s.skillId] === domain))
+        .filter(Boolean)
+        .sort((a, b) => b.priority - a.priority); // most-needed domains win the limited slots
+
+    for (const item of domainCandidates) {
+        if (queue.length >= maxItems) break;
+        if (usedFns.has(item.entry[0])) continue;
+        queue.push(item.entry);
+        usedFns.add(item.entry[0]);
+        queueDomains.push(skillDomain[item.skillId]);
+    }
+
+    // --- Phase 2: fill remaining slots from the global priority order ---
     for (const item of scored) {
         if (queue.length >= maxItems) break;
         if (usedFns.has(item.entry[0])) continue;
         queue.push(item.entry);
         usedFns.add(item.entry[0]);
+        queueDomains.push(skillDomain[item.skillId] || 'none');
     }
 
     console.log('Priority queue:', scored.slice(0, maxItems).map(s =>
-        s.skillId + '=' + s.priority + ' (bw=' + s.baseWeight + ' ru=' + s.reviewUrgency + ' ws=' + s.weaknessSignal + ' cb=' + s.cogatBoost + ' ns=' + s.newSkillBonus + ' op=' + s.overusePenalty + ')'
+        s.skillId + '=' + s.priority + ' (bw=' + s.baseWeight + ' ru=' + s.reviewUrgency + ' ws=' + s.weaknessSignal + ' cb=' + s.cogatBoost + ' ns=' + s.newSkillBonus + ' rb=' + s.reviewNeedBoost + ' op=' + s.overusePenalty + ')'
     ));
-    console.log('Adaptive queue built:', queue.map(q => q[1]));
+    console.log('Adaptive queue built:', queue.map((q, i) => q[1] + ' [' + queueDomains[i] + ']'));
     return queue;
 }
 

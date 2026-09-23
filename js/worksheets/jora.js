@@ -5,7 +5,6 @@ function showJora() {
     const emojis = CONFIG.categories[cat].sort(() => Math.random() - 0.5).slice(0, numPairs);
     const cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
     let flipped = [], matched = [], score = 0;
-    let questionStartMs = Date.now();
     let flipCount = 0;
 
     // Responsive grid: pick columns based on total cards
@@ -16,8 +15,7 @@ function showJora() {
 
     function render() {
         if (matched.length === cards.length) {
-            const responseTimeMs = Date.now() - questionStartMs;
-            recordResponse('find_pairs', {type:'find_pairs', total_pairs:numPairs, category:cat}, String(numPairs), String(score), true, true, 1, responseTimeMs, 0);
+            recordPassiveResponse('find_pairs', {type:'find_pairs', total_pairs:numPairs, category:cat}, 0);
             completeWorksheet('Find Pairs', score, emojis.length);
             return;
         }

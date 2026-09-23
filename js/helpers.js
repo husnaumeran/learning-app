@@ -43,6 +43,21 @@ function sanitizeEmojis() {
     }
 }
 
+// ============ DATE / TIMEZONE ============
+// One formatter, reused: buildAdaptiveQueue formats thousands of timestamps, and
+// constructing a formatter per call is slow on a tablet.
+let _localDayFormatter = null;
+let _localDayFormatterTz = null;
+
+function localDayKey(date) {
+    const tz = CONFIG.timezone || 'America/Chicago';
+    if (_localDayFormatterTz !== tz) {
+        _localDayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+        _localDayFormatterTz = tz;
+    }
+    return _localDayFormatter.format(date ? new Date(date) : new Date());
+}
+
 // ============ SUPABASE RECORDING ============
 function recordResponse(skillId, questionData, correctAnswer, finalAnswer, isCorrect, isFirstTry, attemptCount, responseTimeMs, questionIndex, isSkipped, level) {
     if (!CONFIG.sessionId || !CONFIG.childId) return;
@@ -74,7 +89,7 @@ function startItemTimer() {
     _itemTimerStart = Date.now();
 }
 
-function recordPassiveResponse(skillId, questionData, itemIndex = null) {
+function recordPassiveResponse(skillId, questionData, itemIndex = null, level = null) {
     const elapsed = _itemTimerStart ? Date.now() - _itemTimerStart : null;
     recordResponse(
         skillId,
@@ -87,7 +102,7 @@ function recordPassiveResponse(skillId, questionData, itemIndex = null) {
         elapsed,        // response_time_ms
         itemIndex,      // questionIndex (for idempotency key)
         false,          // is_skipped
-        null            // level
+        level           // level
     );
     _itemTimerStart = null;
 }
@@ -129,7 +144,7 @@ function getDifficultyLevel(skillId) {
     const globalLevel = CONFIG.focusNumber || 1;
     const skillLevel = getSkillValue(skillId, 'difficulty', globalLevel);
 
-    return Math.max(skillLevel, globalLevel, floor);
+    return Math.max(skillLevel, floor);
 }
 
 function getQuestionCount(skillId, mode = 'practice') {
@@ -145,7 +160,129 @@ function getFocusNumber(skillId) {
 }
 
 function getContentLevel(skillId) {
+    const progress = getSkillProgress(skillId);
+    if (progress && (progress.mastery_type === 'mastery' || progress.mastery_type === 'qaida')) {
+        return Math.max(progress.unlocked_level || 1, getSkillValue(skillId, 'content', 1) || 1);
+    }
     return Math.max(getSkillValue(skillId, 'content', 1), 1);
+}
+
+// ============ MASTERY SYSTEM ============
+
+async function refreshSkillProgress() {
+    if (!CONFIG.childId) return;
+    try {
+        const { data, error } = await sb.rpc('get_skill_progress', { p_child_id: CONFIG.childId });
+        if (error) { console.error('get_skill_progress error:', error); return; }
+        const byId = {};
+        (data || []).forEach(row => { byId[row.skill_id] = row; });
+        CONFIG.skillProgress = byId;
+    } catch (e) {
+        console.error('refreshSkillProgress failed:', e);
+    }
+}
+
+function getSkillProgress(skillId) {
+    return (CONFIG.skillProgress && CONFIG.skillProgress[skillId]) || null;
+}
+
+async function raiseSkillLevel(skillId, level) {
+    if (!CONFIG.childId) return null;
+    try {
+        const { data, error } = await sb.rpc('raise_skill_level', {
+            p_child_id: CONFIG.childId,
+            p_skill_id: skillId,
+            p_level: level
+        });
+        if (error) { console.error('raise_skill_level error:', error); return null; }
+        await refreshSkillProgress();
+        return data;
+    } catch (e) {
+        console.error('raiseSkillLevel failed:', e);
+        return null;
+    }
+}
+
+async function evaluateSkillMastery(skillId) {
+    if (!CONFIG.childId) return null;
+    try {
+        const { data, error } = await sb.rpc('evaluate_skill_mastery', {
+            p_child_id: CONFIG.childId,
+            p_skill_id: skillId
+        });
+        if (error) { console.error('evaluate_skill_mastery error:', error); return null; }
+        await refreshSkillProgress();
+        return data;
+    } catch (e) {
+        console.error('evaluateSkillMastery failed:', e);
+        return null;
+    }
+}
+
+let _activeLevelUnlockBanners = 0;
+
+function celebrateLevelUnlock(skillId, newLevel) {
+    const b = document.createElement('div');
+    const topOffset = _activeLevelUnlockBanners * 52;
+    _activeLevelUnlockBanners++;
+    b.textContent = '🎉 ' + formatSkillName(skillId) + ' — Level ' + newLevel + ' unlocked! 🎉';
+    b.style.cssText = 'position:fixed;top:'+topOffset+'px;left:0;right:0;background:#22c55e;color:white;text-align:center;padding:12px;font-weight:bold;z-index:9999;font-size:16px;';
+    document.body.prepend(b);
+    setTimeout(() => {
+        if (b.parentNode) b.parentNode.removeChild(b);
+        _activeLevelUnlockBanners--;
+    }, 4000);
+}
+
+// Marked done only once every level has reached the server: until the mastery
+// migration is applied the RPC doesn't exist, so this must retry at next login.
+// Key is _v2 because an earlier build set the flag even when every upload failed.
+async function syncLegacyLevels() {
+    if (localStorage.getItem('legacy_levels_synced_v2')) return;
+    const legacy = [
+        ['numbers_english', parseInt(localStorage.getItem('ne_level') || '1')],
+        ['numbers_arabic', parseInt(localStorage.getItem('na_level') || '1')],
+        ['arabic_qaida', legacyQaidaLevel('qaida_unlocked', 'qaida_l')],
+        ['urdu_qaida', legacyQaidaLevel('urdu_qaida_unlocked', 'urdu_qaida_l')]
+    ];
+    let allSynced = true;
+    for (const [skillId, level] of legacy) {
+        if (!(level > 1)) continue;
+        if (await raiseSkillLevel(skillId, level) == null) allSynced = false;
+    }
+    if (allSynced) localStorage.setItem('legacy_levels_synced_v2', '1');
+}
+
+// Old qaida logic unlocked level 1 by default, then level L once level L-1 had
+// been practiced on 5 distinct days, or once the parent override reached L-1:
+// the old 3-second hold stored a ZERO-based level index, so `override >= level`
+// (not `next`) is what keeps a skipped-ahead child at the level they had.
+function legacyQaidaLevel(overrideKey, datesPrefix) {
+    const override = parseInt(localStorage.getItem(overrideKey) || '0');
+    let level = 1;
+    while (level < 5) {
+        const next = level + 1;
+        let dates = [];
+        try { dates = JSON.parse(localStorage.getItem(datesPrefix + level) || '[]'); } catch (e) { dates = []; }
+        if (override >= level || (Array.isArray(dates) && dates.length >= 5)) level = next;
+        else break;
+    }
+    return level;
+}
+
+function levelProgressHTML(skillId) {
+    const p = getSkillProgress(skillId);
+    if (!p || p.mastery_state === 'mastered') return '';
+    if (p.mastery_type === 'mastery') {
+        if (p.window_questions == null) return '';
+        return (p.window_questions || 0) + ' of ' + p.questions_needed + ' questions · ' + (p.window_days || 0) + ' of ' + p.days_needed + ' days';
+    }
+    if (p.mastery_type === 'qaida') {
+        if (p.check_ready) return 'Check ready!';
+        if (p.practice_days == null) return '';
+        return 'Practiced ' + p.practice_days + ' of ' + p.days_needed + ' days';
+    }
+    return '';
 }
 
 
@@ -225,6 +362,16 @@ function getOverusePenalty(timesToday) {
     return 3; // 4+
 }
 
+function getReviewNeedBoost(skillId) {
+    const progress = getSkillProgress(skillId);
+    if (!progress) return 0;
+    const needsReview = Array.isArray(progress.levels_needing_review) && progress.levels_needing_review.length > 0;
+    const reviewQuestions = progress.review_questions || 0;
+    const belowBar = reviewQuestions >= 5 && progress.accuracy_needed != null &&
+        (progress.review_correct || 0) / reviewQuestions < progress.accuracy_needed;
+    return (needsReview || belowBar) ? 2 : 0;
+}
+
 function calculatePriority(skillId, stats) {
     const baseWeight = getBaseWeight(skillId);
     const reviewUrgency = getReviewUrgency(stats.daysSincePracticed || 0);
@@ -232,12 +379,13 @@ function calculatePriority(skillId, stats) {
     const cogatBoost = getCogatBoost(skillId);
     const newSkillBonus = getNewSkillBonus(stats.totalAttempts || 0);
     const overusePenalty = getOverusePenalty(stats.timesToday || 0);
+    const reviewNeedBoost = getReviewNeedBoost(skillId);
 
-    const priority = Math.max(0, baseWeight + reviewUrgency + weaknessSignal + cogatBoost + newSkillBonus - overusePenalty);
+    const priority = Math.max(0, baseWeight + reviewUrgency + weaknessSignal + cogatBoost + newSkillBonus + reviewNeedBoost - overusePenalty);
 
     return {
         skillId, priority, baseWeight, reviewUrgency, weaknessSignal,
-        cogatBoost, newSkillBonus, overusePenalty
+        cogatBoost, newSkillBonus, overusePenalty, reviewNeedBoost
     };
 }
 

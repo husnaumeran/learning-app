@@ -5,6 +5,8 @@ function showCounting() {
     const solved = new Set();
     const answers = {};
     let questionStartMs = null;
+    let entry = '';
+    const MAX_DIGITS = 3;
 
     function render() {
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Count Them!</div>';
@@ -14,16 +16,34 @@ function showCounting() {
         });
         html += '</div><div class="score">⭐ '+score+' / '+problems.length+'</div>';
         html += '<div class="overlay" id="overlay" onclick="closeKeypad()"></div>';
-        html += '<div class="popup" id="popup" onclick="event.stopPropagation()"><div class="keypad">';
-        for (let n = 0; n <= 9; n++) html += '<button class="key big" onclick="submitAnswer('+n+')">'+n+'</button>';
+        html += '<div class="popup" id="popup" onclick="event.stopPropagation()">';
+        html += '<div class="answer-box" id="popupEntry" style="margin:0 auto 10px;font-size:28px;min-width:70px;height:50px">'+(entry || '?')+'</div>';
+        html += '<div class="keypad">';
+        for (let n = 0; n <= 9; n++) html += '<button class="key big" onclick="pressPopupKey('+n+')">'+n+'</button>';
+        html += '<button class="key big red" onclick="backspacePopupKey()">⌫</button><button class="key big green" onclick="submitPopupAnswer()">✓</button>';
         html += '</div></div>';
         document.getElementById('app').innerHTML = html;
     }
 
-    window.openKeypad = (i) => { if (!solved.has(i)) { current = i; questionStartMs = Date.now(); document.getElementById('overlay').style.display='block'; document.getElementById('popup').style.display='block'; } };
-    window.closeKeypad = () => { document.getElementById('overlay').style.display='none'; document.getElementById('popup').style.display='none'; };
-    window.submitAnswer = async (n) => {
+    window.openKeypad = (i) => { if (!solved.has(i)) { current = i; entry = ''; questionStartMs = Date.now(); document.getElementById('overlay').style.display='block'; document.getElementById('popup').style.display='block'; } };
+    window.closeKeypad = () => { entry = ''; document.getElementById('overlay').style.display='none'; document.getElementById('popup').style.display='none'; };
+    window.pressPopupKey = (n) => {
         if (current < 0) return;
+        if (entry.length >= MAX_DIGITS) return;
+        entry += String(n);
+        const el = document.getElementById('popupEntry');
+        if (el) el.textContent = entry;
+    };
+    window.backspacePopupKey = () => {
+        if (current < 0) return;
+        entry = entry.slice(0, -1);
+        const el = document.getElementById('popupEntry');
+        if (el) el.textContent = entry === '' ? '?' : entry;
+    };
+    window.submitPopupAnswer = async () => {
+        if (current < 0) return;
+        if (entry === '') return;
+        const n = parseInt(entry, 10);
         const responseTimeMs = Date.now() - questionStartMs;
         answers[current] = n;
         const [ans, emoji] = problems[current];

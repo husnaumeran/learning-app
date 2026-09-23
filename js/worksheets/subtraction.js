@@ -6,6 +6,7 @@ function showSubtraction() {
     const answers = {};
     const attemptCounts = {};
     let questionStartMs = null;
+    const MAX_DIGITS = 3;
 
     function render() {
         const p = problems[current];
@@ -49,7 +50,7 @@ function showSubtraction() {
 
         html += '</div><div class="keypad">';
         for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey('+n+')">'+n+'</button>';
-        html += '<button class="key red" onclick="clearKey()">✕</button><button class="key green" onclick="checkKey()">✓</button></div>';
+        html += '<button class="key red" onclick="clearKey()">⌫</button><button class="key green" onclick="checkKey()">✓</button></div>';
         html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
         document.getElementById('app').innerHTML = html;
         questionStartMs = Date.now();
@@ -57,24 +58,32 @@ function showSubtraction() {
 
     window.pressKey = (n) => {
         if (solved.has(current)) return;
-        answers[current] = n;
-        document.getElementById('ansBox').textContent = n;
+        const box = document.getElementById('ansBox');
+        const base = (box.textContent === '?' ? '' : box.textContent);
+        if (base.length >= MAX_DIGITS) return;
+        const next = base + n;
+        answers[current] = next;
+        box.textContent = next;
     };
     window.clearKey = () => {
         if (solved.has(current)) return;
-        answers[current] = null;
-        document.getElementById('ansBox').textContent = '?';
+        const box = document.getElementById('ansBox');
+        const base = (box.textContent === '?' ? '' : box.textContent);
+        const next = base.slice(0, -1);
+        answers[current] = next === '' ? null : next;
+        box.textContent = next === '' ? '?' : next;
     };
     window.checkKey = () => {
         const ans = document.getElementById('ansBox').textContent;
-        if (ans === '?' || solved.has(current)) return;
+        if (ans === '?' || ans === '' || solved.has(current)) return;
         const responseTimeMs = Date.now() - questionStartMs;
         attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
-        const correct = parseInt(ans) === p.ans;
-        if (attemptCounts[current] === 1) currentAnswers.push({q: p.a+'−'+p.b, answer: ans, correct: correct});
+        const ansNum = parseInt(ans, 10);
+        const correct = ansNum === p.ans;
+        if (attemptCounts[current] === 1) currentAnswers.push({q: p.a+'−'+p.b, answer: ansNum, correct: correct});
 
-        recordResponse('subtraction', {type:'subtraction', a:p.a, b:p.b, answer:p.ans, mode:p.mode}, String(p.ans), ans, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
+        recordResponse('subtraction', {type:'subtraction', a:p.a, b:p.b, answer:p.ans, mode:p.mode}, String(p.ans), ansNum, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
 
         showFeedback(correct, () => {
             if (correct) {

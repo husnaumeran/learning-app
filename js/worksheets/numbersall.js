@@ -18,7 +18,6 @@ function showNumbersAll() {
     const nums = [];
     for (let i = 1; i <= Math.max(count, 1); i++) nums.push(i);
     let current = 0;
-    let questionStartMs = Date.now();
     let autoTimers = [];
 
     function cancelAuto() { autoTimers.forEach(t => clearTimeout(t)); autoTimers = []; }
@@ -90,13 +89,8 @@ function showNumbersAll() {
     };
 
     window.nextNA = () => {
-        const responseTimeMs = Date.now() - questionStartMs;
-        recordResponse('numbers_all',
-            { number: nums[current] },
-            String(nums[current]), String(nums[current]), true, true, 1,
-            responseTimeMs, current, false);
+        recordPassiveResponse('numbers_all', { number: nums[current] }, current);
         current++;
-        questionStartMs = Date.now();
         render();
     };
 

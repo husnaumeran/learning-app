@@ -1,7 +1,6 @@
 // ============ VERBAL ANALOGIES (CogAT Prep) ============
 function showVerbalAnalogies() {
     const QUESTIONS = getFocusNumber('verbal_analogies');
-    const MIN_FOR_UNLOCK = 5;
     const LEVELS = window.VA_LEVELS;
 
     // Sanitize emojis for device compatibility
@@ -10,6 +9,7 @@ function showVerbalAnalogies() {
     let level = getContentLevel('verbal_analogies');
     const history = JSON.parse(localStorage.getItem('va_history') || '{}');
     let problems=[], problemLevels=[], current=0, score=0, skips=0, tried=false;
+    let levelScore={}, levelSkips={};
     let questionStartMs = null;
     const attemptCounts = {};
 
@@ -88,7 +88,7 @@ function showVerbalAnalogies() {
         level = l;
         problems = generateProblems(level);
         problemLevels = problems.map(() => l);
-        current = 0; score = 0; skips = 0; tried = false;
+        current = 0; score = 0; skips = 0; tried = false; levelScore = {}; levelSkips = {};
         // Show learn mode for Level 1 (Opposites) only
         if (l === 1) {
             const quizPairs = problems.map(p => p.question);
@@ -106,12 +106,14 @@ function showVerbalAnalogies() {
             const lProbs = generateProblems(l);
             lProbs.forEach(p => { problems.push(p); problemLevels.push(l); });
         }
-        current = 0; score = 0; skips = 0; tried = false;
+        current = 0; score = 0; skips = 0; tried = false; levelScore = {}; levelSkips = {};
         renderGame();
     }
 
     function renderPicker() {
         const maxUnlocked = getContentLevel('verbal_analogies');
+        let progressHtml = '';
+        try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('verbal_analogies') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🗣️ Verbal Analogies</div>';
         html += '<div class="inst">Pick a level!</div>';
@@ -126,6 +128,7 @@ function showVerbalAnalogies() {
             html += '<div style="font-size:24px;font-weight:bold">L'+l+'</div>';
             html += '<div style="font-size:11px;margin-top:3px">'+LEVELS[l].name+'</div>';
             if (unlocked && h.length) html += '<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+problems.length+' (×'+h.length+')</div>';
+            if (l === maxUnlocked && progressHtml) html += '<div style="font-size:11px;margin-top:2px;opacity:0.9">'+progressHtml+'</div>';
             html += '</div>';
         }
         html += '</div></div>';
@@ -138,16 +141,18 @@ function showVerbalAnalogies() {
     function renderGame() {
         if(problemLevels[current]) level=problemLevels[current];
         if (current >= problems.length) {
-            const key = 'L' + level;
-            const h = history[key] || [];
-            const answered = QUESTIONS - skips;
-            const qualifies = answered >= MIN_FOR_UNLOCK && (skips / QUESTIONS) <= 0.25;
-            h.push({score, skips, qualifies});
-            history[key] = h;
+            const levelsPlayed = [...new Set(problemLevels)];
+            levelsPlayed.forEach(l => {
+                const lScore = levelScore[l] || 0;
+                const lSkips = levelSkips[l] || 0;
+                const key = 'L' + l;
+                const h = history[key] || [];
+                h.push({score: lScore, skips: lSkips});
+                history[key] = h;
+            });
             localStorage.setItem('va_history', JSON.stringify(history));
 
-            // Level-up moved to weekend challenge (assessment.js)
-            completeWorksheet('Verbal Analogies', score, QUESTIONS);
+            completeWorksheet('Verbal Analogies', score, problems.length);
             return;
         }
 
@@ -205,7 +210,7 @@ function showVerbalAnalogies() {
         const ch = p.choices[i];
         const el = document.getElementById('vach'+i);
         if(ch.correct) {
-            if(!tried) score++;
+            if(!tried) { score++; levelScore[level] = (levelScore[level] || 0) + 1; }
             currentAnswers.push({q:p.example.a+'→'+p.example.b+', '+p.question.a+'→?', answer:ch.text, correct:true, firstTry:!tried});
             recordResponse('verbal_analogies', {type:'verbal_analogies', example_a:p.example.a, example_b:p.example.b, question_a:p.question.a, correct_answer:p.question.b}, p.question.b, ch.text, true, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current, false, level);
             el.style.borderColor = '#22c55e';
@@ -225,7 +230,7 @@ function showVerbalAnalogies() {
 
     window.skipVA = function() {
         const responseTimeMs = Date.now() - questionStartMs;
-        skips++;
+        skips++; levelSkips[level] = (levelSkips[level] || 0) + 1;
         currentAnswers.push({q:problems[current].question.a+'→?', answer:'skipped', correct:false, firstTry:false});
         recordResponse('verbal_analogies', {type:'verbal_analogies', question_a:problems[current].question.a}, problems[current].question.b, 'skipped', false, false, 1, responseTimeMs, current, true, level);
         current++;

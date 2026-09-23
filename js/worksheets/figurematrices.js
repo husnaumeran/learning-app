@@ -9,6 +9,7 @@ function showFigureMatrices() {
     const LEVEL_NAMES = ['Color','Size','Shape','Direction','Color+Size','Color+Shape','Size+Shape','All Three'];
 
     let level = getContentLevel('figure_matrices');
+    const history = JSON.parse(localStorage.getItem('fm_history') || '{}');
 
     function pick(a) { return a[Math.floor(Math.random()*a.length)]; }
     function pickDiff(a,x) { const o=a.filter(v=>v!==x); return o[Math.floor(Math.random()*o.length)]; }
@@ -155,6 +156,8 @@ function showFigureMatrices() {
     // Level picker screen
     function renderPicker() {
         const maxLevel=getContentLevel('figure_matrices');
+        let progressHtml = '';
+        try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('figure_matrices') || '') : ''; } catch (e) {}
         let html='<button class="back" onclick="showMenu()">← Back</button>';
         html+='<div class="card"><div class="title">🧩 Figure Matrices</div>';
         html+='<div class="inst">Pick a level!</div>';
@@ -170,6 +173,7 @@ function showFigureMatrices() {
             html+='><div style="font-size:18px;font-weight:bold">'+(unlocked?'Level '+l:'🔒 Level '+l)+'</div>';
             html+='<div style="font-size:11px;margin-top:3px">'+LEVEL_NAMES[l-1]+'</div>';
             if(unlocked && h.length) html+='<div style="font-size:11px;margin-top:2px">Best: '+best+'/'+QUESTIONS+' (×'+h.length+')</div>';
+            if(l===maxLevel && progressHtml) html+='<div style="font-size:11px;margin-top:2px;opacity:0.9">'+progressHtml+'</div>';
             html+='</div>';
         }
         html+='</div></div>';
@@ -183,13 +187,11 @@ function showFigureMatrices() {
     function renderGame() {
         if(problemLevels[current]) level=problemLevels[current];
         if(current>=problems.length) {
-            // Save history & check level-up
             const key='L'+level;
             const h=history[key]||[];
             h.push(score);
             history[key]=h;
             localStorage.setItem('fm_history',JSON.stringify(history));
-            // Level-up moved to weekend challenge (assessment.js)
             completeWorksheet('Figure Matrices',score,problems.length);
             return;
         }

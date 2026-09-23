@@ -34,6 +34,7 @@ async function renderReportCard() {
 
     // Fetch data
     const weekStart = getWeekStartISO();
+    const skillProgressRefresh = refreshSkillProgress();
     const [sessionsRes, statsRes, progressRes, weekendRes] = await Promise.all([
         sb.from('sessions').select('id,started_at,status,session_type')
             .eq('child_id', CONFIG.childId).gte('created_at', weekStart),
@@ -43,6 +44,7 @@ async function renderReportCard() {
             .eq('child_id', CONFIG.childId).eq('session_type', 'weekend_assessment')
             .gte('created_at', weekStart).eq('status', 'completed').limit(1)
     ]);
+    await skillProgressRefresh;
 
     const sessions = sessionsRes.data || [];
     const stats = statsRes.data || [];
@@ -63,8 +65,9 @@ async function renderReportCard() {
         html += '<div>⭐ Weekend Challenge: <span style="color:#888">Not yet</span></div>';
     }
 
-    // Strong/weak areas from skill_stats
+    // Strong/weak areas from skill_stats (practice skills have no real accuracy — excluded)
     const ranked = stats.filter(s => s.total_attempts >= 3)
+        .filter(s => { const p = getSkillProgress(s.skill_id); return !p || p.mastery_type !== 'practice'; })
         .map(s => ({...s, accuracy: s.correct_count / s.total_attempts}))
         .sort((a, b) => b.accuracy - a.accuracy);
 
@@ -93,10 +96,11 @@ async function renderReportCard() {
     html += '<div style="background:#1a1a2e;border:2px solid #0099FF;border-radius:15px;padding:20px;margin:10px 0">';
     html += '<div style="text-align:center;font-size:20px;color:#0099FF;font-weight:bold">🎯 Skill Report</div>';
 
-    if (stats.length === 0) {
+    const reportableStats = stats.filter(s => { const p = getSkillProgress(s.skill_id); return !p || p.mastery_type !== 'practice'; });
+    if (reportableStats.length === 0) {
         html += '<div style="color:#888;text-align:center;margin:15px">No skills practiced yet.</div>';
     } else {
-        const sorted = stats.sort((a, b) => (a.skill_id > b.skill_id ? 1 : -1));
+        const sorted = reportableStats.sort((a, b) => (a.skill_id > b.skill_id ? 1 : -1));
         sorted.forEach(s => {
             const acc = s.total_attempts > 0 ? s.correct_count / s.total_attempts : 0;
             const pct = Math.round(acc * 100);
@@ -118,13 +122,51 @@ async function renderReportCard() {
             html += '<span>' + pct + '% accuracy</span>';
             html += '<span>' + s.total_attempts + ' attempts</span>';
             html += '<span>Focus: ' + focus + '</span>';
-            html += '</div></div>';
+            html += '</div>';
+
+            const skillProgress = getSkillProgress(s.skill_id);
+            if (skillProgress && skillProgress.review_questions) {
+                const reviewPct = Math.round((skillProgress.review_correct || 0) / skillProgress.review_questions * 100);
+                html += '<div style="color:#888;font-size:12px;margin-top:4px">🔁 Review: ' + reviewPct + '% (' + skillProgress.review_questions + ' questions)</div>';
+            }
+            html += '</div>';
         });
     }
 
     html += '</div>';
 
-    // --- 3. Practice Activity (this week) ---
+    // --- 3. Levels ---
+    const levelRows = Object.values(CONFIG.skillProgress || {})
+        .filter(p => p.mastery_type === 'mastery' || p.mastery_type === 'qaida')
+        .sort((a, b) => (a.skill_id > b.skill_id ? 1 : -1));
+
+    html += '<div style="background:#1a1a2e;border:2px solid #9c27b0;border-radius:15px;padding:20px;margin:10px 0">';
+    html += '<div style="text-align:center;font-size:20px;color:#9c27b0;font-weight:bold">🏆 Levels</div>';
+
+    if (levelRows.length === 0) {
+        html += '<div style="color:#888;text-align:center;margin:15px">No level data yet.</div>';
+    } else {
+        levelRows.forEach(p => {
+            const level = p.unlocked_level || 1;
+            const maxLevel = p.max_level || level;
+            const mastered = p.mastery_state === 'mastered';
+            const needsReview = Array.isArray(p.levels_needing_review) && p.levels_needing_review.length > 0;
+            const progressText = levelProgressHTML(p.skill_id);
+
+            html += '<div style="background:#222;border-radius:10px;padding:12px;margin:8px 0">';
+            html += '<div style="display:flex;justify-content:space-between;color:white;font-size:15px">';
+            html += '<b>' + formatSkillName(p.skill_id) + '</b>';
+            html += '<span style="color:' + (mastered ? '#FFD700' : '#0099FF') + '">' + (mastered ? '👑 Mastered' : 'Level ' + level + ' / ' + maxLevel) + '</span>';
+            html += '</div>';
+            if (progressText) html += '<div style="color:#aaa;font-size:12px;margin-top:4px">' + progressText + '</div>';
+            if (needsReview) html += '<div style="color:#ef4444;font-size:12px;margin-top:4px">🔁 Needs review: level ' + p.levels_needing_review.join(', ') + '</div>';
+            html += '</div>';
+        });
+    }
+
+    html += '</div>';
+
+    // --- 4. Practice Activity (this week) ---
     html += '<div style="background:#1a1a2e;border:2px solid #22c55e;border-radius:15px;padding:20px;margin:10px 0">';
     html += '<div style="text-align:center;font-size:20px;color:#22c55e;font-weight:bold">📆 Practice This Week</div>';
     html += '<div style="display:flex;justify-content:space-around;margin-top:15px">';

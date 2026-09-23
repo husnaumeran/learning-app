@@ -214,6 +214,9 @@ async function selectChild(child) {
     const fmSettings = CONFIG.skillSettings['figure_matrices'];
     if (fmSettings && fmSettings.content_level) localStorage.setItem('fm_level', String(fmSettings.content_level));
 
+    await refreshSkillProgress();
+    await syncLegacyLevels();
+
     await checkWeekendAssessment();
     showMenu();
 }

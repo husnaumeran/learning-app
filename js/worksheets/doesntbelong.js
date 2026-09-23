@@ -4,10 +4,15 @@ function showDoesntBelong() {
     const problems = [];
     for (let i = 0; i < getQuestionCount('which_doesnt_belong'); i++) {
         const cat1 = catNames[Math.floor(Math.random() * catNames.length)];
-        let cat2;
-        do { cat2 = catNames[Math.floor(Math.random() * catNames.length)]; } while (cat2 === cat1);
         const items1 = CONFIG.categories[cat1].sort(() => Math.random() - 0.5).slice(0, 3);
-        const oddOne = CONFIG.categories[cat2][Math.floor(Math.random() * CONFIG.categories[cat2].length)];
+        let cat2, pool = [], attempts = 0;
+        do {
+            do { cat2 = catNames[Math.floor(Math.random() * catNames.length)]; } while (cat2 === cat1);
+            pool = CONFIG.categories[cat2].filter(e => !items1.includes(e));
+            attempts++;
+        } while (pool.length === 0 && attempts < 50);
+        if (pool.length === 0) continue;
+        const oddOne = pool[Math.floor(Math.random() * pool.length)];
         problems.push([[...items1, oddOne], oddOne, cat1]);
     }
     let current = 0, score = 0;
