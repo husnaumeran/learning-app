@@ -5,11 +5,15 @@ function showUrduReading() {
 
     function render() {
         const l = letters[current];
+        const audible = canHearLetter('ur', l.letter);
+        const tap = audible ? ' onclick="playLetterSound(\'ur\',\'' + l.letter + '\')"' : '';
         let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card">';
         html += '<div class="title" style="direction:rtl">اردو Urdu — Read: ' + l.name + '</div>';
-        html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;cursor:pointer" onclick="speakUrduLetter(\'' + l.letter + '\')">' + l.letter + '</div>';
+        html += '<div style="text-align:center;font-size:80px;margin:10px;font-family:serif;direction:rtl;' + (audible ? 'cursor:pointer' : '') + '"' + tap + '>' + l.letter + '</div>';
+        if (audible) html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin:10px auto;display:block"' + tap + '>🔊 Listen</button>';
         html += '<div style="display:flex;justify-content:space-between;margin-top:15px"><button class="key" onclick="prevUrduRead()">← Prev</button><span class="score">' + (current + 1) + ' / ' + letters.length + '</span><button class="key green" onclick="nextUrduRead()">Next →</button></div></div>';
         document.getElementById('app').innerHTML = html;
+        if (audible) playLetterSound('ur', l.letter);
     }
 
     window.prevUrduRead = () => { if (current > 0) { current--; render(); } };
@@ -74,7 +78,8 @@ function showUrduReadingCheck(letters, silent = false) {
         html += '<div style="text-align:center;color:#888">' + (current + 1) + ' / ' + questions.length + '</div>';
         html += '<div style="text-align:center;font-size:24px;margin:15px 0">Tap the correct letter</div>';
         html += '<div style="text-align:center;font-size:28px;margin:15px 0">' + q.correct.name + '</div>';
-        html += '<div style="text-align:center;margin:10px 0"><button class="btn" onclick="speakUrduLetter(\'' + q.correct.letter + '\')">🔊 Hear</button></div>';
+        const audible = canHearLetter('ur', q.correct.letter);
+        if (audible) html += '<div style="text-align:center;margin:10px 0"><button class="btn" style="font-size:20px;padding:14px 28px" onclick="playLetterSound(\'ur\',\'' + q.correct.letter + '\')">🔊 Hear</button></div>';
         html += '<div style="display:grid;grid-template-columns:1fr;gap:20px;margin-top:20px">';
         q.choices.forEach((choice, i) => {
             html += '<button class="key" onclick="pickUrduReadingCheck(' + i + ')" style="font-size:64px;min-height:110px;padding:24px 20px;line-height:1.4;font-family:serif;direction:rtl;display:flex;align-items:center;justify-content:center;overflow:visible">' + choice.letter + '</button>';
@@ -82,6 +87,7 @@ function showUrduReadingCheck(letters, silent = false) {
         html += '</div></div>';
         document.getElementById('app').innerHTML = html;
         questionStartMs = Date.now();
+        if (audible) playLetterSound('ur', q.correct.letter);
     }
 
     window.pickUrduReadingCheck = function(i) {
@@ -143,142 +149,7 @@ async function finishUrduReadingCheck(score, total, silent = false) {
     }
 }
 
-async function speakUrduLetter(letter, harakat = 'fatha') {
-    const URDU_MAP = {
-        'ا': 'alif',
-        'ب': 'baa',
-        'پ': 'pey',
-        'ت': 'ta',
-        'ٹ': 'tey',
-        'ث': 'tha',
-        'ج': 'jiim',
-        'چ': 'chey',
-        'ح': 'hha',
-        'خ': 'kha',
-        'د': 'daal',
-        'ڈ': 'daaal',
-        'ذ': 'thaal',
-        'ر': 'ra',
-        'ڑ': 'rey',
-        'ز': 'zay',
-        'ژ': 'zhey',
-        'س': 'siin',
-        'ش': 'shiin',
-        'ص': 'saad',
-        'ض': 'daad',
-        'ط': 'taa',
-        'ظ': 'thaa',
-        'ع': 'ayn',
-        'غ': 'ghayn',
-        'ف': 'fa',
-        'ق': 'qaf',
-        'ک': 'kaf',
-        'گ': 'gaaf',
-        'ل': 'lam',
-        'م': 'miim',
-        'ن': 'nuun',
-        'و': 'waw',
-        'ہ': 'he',
-        'ی': 'ya'
-    };
-
-    const ARABIC_MAP = {
-        'ا': 'alif',
-        'ب': 'baa',
-        'ت': 'ta',
-        'ث': 'tha',
-        'ج': 'jiim',
-        'ح': 'hha',
-        'خ': 'kha',
-        'د': 'daal',
-        'ذ': 'thaal',
-        'ر': 'ra',
-        'ز': 'zay',
-        'س': 'siin',
-        'ش': 'shiin',
-        'ص': 'saad',
-        'ض': 'daad',
-        'ط': 'taa',
-        'ظ': 'thaa',
-        'ع': 'ayn',
-        'غ': 'ghayn',
-        'ف': 'fa',
-        'ق': 'qaf',
-        'ک': 'kaf',
-        'ل': 'lam',
-        'م': 'miim',
-        'ن': 'nuun',
-        'و': 'waw',
-        'ی': 'ya'
-    };
-
-    const basePath = '/learning-app/learning-app/audio/letters/';
-    const candidates = [];
-
-    const urduName = URDU_MAP[letter];
-    const arabicName = ARABIC_MAP[letter];
-
-    if (urduName) {
-        candidates.push(`${basePath}ur_${urduName}_letter.ogg`);
-    }
-
-    if (arabicName) {
-        candidates.push(`${basePath}ar_${arabicName}_letter.ogg`);
-    }
-
-    for (const src of candidates) {
-        try {
-            await playAudioFile(src);
-            return;
-        } catch (e) {
-            console.warn('Audio failed:', src);
-        }
-    }
-
-    try {
-        const utter = new SpeechSynthesisUtterance(letter);
-        utter.lang = 'ur-PK';
-        speechSynthesis.cancel();
-        speechSynthesis.speak(utter);
-    } catch (e) {
-        console.error('Urdu speech fallback failed:', e);
-    }
-}
-
-function playAudioFile(src) {
-    return new Promise((resolve, reject) => {
-        const audio = new Audio(src);
-        let finished = false;
-
-        const cleanup = () => {
-            audio.onended = null;
-            audio.onerror = null;
-            audio.oncanplaythrough = null;
-        };
-
-        audio.onended = () => {
-            if (finished) return;
-            finished = true;
-            cleanup();
-            resolve();
-        };
-
-        audio.onerror = (e) => {
-            if (finished) return;
-            finished = true;
-            cleanup();
-            reject(e);
-        };
-
-        audio.oncanplaythrough = () => {
-            audio.play().catch(err => {
-                if (finished) return;
-                finished = true;
-                cleanup();
-                reject(err);
-            });
-        };
-
-        audio.load();
-    });
+// Kept as the name the Urdu Reading screens have always called; the lookup now lives in helpers.js.
+function speakUrduLetter(letter) {
+    return playLetterSound('ur', letter);
 }

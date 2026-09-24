@@ -2,7 +2,7 @@
 function showNumbersAll() {
     const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
     const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-    const count = getFocusNumber('numbers_all');
+    const count = getQuestionCount('numbers_all');
 
     // Number words for TTS
     const URDU_WORDS = ['','ایک','دو','تین','چار','پانچ','چھ','سات','آٹھ','نو','دس',

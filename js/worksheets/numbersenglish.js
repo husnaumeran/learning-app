@@ -1,6 +1,6 @@
 // ============ NUMBERS ENGLISH ============
 function showNumbersEnglish() {
-    const QUESTIONS = getFocusNumber('numbers_english');
+    const QUESTIONS = getQuestionCount('numbers_english');
     const LEVEL_NAMES = ['Hear & Tap','Closest','More Than','Less Than'];
     const HISTORY_KEY = 'ne_history';
 
@@ -97,16 +97,29 @@ function showNumbersEnglish() {
         renderGame();
     }
 
+    let revealed = false;
+
     function renderPicker() {
         const maxLevel = getContentLevel('numbers_english');
+        let unlockedLevel = maxLevel;
+        try { if (typeof getUnlockedLevel === 'function') unlockedLevel = Math.max(getUnlockedLevel('numbers_english') || maxLevel, maxLevel); } catch (e) {}
+        let guided = false;
+        try { guided = typeof CONFIG !== 'undefined' && CONFIG.guidedLaunch === true; } catch (e) {}
         let progressHtml = '';
         try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('numbers_english') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 Numbers — English</div>';
         html += '<div class="inst">Pick a level!</div>';
+        if (guided && !revealed) {
+            html += '<div onmousedown="this.holdTimer=setTimeout(()=>{this._held=true;neReveal()},3000)" onmouseup="clearTimeout(this.holdTimer);if(!this._held){startNELevel('+maxLevel+')}this._held=false" ontouchstart="this.holdTimer=setTimeout(()=>{this._held=true;neReveal()},3000)" ontouchend="clearTimeout(this.holdTimer);if(!this._held){startNELevel('+maxLevel+')}this._held=false" style="background:#0099FF;color:white;padding:28px 14px;border-radius:14px;text-align:center;cursor:pointer;font-size:22px;font-weight:bold">🌟 Practice All</div>';
+            html += '<div style="text-align:center;color:#999;font-size:12px;margin-top:8px">Hold 3s to see all levels</div>';
+            html += '</div>';
+            document.getElementById('app').innerHTML = html;
+            return;
+        }
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 4; l++) {
-            const unlocked = l <= maxLevel;
+            const unlocked = l <= unlockedLevel;
             const h = history['L'+l] || [];
             const best = h.length ? Math.max(...h.map(s=>s.score)) : 0;
             const bg = !unlocked ? '#666' : (l === maxLevel ? '#22c55e' : '#0099FF');
@@ -122,6 +135,7 @@ function showNumbersEnglish() {
     }
 
     window.startNELevel = startLevel;
+    window.neReveal = () => { revealed = true; renderPicker(); };
 
     function renderGame() {
         if (current >= problems.length) {

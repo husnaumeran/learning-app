@@ -5,7 +5,7 @@ function showFigureMatrices() {
     const CNAMES = ['red','blue','green','yellow','orange','pink'];
     const SIZES = [80, 40]; // big, small
     const SNAMES = ['big','small'];
-    const QUESTIONS = getFocusNumber('figure_matrices');
+    const QUESTIONS = getQuestionCount('figure_matrices');
     const LEVEL_NAMES = ['Color','Size','Shape','Direction','Color+Size','Color+Shape','Size+Shape','All Three'];
 
     let level = getContentLevel('figure_matrices');
@@ -153,18 +153,31 @@ function showFigureMatrices() {
         renderGame();
     }
 
+    let revealed = false;
+
     // Level picker screen
     function renderPicker() {
         const maxLevel=getContentLevel('figure_matrices');
+        let unlockedLevel = maxLevel;
+        try { if (typeof getUnlockedLevel === 'function') unlockedLevel = Math.max(getUnlockedLevel('figure_matrices') || maxLevel, maxLevel); } catch (e) {}
+        let guided = false;
+        try { guided = typeof CONFIG !== 'undefined' && CONFIG.guidedLaunch === true; } catch (e) {}
         let progressHtml = '';
         try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('figure_matrices') || '') : ''; } catch (e) {}
         let html='<button class="back" onclick="showMenu()">← Back</button>';
         html+='<div class="card"><div class="title">🧩 Figure Matrices</div>';
         html+='<div class="inst">Pick a level!</div>';
+        if (guided && !revealed) {
+            html+='<div onmousedown="this.holdTimer=setTimeout(()=>{this._held=true;fmReveal()},3000)" onmouseup="clearTimeout(this.holdTimer);if(!this._held){fmStartAll()}this._held=false" ontouchstart="this.holdTimer=setTimeout(()=>{this._held=true;fmReveal()},3000)" ontouchend="clearTimeout(this.holdTimer);if(!this._held){fmStartAll()}this._held=false" style="background:#FF6600;color:white;padding:28px 14px;border-radius:14px;text-align:center;cursor:pointer;font-size:22px;font-weight:bold">🌟 Practice All</div>';
+            html+='<div style="text-align:center;color:#999;font-size:12px;margin-top:8px">Hold 3s to see all levels</div>';
+            html+='</div>';
+            document.getElementById('app').innerHTML=html;
+            return;
+        }
         if(maxLevel>1) html+='<div onclick="fmStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L'+maxLevel+')</div>';
         html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for(let l=1;l<=8;l++){
-            const unlocked=l<=maxLevel;
+            const unlocked=l<=unlockedLevel;
             const h=history['L'+l]||[];
             const best=h.length?Math.max(...h):0;
             const bg=l===maxLevel?'#22c55e':unlocked?'#4169E1':'#555';
@@ -182,6 +195,7 @@ function showFigureMatrices() {
 
     window.fmStart = startLevel;
     window.fmStartAll = startAllLevels;
+    window.fmReveal = () => { revealed = true; renderPicker(); };
 
     // Game screen
     function renderGame() {

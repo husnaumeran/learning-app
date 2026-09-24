@@ -15,9 +15,9 @@ const ASSESSMENT_SKILLS = {
     color_patterns_l2:        { type: 'text',   enabled: true },
     verbal_analogies:         { type: 'text',   enabled: true },
     figure_matrices:          { type: 'visual', enabled: true },
-    numbers_english:          { type: 'audio',  enabled: false },
-    numbers_urdu:             { type: 'audio',  enabled: false },
-    numbers_arabic:           { type: 'audio',  enabled: false },
+    numbers_english:          { type: 'audio',  enabled: true },
+    numbers_urdu:             { type: 'audio',  enabled: true },
+    numbers_arabic:           { type: 'audio',  enabled: true },
     urdu_qaida:               { type: 'audio',  enabled: false },
     arabic_qaida:             { type: 'audio',  enabled: false },
 };
@@ -287,6 +287,99 @@ function makeAssessmentQs(skillId, count, overrides) {
         return [...wrongs];
     }
 
+    // ---- shared helpers for the audio numbers skills (English/Urdu/Arabic) ----
+    // Every pool below is built as an explicit array from a bounded range, then
+    // sliced — never rejection-sampled — so every loop here has a fixed trip
+    // count and provably terminates regardless of where n falls in its range.
+    function numRange(lo, hi) { const a = []; for (let v = lo; v <= hi; v++) a.push(v); return a; }
+    function shufN(a) { return [...a].sort(() => Math.random() - 0.5); }
+    function pickOne(a) { return a[Math.floor(Math.random() * a.length)]; }
+    const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+    const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+    const toUrduDigits = n => String(n).split('').map(d => URDU_DIGITS[+d]).join('');
+    const toArabicDigits = n => String(n).split('').map(d => ARABIC_DIGITS[+d]).join('');
+
+    // Builds one question object in the shape runAssessment/recordResponse expect.
+    // cfg.instruction may be a string or a fn(n) for prompts that embed the number.
+    // cfg.choiceDisplay renders choices in a script (Urdu/Arabic digits); omitted
+    // means choices display as the plain digit string they already are.
+    // cfg.promptDisplay, if set, shows the number itself as part of the prompt
+    // (the "Learn" reading check, and Urdu's What Comes Next/More/Less, which
+    // teach with the numeral visible); omitted means audio-only, matching how
+    // English and Arabic's L2+ levels actually present ("verify per file").
+    function numberChoiceQ(sId, level, n, correct, wrongPool, cfg) {
+        const wrongs = shufN(wrongPool).slice(0, 3);
+        const choiceVals = shufN([correct, ...wrongs]);
+        const q = {
+            skill_id: sId,
+            prompt: typeof cfg.instruction === 'function' ? cfg.instruction(n) : cfg.instruction,
+            choices: choiceVals.map(String),
+            correct: String(correct),
+            audio: { n: n, prefix: cfg.audioPrefix },
+            qdata: { type: sId, number: n, correct_answer: correct, level: level }
+        };
+        if (cfg.choiceDisplay) q.choice_labels = choiceVals.map(cfg.choiceDisplay);
+        if (cfg.promptDisplay) {
+            q.prompt_html = '<div style="direction:' + (cfg.dir || 'rtl') + ';font-size:60px;font-weight:bold">' + cfg.promptDisplay(n) + '</div>';
+        }
+        return q;
+    }
+
+    // "Hear it, tap it" — n from [1,hi]; wrong choices from a +/-10 window,
+    // which collapses to the whole range when hi is small (e.g. Urdu's learned
+    // range), matching how that worksheet's own nearNums has no window at all.
+    function hearTapQ(sId, level, hi, cfg) {
+        const n = pickOne(numRange(1, hi));
+        const near = numRange(Math.max(1, n - 10), Math.min(hi, n + 10)).filter(v => v !== n);
+        const pool = near.length >= 3 ? near : numRange(1, hi).filter(v => v !== n);
+        return numberChoiceQ(sId, level, n, n, pool, cfg);
+    }
+
+    // "Closest" — wrong choices are all strictly farther from n than the
+    // correct answer, so exactly one choice is ever the closest.
+    function closestQ(sId, level, hi, cfg) {
+        const n = pickOne(numRange(1, hi));
+        let deltas = [-3, -2, -1, 1, 2, 3].filter(d => n + d >= 1 && n + d <= hi);
+        if (!deltas.length) deltas = [n <= 1 ? 1 : -1];
+        const delta = pickOne(deltas);
+        const correct = n + delta;
+        const dist = Math.abs(delta);
+        let pool = numRange(1, hi).filter(v => v !== n && v !== correct && Math.abs(v - n) > dist);
+        if (pool.length < 3) pool = numRange(1, hi).filter(v => v !== n && v !== correct);
+        return numberChoiceQ(sId, level, n, correct, pool, cfg);
+    }
+
+    // "More Than" — wrong choices are drawn only from <= n, so no wrong choice
+    // is itself a valid "more than n" answer (the grading is exact-match, not
+    // a > comparison, so an also-bigger wrong choice would be a second correct
+    // answer in disguise). hi is floored at 6 so there's always room for n>=3
+    // with 3 smaller distractors below it and 1 bigger correct answer above.
+    function moreThanQ(sId, level, hiIn, cfg) {
+        const hi = Math.max(hiIn, 6);
+        const n = pickOne(numRange(3, hi - 1));
+        const correct = pickOne(numRange(n + 1, hi));
+        const pool = numRange(1, n);
+        return numberChoiceQ(sId, level, n, correct, pool, cfg);
+    }
+
+    // "Less Than" — mirror of moreThanQ; wrong choices are drawn only from >= n.
+    function lessThanQ(sId, level, hiIn, cfg) {
+        const hi = Math.max(hiIn, 6);
+        const n = pickOne(numRange(2, hi - 2));
+        const correct = pickOne(numRange(1, n - 1));
+        const pool = numRange(n, hi);
+        return numberChoiceQ(sId, level, n, correct, pool, cfg);
+    }
+
+    // Urdu-only "What Comes Next" — correct is always n+1.
+    function whatComesNextQ(sId, level, hiIn, cfg) {
+        const hi = Math.max(hiIn, 6);
+        const n = pickOne(numRange(1, hi - 1));
+        const correct = n + 1;
+        const pool = numRange(1, hi).filter(v => v !== n && v !== correct);
+        return numberChoiceQ(sId, level, n, correct, pool, cfg);
+    }
+
     switch(skillId) {
         case 'addition': {
             const probs = generateAdditionProblems(focus, count);
@@ -414,20 +507,29 @@ function makeAssessmentQs(skillId, count, overrides) {
             break;
         }
         case 'what_comes_next_numbers': {
-            const seqs = [
-                [[1,2,3,4], '5'], [[2,4,6,8], '10'],
-                [[focus-4,focus-3,focus-2,focus-1], String(focus)],
-                [[focus,focus-1,focus-2,focus-3], String(focus-4)],
-                [[5,10,15,20], '25']
-            ];
-            const shuffled = [...seqs].sort(() => Math.random() - 0.5).slice(0, count);
-            for (const [seq, ans] of shuffled) {
+            // Generated, not a fixed list: five hardcoded sequences meant a child
+            // could memorise the answers instead of learning to count on. Steps
+            // widen with difficulty so skip-counting appears once they're ready,
+            // and a descending run starts high enough that nothing reaches zero.
+            const stepPool = focus <= 2 ? [1, 2] : (focus <= 4 ? [1, 2, 5] : [1, 2, 5, 10]);
+            for (let i = 0; i < count; i++) {
+                const step = stepPool[Math.floor(Math.random() * stepPool.length)];
+                const goingUp = Math.random() < 0.5;
+                const start = (goingUp ? 1 : step * 4 + 1) + Math.floor(Math.random() * (focus * 2 + 5));
+                const seq = [0, 1, 2, 3].map(k => goingUp ? start + k * step : start - k * step);
+                const ans = goingUp ? start + 4 * step : start - 4 * step;
+                const choices = [String(ans)];
+                for (let k = 1; choices.length < 4 && k <= 6; k++) {
+                    [ans + step * k, ans - step * k].forEach(v => {
+                        if (v >= 1 && choices.length < 4 && choices.indexOf(String(v)) === -1) choices.push(String(v));
+                    });
+                }
                 qs.push({
                     skill_id: 'what_comes_next_numbers',
                     prompt: seq.join(' → ') + ' → ?',
-                    choices: [ans, ...randWrongs(Number(ans), 3, 0).map(String)].sort(() => Math.random() - 0.5),
-                    correct: ans,
-                    qdata: {type:'what_comes_next', sequence:seq, correct_answer:ans}
+                    choices: choices.sort(() => Math.random() - 0.5),
+                    correct: String(ans),
+                    qdata: {type:'what_comes_next', sequence:seq, correct_answer:String(ans), step:step, direction: goingUp ? 'up' : 'down'}
                 });
             }
             break;
@@ -506,6 +608,55 @@ function makeAssessmentQs(skillId, count, overrides) {
             qs.push(...makeFMAssessmentQs(count, overrides && overrides.level));
             break;
         }
+        case 'numbers_english': {
+            const maxLevel = 4;
+            const lvl = Math.min(Math.max(1, (overrides && overrides.level != null) ? overrides.level : getContentLevel('numbers_english')), maxLevel);
+            const cfg = { audioPrefix: 'en' };
+            for (let i = 0; i < count; i++) {
+                let q;
+                if (lvl === 1) q = hearTapQ('numbers_english', lvl, 100, Object.assign({}, cfg, {instruction: 'Tap the number you hear!'}));
+                else if (lvl === 2) q = closestQ('numbers_english', lvl, 100, Object.assign({}, cfg, {instruction: 'Which is closest to what you hear?'}));
+                else if (lvl === 3) q = moreThanQ('numbers_english', lvl, 100, Object.assign({}, cfg, {instruction: 'Tap a number MORE than what you hear!'}));
+                else q = lessThanQ('numbers_english', lvl, 100, Object.assign({}, cfg, {instruction: 'Tap a number LESS than what you hear!'}));
+                qs.push(q);
+            }
+            break;
+        }
+        case 'numbers_arabic': {
+            const maxLevel = 5;
+            const lvl = Math.min(Math.max(1, (overrides && overrides.level != null) ? overrides.level : getContentLevel('numbers_arabic')), maxLevel);
+            const base = { audioPrefix: 'ar', choiceDisplay: toArabicDigits };
+            for (let i = 0; i < count; i++) {
+                let q;
+                if (lvl === 1) q = hearTapQ('numbers_arabic', lvl, 20, { audioPrefix: 'ar', promptDisplay: toArabicDigits, instruction: 'Which English number matches?' });
+                else if (lvl === 2) q = hearTapQ('numbers_arabic', lvl, 100, Object.assign({}, base, {instruction: 'اضغط الرقم الذي تسمعه!'}));
+                else if (lvl === 3) q = closestQ('numbers_arabic', lvl, 100, Object.assign({}, base, {instruction: 'اضغط الرقم الأقرب!'}));
+                else if (lvl === 4) q = moreThanQ('numbers_arabic', lvl, 100, Object.assign({}, base, {instruction: 'اضغط الرقم الأكبر!'}));
+                else q = lessThanQ('numbers_arabic', lvl, 100, Object.assign({}, base, {instruction: 'اضغط الرقم الأصغر!'}));
+                qs.push(q);
+            }
+            break;
+        }
+        case 'numbers_urdu': {
+            const maxLevel = 5;
+            const lvl = Math.min(Math.max(1, (overrides && overrides.level != null) ? overrides.level : getContentLevel('numbers_urdu')), maxLevel);
+            // Same "focus number" the worksheet itself calls getLearnedNumberMax()
+            // via getFocusNumber — floored at 6 (not the worksheet's 3) so the
+            // More/Less/What-Comes-Next pools always have room; see moreThanQ.
+            const learnedMax = Math.max(3, (overrides && overrides.difficulty != null) ? overrides.difficulty : focus);
+            const span = Math.max(learnedMax, 6);
+            const base = { audioPrefix: 'ur', choiceDisplay: toUrduDigits };
+            for (let i = 0; i < count; i++) {
+                let q;
+                if (lvl === 1) q = hearTapQ('numbers_urdu', lvl, 20, { audioPrefix: 'ur', promptDisplay: toUrduDigits, instruction: 'Which English number matches?' });
+                else if (lvl === 2) q = hearTapQ('numbers_urdu', lvl, span, Object.assign({}, base, {instruction: 'جو نمبر سنو وہ تھپتھپاؤ!'}));
+                else if (lvl === 3) q = whatComesNextQ('numbers_urdu', lvl, span, Object.assign({}, base, {instruction: 'اگلا نمبر کون سا ہے؟', promptDisplay: toUrduDigits, dir: 'ltr'}));
+                else if (lvl === 4) q = moreThanQ('numbers_urdu', lvl, span, Object.assign({}, base, {promptDisplay: toUrduDigits, instruction: n => toUrduDigits(n) + ' سے بڑا نمبر تھپتھپاؤ!'}));
+                else q = lessThanQ('numbers_urdu', lvl, span, Object.assign({}, base, {promptDisplay: toUrduDigits, instruction: n => toUrduDigits(n) + ' سے چھوٹا نمبر تھپتھپاؤ!'}));
+                qs.push(q);
+            }
+            break;
+        }
     }
 
     return qs;
@@ -516,7 +667,8 @@ function makeAssessmentQs(skillId, count, overrides) {
 function buildAssessmentQuestions(skillId, count) {
     if (!count || count < 1) return makeAssessmentQs(skillId, count);
 
-    const isMasterySkill = skillId === 'verbal_analogies' || skillId === 'figure_matrices';
+    const isMasterySkill = skillId === 'verbal_analogies' || skillId === 'figure_matrices' ||
+        skillId === 'numbers_english' || skillId === 'numbers_urdu' || skillId === 'numbers_arabic';
     const difficultyReviewSkills = ['addition', 'subtraction', 'counting', 'find_pairs', 'match_numbers', 'more_less', 'bigger_smaller', 'what_comes_next_numbers'];
 
     let earlierMaterialExists = false;
@@ -526,6 +678,8 @@ function buildAssessmentQuestions(skillId, count) {
         currentLevel = getContentLevel(skillId);
         if (skillId === 'figure_matrices') currentLevel = Math.min(currentLevel, 8);
         if (skillId === 'verbal_analogies') currentLevel = Math.min(currentLevel, VA_ASSESS_LEVELS.length - 1);
+        if (skillId === 'numbers_english') currentLevel = Math.min(currentLevel, 4);
+        if (skillId === 'numbers_urdu' || skillId === 'numbers_arabic') currentLevel = Math.min(currentLevel, 5);
         earlierMaterialExists = currentLevel > 1;
     } else if (difficultyReviewSkills.indexOf(skillId) !== -1) {
         floor = FOCUS_FLOORS[skillId] ?? FOCUS_FLOORS.default;
@@ -601,6 +755,11 @@ function runAssessment(questions, indexOffset) {
         html += '<div style="background:#333;border-radius:10px;height:8px;margin:10px 0">';
         html += '<div style="background:#FFD700;border-radius:10px;height:8px;width:' + (current / questions.length * 100) + '%"></div></div>';
 
+        // Audio prompt (numbers hear-it skills)
+        if (q.audio) {
+            html += '<div style="text-align:center;margin:15px 0"><button onclick="assessPlayAudio()" style="font-size:60px;background:none;border:none;cursor:pointer;padding:15px">🔊</button></div>';
+        }
+
         // HTML prompt (pattern sequences with color swatches)
         if (q.prompt_html) {
             html += '<div style="text-align:center;font-size:28px;margin:15px 0;line-height:2">' + q.prompt_html + '</div>';
@@ -633,7 +792,17 @@ function runAssessment(questions, indexOffset) {
 
         document.getElementById('app').innerHTML = html;
         questionStartMs = Date.now();
+        if (q.audio) setTimeout(() => window.assessPlayAudio(), 400);
     }
+
+    window.assessPlayAudio = function() {
+        const q = questions[current];
+        if (!q || !q.audio) return;
+        new Audio('audio/numbers/' + q.audio.prefix + '_' + q.audio.n + '.mp3').play().catch(() => {
+            const fallback = q.audio.prefix === 'ur' ? speakUrdu : q.audio.prefix === 'ar' ? speakArabic : speak;
+            fallback(String(q.audio.n));
+        });
+    };
 
     window.assessPick = (i) => {
         const responseTimeMs = Date.now() - questionStartMs;

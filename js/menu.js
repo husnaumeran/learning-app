@@ -114,8 +114,8 @@ async function showMenu() {
             const done = doneTypes.includes(type);
             const icon = done ? ' ✅' : ' 🔒';
             html += '<div style="padding:12px 20px;margin:4px 0;background:#333;border-radius:10px;color:'+(done?'#aaa':'white')+';font-size:18px;cursor:default" ';
-            html += 'ontouchstart="this.holdTimer=setTimeout(()=>{window[\''+fn+'\']()},3000)" ontouchend="clearTimeout(this.holdTimer)" ';
-            html += 'onmousedown="this.holdTimer=setTimeout(()=>{window[\''+fn+'\']()},3000)" onmouseup="clearTimeout(this.holdTimer)">';
+            html += 'ontouchstart="this.holdTimer=setTimeout(()=>{CONFIG.guidedLaunch=false;window[\''+fn+'\']()},3000)" ontouchend="clearTimeout(this.holdTimer)" ';
+            html += 'onmousedown="this.holdTimer=setTimeout(()=>{CONFIG.guidedLaunch=false;window[\''+fn+'\']()},3000)" onmouseup="clearTimeout(this.holdTimer)">';
             html += label + icon + '</div>';
         });
         html += '</div>';
@@ -231,23 +231,6 @@ function nextWorksheet() {
     const todayProgress = JSON.parse(localStorage.getItem('daily_'+today) || '[]');
     const wsLimit = parseInt(localStorage.getItem('worksheetLimit') || '10');
     if (todayProgress.length >= wsLimit || queueIndex >= worksheetQueue.length) {
-        // Finalize session in Supabase
-        if (CONFIG.sessionId) {
-            sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId })
-              .then(async ({data, error}) => {
-                if (error) console.error('finalize_session error:', error);
-                else {
-                    console.log('finalize_session OK:', data);
-                    // Daily practice: no difficulty adjustment (weekend challenge only)
-                    await refreshSkillProgress();
-                    if (data && data.levels_unlocked) {
-                        Object.keys(data.levels_unlocked).forEach(skillId => {
-                            celebrateLevelUnlock(skillId, data.levels_unlocked[skillId]);
-                        });
-                    }
-                }
-              });
-        }
         if (CONFIG.sessionId) {
             sb.from('sessions').update({
                 queue_index: queueIndex,
@@ -257,14 +240,183 @@ function nextWorksheet() {
                 if (error) console.error('Final session update failed:', error);
             });
         }
-        showMenu();
+        // Practice unlocks nothing now — the daily mini-test runs first (so
+        // finalize_session below sees its answers), then the closing book.
+        startDailyTestStep();
         return;
     }
     const item = worksheetQueue[queueIndex];
     if (!item) { console.error('Queue item missing at index', queueIndex); showMenu(); return; }
     const [fn, type] = item;
     if (typeof window[fn] !== 'function') { console.error('Worksheet function not found:', fn); queueIndex++; nextWorksheet(); return; }
+    CONFIG.guidedLaunch = true;
     try { window[fn](); } catch(e) { console.error('Worksheet crashed:', fn, e); queueIndex++; nextWorksheet(); }
+}
+
+// ============ DAILY MINI-TEST + CLOSING BOOK ============
+// Session shape: worksheets (above) -> one daily mini-test -> a book -> menu.
+// See docs/MASTERY.md "The shape of a session".
+
+async function startDailyTestStep() {
+    if (!CONFIG.sessionId) { launchClosingBook(); return; }
+
+    let skillId = null;
+    try { skillId = await pickDailyTestSkill(); }
+    catch (e) { console.error('pickDailyTestSkill failed:', e); }
+    if (!skillId) { finishDailySession(); return; }
+
+    const progress = getSkillProgress(skillId);
+    const level = (progress && progress.current_level) || 1;
+    const count = (progress && progress.questions_needed) || 6;
+
+    let questions = [];
+    try { questions = buildDailyTest(skillId, level, count) || []; }
+    catch (e) { console.error('buildDailyTest failed for ' + skillId + ':', e); }
+
+    if (!questions.length) { finishDailySession(); return; }
+    runDailyTest(skillId, level, questions, finishDailySession);
+}
+
+// One skill per day: fewest qualifying_days at its current_level first
+// (closest to unlocking), ties broken by least recently tested.
+async function pickDailyTestSkill() {
+    if (!CONFIG.childId) return null;
+    const practiced = [...new Set(worksheetQueue.slice(0, queueIndex).map(item => item[2]).filter(Boolean))];
+    const eligible = practiced.filter(id => {
+        const p = getSkillProgress(id);
+        return p && (p.mastery_type === 'mastery' || p.mastery_type === 'qaida') && p.mastery_state !== 'mastered';
+    });
+    if (!eligible.length) return null;
+    if (eligible.length === 1) return eligible[0];
+
+    const lastPracticed = {};
+    try {
+        const { data, error } = await sb.from('responses')
+            .select('skill_id, created_at')
+            .eq('child_id', CONFIG.childId)
+            .in('skill_id', eligible)
+            .order('created_at', { ascending: false });
+        if (error) console.error('pickDailyTestSkill recency lookup error:', error);
+        (data || []).forEach(r => { if (!(r.skill_id in lastPracticed)) lastPracticed[r.skill_id] = r.created_at; });
+    } catch (e) {
+        console.error('pickDailyTestSkill recency lookup failed:', e);
+    }
+
+    eligible.sort((a, b) => {
+        const qa = getSkillProgress(a).qualifying_days || 0;
+        const qb = getSkillProgress(b).qualifying_days || 0;
+        if (qa !== qb) return qa - qb;
+        const ta = lastPracticed[a] || '';
+        const tb = lastPracticed[b] || '';
+        return ta < tb ? -1 : (ta > tb ? 1 : 0);
+    });
+    return eligible[0];
+}
+
+// One question at a time, no hints, no retries — the first answer stands.
+function runDailyTest(skillId, level, questions, onDone) {
+    const runId = Date.now();
+    let current = 0, score = 0, qStartMs = null;
+
+    function speakQuestion(q) {
+        if (!q.sound) return;
+        const fn = skillId === 'urdu_qaida' ? window.speakUrdu : window.speakArabic;
+        if (typeof fn === 'function') { try { fn(q.sound); } catch (e) {} }
+    }
+
+    function render() {
+        if (current >= questions.length) { showResult(); return; }
+        const q = questions[current];
+        let html = '<div class="card">';
+        html += '<div style="text-align:center;font-size:16px;color:#FFD700;margin-bottom:5px">✅ Quick Check</div>';
+        html += '<div style="text-align:center;font-size:14px;color:#888">' + (current + 1) + ' / ' + questions.length + '</div>';
+        html += '<div style="background:#333;border-radius:10px;height:8px;margin:10px 0"><div style="background:#FFD700;border-radius:10px;height:8px;width:' + (current / questions.length * 100) + '%"></div></div>';
+        if (q.prompt_html) html += '<div style="text-align:center;font-size:28px;margin:15px 0;line-height:2">' + q.prompt_html + '</div>';
+        if (q.prompt_emoji) html += '<div style="text-align:center;font-size:36px;margin:15px 0">' + q.prompt_emoji + '</div>';
+        if (q.prompt) html += '<div class="title" style="font-size:28px">' + q.prompt + '</div>';
+        if (q.sound) html += '<button class="btn green" style="font-size:20px;padding:12px 25px;margin:10px auto;display:block" onclick="dailyTestListen()">🔊 Listen</button>';
+        const cols = q.choices.length <= 2 ? 2 : (q.color_choices ? 4 : 2);
+        const fontSize = q.emoji_choices ? '36px' : '28px';
+        html += '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:12px;margin:20px 0">';
+        q.choices.forEach((ch, i) => {
+            if (q.color_choices && CONFIG.colors[ch]) {
+                html += '<div id="dtch' + i + '" onclick="dailyTestPick(' + i + ')" style="display:flex;align-items:center;justify-content:center;padding:10px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;min-height:60px">';
+                html += '<span style="display:inline-block;width:44px;height:44px;border-radius:50%;background:' + CONFIG.colors[ch] + '"></span></div>';
+            } else {
+                const label = q.choice_labels ? q.choice_labels[i] : ch;
+                html += '<div id="dtch' + i + '" onclick="dailyTestPick(' + i + ')" style="display:flex;align-items:center;justify-content:center;padding:20px;background:white;border:3px solid #ddd;border-radius:12px;cursor:pointer;font-size:' + fontSize + ';font-weight:bold;min-height:60px">' + label + '</div>';
+            }
+        });
+        html += '</div></div>';
+        document.getElementById('app').innerHTML = html;
+        qStartMs = Date.now();
+        window.dailyTestListen = () => speakQuestion(q);
+    }
+
+    window.dailyTestPick = (i) => {
+        const q = questions[current];
+        const responseTimeMs = qStartMs ? Date.now() - qStartMs : null;
+        const chosen = q.choices[i];
+        const correct = chosen === q.correct;
+
+        q.choices.forEach((ch, j) => {
+            const el = document.getElementById('dtch' + j);
+            if (!el) return;
+            if (ch === q.correct) { el.style.borderColor = '#22c55e'; el.style.background = '#dcfce7'; }
+            else if (j === i && !correct) { el.style.borderColor = '#ef4444'; el.style.background = '#fee2e2'; }
+            el.onclick = null;
+        });
+
+        if (correct) score++;
+        recordResponse(q.skill_id || skillId, q.qdata, q.correct, chosen, correct, true, 1,
+            responseTimeMs, 'dt' + runId + '_' + current, false, q.level != null ? q.level : level);
+
+        setTimeout(() => { current++; render(); }, 1200);
+    };
+
+    function showResult() {
+        const warm = score >= questions.length * 0.8 ? 'Amazing work! 🌟'
+            : score >= questions.length * 0.5 ? 'Great effort! 👍'
+            : 'Good try — more practice coming!';
+        let html = '<div class="card">';
+        html += '<div class="title" style="font-size:26px">✅ Quick Check Done!</div>';
+        html += '<div style="text-align:center;font-size:40px;margin:20px">⭐ You got ' + score + ' of ' + questions.length + '</div>';
+        html += '<div style="text-align:center;color:#888;font-size:18px;margin:10px">' + warm + '</div>';
+        html += '<button class="btn green" style="font-size:20px;padding:15px 30px" onclick="dailyTestContinue()">Continue →</button>';
+        html += '</div>';
+        document.getElementById('app').innerHTML = html;
+    }
+
+    window.dailyTestContinue = () => { onDone(); };
+
+    render();
+}
+
+async function finishDailySession() {
+    if (CONFIG.sessionId) {
+        try {
+            const { data, error } = await sb.rpc('finalize_session', { p_session_id: CONFIG.sessionId });
+            if (error) console.error('finalize_session error:', error);
+            else {
+                console.log('finalize_session OK:', data);
+                await refreshSkillProgress();
+                if (data && data.levels_unlocked) {
+                    Object.keys(data.levels_unlocked).forEach(skillId => {
+                        celebrateLevelUnlock(skillId, data.levels_unlocked[skillId]);
+                    });
+                }
+            }
+        } catch (e) { console.error('finalize_session failed:', e); }
+    }
+    launchClosingBook();
+}
+
+function launchClosingBook() {
+    CONFIG.guidedLaunch = true;
+    if (typeof showBabyUniversity === 'function') {
+        try { showBabyUniversity(); return; } catch (e) { console.error('showBabyUniversity failed:', e); }
+    }
+    showMenu();
 }
 
 function getToday() {
@@ -526,15 +678,6 @@ const FUN_SKILLS = [
     'trace_upper','trace_lower','trace_numbers','urdu_trace', 'arabic_trace','urdu_videos'
 ];
 
-const DOMAINS = {
-    quantitative: ['addition','subtraction','counting','match_numbers','more_less','bigger_smaller','what_comes_next_numbers','numbers_english','numbers_all','trace_numbers','connect_dots'],
-    nonverbal:    ['figure_matrices','color_patterns','color_patterns_l2','which_doesnt_belong','find_pairs'],
-    verbal:       ['verbal_analogies'],
-    literacy:     ['two_letter_words','three_letter_words','trace_upper','trace_lower'],
-    urdu:         ['urdu_what_next','urdu_qaida','numbers_urdu','urdu_reading','urdu_2letter','urdu_trace','urdu_videos'],
-    arabic:       ['arabic_qaida','numbers_arabic','arabic_trace'],
-};
-
 async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
     const today = getToday();
     const allSkillIds = Object.keys(SKILL_MAP);
@@ -604,10 +747,10 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
         return diff;
     });
 
-    // --- Map each skill to its domain (for coverage phase + diagnostics) ---
-    const domainNames = Object.keys(DOMAINS);
+    // --- Map each skill to its domain, straight from the skills table (SKILLS) ---
     const skillDomain = {};
-    domainNames.forEach(d => DOMAINS[d].forEach(id => { skillDomain[id] = d; }));
+    Object.keys(SKILLS).forEach(id => { if (SKILLS[id] && SKILLS[id].domain) skillDomain[id] = SKILLS[id].domain; });
+    const domainNames = [...new Set(Object.values(skillDomain))];
 
     // --- Phase 1: guarantee coverage — each domain's highest-priority eligible skill ---
     const queue = [];
@@ -622,7 +765,7 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
     for (const item of domainCandidates) {
         if (queue.length >= maxItems) break;
         if (usedFns.has(item.entry[0])) continue;
-        queue.push(item.entry);
+        queue.push([item.entry[0], item.entry[1], item.skillId]);
         usedFns.add(item.entry[0]);
         queueDomains.push(skillDomain[item.skillId]);
     }
@@ -631,7 +774,7 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
     for (const item of scored) {
         if (queue.length >= maxItems) break;
         if (usedFns.has(item.entry[0])) continue;
-        queue.push(item.entry);
+        queue.push([item.entry[0], item.entry[1], item.skillId]);
         usedFns.add(item.entry[0]);
         queueDomains.push(skillDomain[item.skillId] || 'none');
     }

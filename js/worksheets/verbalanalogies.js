@@ -1,6 +1,6 @@
 // ============ VERBAL ANALOGIES (CogAT Prep) ============
 function showVerbalAnalogies() {
-    const QUESTIONS = getFocusNumber('verbal_analogies');
+    const QUESTIONS = getQuestionCount('verbal_analogies');
     const LEVELS = window.VA_LEVELS;
 
     // Sanitize emojis for device compatibility
@@ -12,6 +12,7 @@ function showVerbalAnalogies() {
     let levelScore={}, levelSkips={};
     let questionStartMs = null;
     const attemptCounts = {};
+    let revealed = false;
 
     function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
     function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -28,37 +29,18 @@ function showVerbalAnalogies() {
         }
     }
 
-    function generateProblems(lvl) {
-        const pairs = LEVELS[lvl].pairs;
-        const result = [];
-        const used = new Set();
-        let attempts = 0;
-        const bMap = {};
-        pairs.forEach(p => { if(p.eb && !bMap[p.b]) bMap[p.b] = p.eb; });
-
-        while (result.length < QUESTIONS && attempts < 200) {
-            const sh = shuffle(pairs);
-            const ex = sh[0];
-            const qCandidates = sh.filter(p => p !== ex && p.b !== ex.b);
-            if (!qCandidates.length) { attempts++; continue; }
-            const q = qCandidates[0];
-            const key = ex.a + ':' + q.a;
-            if (used.has(key)) { attempts++; continue; }
-            used.add(key);
-
-            const uniqueBs = [...new Set(pairs.filter(p => p.b !== q.b).map(p => p.b))];
-            const wrong = shuffle(uniqueBs).slice(0, 3);
-            const choices = shuffle([
-                {text: q.b, emoji: bMap[q.b]||'', correct: true},
-                ...wrong.map(w => ({text: w, emoji: bMap[w]||'', correct: false}))
-            ]);
-            result.push({ example: ex, question: q, choices });
-            attempts++;
-        }
-        return result;
+    // Spreads the whole sitting's question budget across the levels being practiced today.
+    // At least one question per level; never more than `total`. When the budget can't cover
+    // every level, only the first `total` levels are practiced this round.
+    function splitQuestionBudget(total, levelNums) {
+        const n = Math.min(levelNums.length, Math.max(1, total));
+        const chosen = levelNums.slice(0, n);
+        const base = Math.floor(total / n);
+        const remainder = total - base * n;
+        return chosen.map((lvl, i) => ({ level: lvl, count: Math.max(1, base + (i < remainder ? 1 : 0)) }));
     }
 
-    function runLearnMode(pairs, onDone) {
+    function runLearnMode(pairs, onDone, isFinalTeach) {
         let idx = 0;
         function showCard() {
             if (idx >= pairs.length) { onDone(); return; }
@@ -75,7 +57,8 @@ function showVerbalAnalogies() {
             html += '<div style="font-size:32px;font-weight:bold;color:white">' + p.b + '</div>';
             html += '</div>';
             const isLast = idx === pairs.length - 1;
-            html += '<button onclick="vaLearnNext()" style="width:100%;padding:18px;font-size:22px;background:#22c55e;color:white;border:none;border-radius:14px;cursor:pointer;margin-top:10px">' + (isLast ? '✅ Start Quiz!' : '👉 Next') + '</button>';
+            const nextLabel = !isLast ? '👉 Next' : (isFinalTeach === false ? '👉 Next Level!' : '✅ Start Quiz!');
+            html += '<button onclick="vaLearnNext()" style="width:100%;padding:18px;font-size:22px;background:#22c55e;color:white;border:none;border-radius:14px;cursor:pointer;margin-top:10px">' + nextLabel + '</button>';
             html += '</div>';
             document.getElementById('app').innerHTML = html;
             speak(p.ea ? p.ea + ' ' : '' + p.a + ' and ' + p.b);
@@ -84,43 +67,80 @@ function showVerbalAnalogies() {
         showCard();
     }
 
+    function pickDaySet(lvl, n) {
+        const pairs = LEVELS[lvl].pairs;
+        const setSize = Math.min(n, pairs.length);
+        return shuffle(pairs).slice(0, setSize);
+    }
+
+    function buildDayQuiz(daySet, lvl) {
+        const pairs = LEVELS[lvl].pairs;
+        const bMap = {};
+        pairs.forEach(p => { if (p.eb && !bMap[p.b]) bMap[p.b] = p.eb; });
+        return shuffle(daySet).map(q => {
+            const others = daySet.filter(p => p !== q);
+            const ex = others.length ? others[Math.floor(Math.random() * others.length)] : q;
+            const uniqueBs = [...new Set(pairs.filter(p => p.b !== q.b).map(p => p.b))];
+            const wrong = shuffle(uniqueBs).slice(0, 3);
+            const choices = shuffle([
+                {text: q.b, emoji: bMap[q.b]||'', correct: true},
+                ...wrong.map(w => ({text: w, emoji: bMap[w]||'', correct: false}))
+            ]);
+            return { example: ex, question: q, choices };
+        });
+    }
+
     function startLevel(l) {
         level = l;
-        problems = generateProblems(level);
-        problemLevels = problems.map(() => l);
         current = 0; score = 0; skips = 0; tried = false; levelScore = {}; levelSkips = {};
-        // Show learn mode for Level 1 (Opposites) only
-        if (l === 1) {
-            const quizPairs = problems.map(p => p.question);
-            runLearnMode(quizPairs, renderGame);
-        } else {
-            renderGame();
-        }
+        problems = []; problemLevels = [];
+        // Every level teaches its day's set of pairs first; the quiz then only asks about that same set (shuffled).
+        const daySet = pickDaySet(l, QUESTIONS);
+        buildDayQuiz(daySet, l).forEach(q => { problems.push(q); problemLevels.push(l); });
+        runLearnMode(daySet, renderGame);
     }
 
     function startAllLevels() {
         const maxUnlocked = getContentLevel('verbal_analogies');
-        problems = [];
-        problemLevels = [];
-        for (let l = 1; l <= maxUnlocked; l++) {
-            const lProbs = generateProblems(l);
-            lProbs.forEach(p => { problems.push(p); problemLevels.push(l); });
-        }
+        const levelNums = [];
+        for (let l = 1; l <= maxUnlocked; l++) levelNums.push(l);
+        const plan = splitQuestionBudget(QUESTIONS, levelNums);
+
+        problems = []; problemLevels = [];
         current = 0; score = 0; skips = 0; tried = false; levelScore = {}; levelSkips = {};
-        renderGame();
+
+        function teachNext(i) {
+            if (i >= plan.length) { renderGame(); return; }
+            level = plan[i].level;
+            const daySet = pickDaySet(plan[i].level, plan[i].count);
+            buildDayQuiz(daySet, plan[i].level).forEach(q => { problems.push(q); problemLevels.push(plan[i].level); });
+            runLearnMode(daySet, () => teachNext(i + 1), i === plan.length - 1);
+        }
+        teachNext(0);
     }
 
     function renderPicker() {
         const maxUnlocked = getContentLevel('verbal_analogies');
+        let unlockedLevel = maxUnlocked;
+        try { if (typeof getUnlockedLevel === 'function') unlockedLevel = Math.max(getUnlockedLevel('verbal_analogies') || maxUnlocked, maxUnlocked); } catch (e) {}
+        let guided = false;
+        try { guided = typeof CONFIG !== 'undefined' && CONFIG.guidedLaunch === true; } catch (e) {}
         let progressHtml = '';
         try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('verbal_analogies') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🗣️ Verbal Analogies</div>';
         html += '<div class="inst">Pick a level!</div>';
+        if (guided && !revealed) {
+            html += '<div onmousedown="this.holdTimer=setTimeout(()=>{this._held=true;vaReveal()},3000)" onmouseup="clearTimeout(this.holdTimer);if(!this._held){startVAAll()}this._held=false" ontouchstart="this.holdTimer=setTimeout(()=>{this._held=true;vaReveal()},3000)" ontouchend="clearTimeout(this.holdTimer);if(!this._held){startVAAll()}this._held=false" style="background:#FF6600;color:white;padding:28px 14px;border-radius:14px;text-align:center;cursor:pointer;font-size:22px;font-weight:bold">🌟 Practice All</div>';
+            html += '<div style="text-align:center;color:#999;font-size:12px;margin-top:8px">Hold 3s to see all levels</div>';
+            html += '</div>';
+            document.getElementById('app').innerHTML = html;
+            return;
+        }
         if(maxUnlocked>1) html+='<div onclick="startVAAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L'+maxUnlocked+')</div>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 6; l++) {
-            const unlocked = l <= maxUnlocked;
+            const unlocked = l <= unlockedLevel;
             const h = history['L'+l] || [];
             const best = h.length ? Math.max(...h.map(s => s.score)) : 0;
             const bg = !unlocked ? '#555' : (l === maxUnlocked ? '#22c55e' : '#3b82f6');
@@ -137,6 +157,7 @@ function showVerbalAnalogies() {
 
     window.startVALevel = function(l) { startLevel(l); };
     window.startVAAll = startAllLevels;
+    window.vaReveal = () => { revealed = true; renderPicker(); };
 
     function renderGame() {
         if(problemLevels[current]) level=problemLevels[current];

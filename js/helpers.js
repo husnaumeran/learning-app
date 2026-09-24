@@ -162,6 +162,16 @@ function getFocusNumber(skillId) {
 function getContentLevel(skillId) {
     const progress = getSkillProgress(skillId);
     if (progress && (progress.mastery_type === 'mastery' || progress.mastery_type === 'qaida')) {
+        return progress.current_level || 1;
+    }
+    return Math.max(getSkillValue(skillId, 'content', 1), 1);
+}
+
+// The permanent achievement — for the picker's "highest reached" display only.
+// Content is served from getContentLevel (current_level), which can sit below this.
+function getUnlockedLevel(skillId) {
+    const progress = getSkillProgress(skillId);
+    if (progress && (progress.mastery_type === 'mastery' || progress.mastery_type === 'qaida')) {
         return Math.max(progress.unlocked_level || 1, getSkillValue(skillId, 'content', 1) || 1);
     }
     return Math.max(getSkillValue(skillId, 'content', 1), 1);
@@ -184,6 +194,36 @@ async function refreshSkillProgress() {
 
 function getSkillProgress(skillId) {
     return (CONFIG.skillProgress && CONFIG.skillProgress[skillId]) || null;
+}
+
+// Dispatches rather than generating: Qaida supplies its own check questions
+// (window.qaidaCheckQuestions); mastery skills reuse the weekend generators
+// so the test never repeats the practice worksheet's own layout. Returns []
+// (never throws) when no generator is available, so the caller can just skip
+// the test — see docs/MASTERY.md "The rules, precisely".
+function buildDailyTest(skillId, level, count) {
+    const n = count || 6;
+    let qs = [];
+    try {
+        const progress = getSkillProgress(skillId);
+        const isQaida = (progress && progress.mastery_type === 'qaida') || skillId === 'arabic_qaida' || skillId === 'urdu_qaida';
+        if (isQaida && typeof window.qaidaCheckQuestions === 'function') {
+            qs = window.qaidaCheckQuestions(skillId, level, n) || [];
+        } else if (typeof makeAssessmentQs === 'function' && typeof ASSESSMENT_SKILLS !== 'undefined' &&
+                   ASSESSMENT_SKILLS[skillId] && ASSESSMENT_SKILLS[skillId].enabled) {
+            qs = makeAssessmentQs(skillId, n, { level: level, difficulty: level }) || [];
+        }
+    } catch (e) {
+        console.error('buildDailyTest failed for ' + skillId + ':', e);
+        qs = [];
+    }
+    qs.forEach(q => {
+        q.level = level;
+        q.qdata = q.qdata || {};
+        q.qdata.purpose = 'check';
+        if (q.qdata.level == null) q.qdata.level = level;
+    });
+    return qs;
 }
 
 async function raiseSkillLevel(skillId, level) {
@@ -273,14 +313,11 @@ function legacyQaidaLevel(overrideKey, datesPrefix) {
 function levelProgressHTML(skillId) {
     const p = getSkillProgress(skillId);
     if (!p || p.mastery_state === 'mastered') return '';
-    if (p.mastery_type === 'mastery') {
-        if (p.window_questions == null) return '';
-        return (p.window_questions || 0) + ' of ' + p.questions_needed + ' questions · ' + (p.window_days || 0) + ' of ' + p.days_needed + ' days';
-    }
-    if (p.mastery_type === 'qaida') {
-        if (p.check_ready) return 'Check ready!';
-        if (p.practice_days == null) return '';
-        return 'Practiced ' + p.practice_days + ' of ' + p.days_needed + ' days';
+    if (p.mastery_type === 'mastery' || p.mastery_type === 'qaida') {
+        if (p.qualifying_days == null) return '';
+        let html = p.qualifying_days + ' of ' + p.days_needed + ' test days';
+        if (p.last_test_questions != null) html += ' · last check: ' + (p.last_test_correct || 0) + '/' + p.last_test_questions;
+        return html;
     }
     return '';
 }
@@ -302,7 +339,7 @@ const COGAT_TEST_DATE = new Date('2026-04-18T11:30:00-05:00');
 async function loadSkills(){
     const {data, error} = await sb
     .from('skills')
-    .select('id, category, base_weight')
+    .select('id, category, base_weight, domain')
     .eq('is_active', true);
 
     if (error) {
@@ -467,31 +504,43 @@ async function adjustFocusNumbers(slices) {
 }
 
 // ============ HELPER FUNCTIONS ============
+// Both addends are at least 1. Drawing from 0..total made "0 + 4" roughly
+// three quarters of the questions, and adding zero teaches nothing. A sum of 1
+// is the only case where a zero addend is unavoidable.
+function splitSumWithoutZero(total) {
+    if (total < 2) return 0;
+    return 1 + Math.floor(Math.random() * (total - 1));
+}
+
 function generateAdditionProblems(difficulty, count) {
     if (count == null) { count = difficulty; }
     const problems = [];
     const used = new Set();
     const numProblems = count;
     const numFocusTarget = Math.max(1, Math.ceil(numProblems / 3));
+    // Sums start at 2, whatever the difficulty: the only fact that adds to 1 is
+    // "0 + 1", so a beginner would otherwise meet nothing else. The first real
+    // addition fact is 1 + 1.
+    const top = Math.max(2, difficulty);
 
-    // ~1/3 problems sum to difficulty
+    // ~1/3 problems sum to the focus number
     for (let i = 0; i < numFocusTarget; i++) {
         let a, key, attempts = 0;
         do {
-            a = Math.floor(Math.random() * (difficulty + 1));
-            key = Math.min(a, difficulty - a) + '+' + Math.max(a, difficulty - a);
+            a = splitSumWithoutZero(top);
+            key = Math.min(a, top - a) + '+' + Math.max(a, top - a);
             attempts++;
         } while (used.has(key) && attempts < 20);
         used.add(key);
-        problems.push([a, difficulty - a, difficulty]);
+        problems.push([a, top - a, top]);
     }
 
-    // ~2/3 problems sum to random numbers 1..difficulty
+    // ~2/3 problems sum to random numbers 2..top
     for (let i = numFocusTarget; i < numProblems; i++) {
         let target, a, key, attempts = 0;
         do {
-            target = Math.floor(Math.random() * difficulty) + 1;
-            a = Math.floor(Math.random() * (target + 1));
+            target = 2 + Math.floor(Math.random() * (top - 1));
+            a = splitSumWithoutZero(target);
             key = Math.min(a, target - a) + '+' + Math.max(a, target - a);
             attempts++;
         } while (used.has(key) && attempts < 20);
@@ -804,9 +853,273 @@ function speakUrdu(text) {
     });
 }
 
-function playHarakat(lang, name, harakat) {
-    const audio = new Audio('audio/harakat/'+lang+'_'+name+'_'+harakat+'.mp3');
-    audio.play().catch(() => {});
+// ============ LETTER & HARAKAT AUDIO ============
+// The two recording folders were named independently: audio/letters/ has its own
+// transliteration (ت is ar_ta_letter.ogg) while audio/harakat/ follows the `name` field
+// in ARABIC_LETTERS / URDU_LETTERS (ت is ar_taa_fatha.mp3). One table carries both stems,
+// keyed by the letter character: ['letters/ stem', 'harakat/ stem'], null where nothing
+// has been recorded yet. Keep this in sync when new recordings land.
+const LETTER_AUDIO = {
+    ar: {
+        'ا': ['alif', 'alif'],
+        'ب': ['baa', 'baa'],
+        'ت': ['ta', 'taa'],
+        'ث': ['tha', 'thaa'],
+        'ج': ['jiim', 'jeem'],
+        'ح': ['hha', 'haa'],
+        'خ': ['kha', 'khaa'],
+        'د': ['daal', 'daal'],
+        'ذ': ['thaal', 'dhaal'],
+        'ر': ['ra', 'raa'],
+        'ز': ['zay', 'zaay'],
+        'س': ['siin', 'seen'],
+        'ش': ['shiin', 'sheen'],
+        'ص': ['saad', 'saad'],
+        'ض': ['daad', 'daad'],
+        'ط': ['taa', 'taa'],
+        'ظ': ['thaa', 'dhaa'],
+        'ع': ['ayn', 'ain'],
+        'غ': ['ghayn', 'ghain'],
+        'ف': ['fa', 'faa'],
+        'ق': ['qaf', 'qaaf'],
+        'ك': ['kaf', 'kaaf'],
+        'ل': ['lam', 'laam'],
+        'م': ['miim', 'meem'],
+        'ن': ['nuun', 'noon'],
+        'ه': ['ha', 'haa'],
+        'و': ['waw', 'waaw'],
+        'ي': ['ya', 'yaa'],
+        // Urdu-shaped kaf and yeh are different codepoints from the Arabic ones above.
+        // Aliased so a screen that hands us the Urdu glyph under lang 'ar' still finds audio.
+        'ک': ['kaf', 'kaaf'],
+        'ی': ['ya', 'yaa']
+    },
+    ur: {
+        'ا': ['alif', 'alif'],
+        'ب': ['baa', 'bay'],
+        'پ': ['pey', 'pay'],
+        'ت': ['ta', 'tay'],
+        'ٹ': ['tey', 'ttay'],
+        'ث': ['tha', 'say'],
+        'ج': ['jiim', 'jeem'],
+        'چ': ['chey', 'chay'],
+        'ح': ['hha', 'hey'],
+        'خ': ['kha', 'khay'],
+        'د': ['daal', 'daal'],
+        'ڈ': ['daaal', 'ddaal'],
+        'ذ': ['thaal', 'zaal'],
+        'ر': ['ra', 'ray'],
+        'ڑ': ['rey', 'rray'],
+        'ز': ['zay', 'zay'],
+        'ژ': ['zhey', 'zhay'],
+        'س': ['siin', 'seen'],
+        'ش': ['shiin', 'sheen'],
+        'ص': ['saad', 'suad'],
+        'ض': ['daad', 'zuad'],
+        'ط': ['taa', 'toy'],
+        'ظ': ['thaa', 'zoy'],
+        'ع': ['ayn', 'ain'],
+        'غ': ['ghayn', 'ghain'],
+        'ف': ['fa', 'fay'],
+        'ق': ['qaf', 'qaaf'],
+        'ک': ['kaf', 'kaaf'],
+        'گ': ['gaaf', 'gaaf'],
+        'ل': ['lam', 'laam'],
+        'م': ['miim', 'meem'],
+        'ن': ['nuun', 'noon'],
+        'ں': [null, null],
+        'و': ['waw', 'wao'],
+        'ہ': ['choti_hey', 'hey'],
+        'ھ': ['do_chashmi_hey', null],
+        'ی': ['ya', 'yay'],
+        'ے': [null, null]
+    }
+};
+
+let activeLetterAudio = null;
+
+function stopLetterAudio() {
+    if (activeLetterAudio) {
+        try { activeLetterAudio.pause(); } catch (e) {}
+        activeLetterAudio = null;
+    }
+    if (typeof speechSynthesis !== 'undefined') {
+        try { speechSynthesis.cancel(); } catch (e) {}
+    }
+}
+
+function playAudioFile(src) {
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let timer = null;
+        const audio = new Audio(src);
+        function finish(ok, err) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            audio.onended = null;
+            audio.onerror = null;
+            audio.oncanplaythrough = null;
+            if (activeLetterAudio === audio) activeLetterAudio = null;
+            if (ok) resolve();
+            else reject(err || new Error('no audio: ' + src));
+        }
+        // Settle even if the browser never fires an event, so a caller's fallback chain moves on.
+        timer = setTimeout(() => finish(false), 4000);
+        audio.onended = () => finish(true);
+        audio.onerror = () => finish(false);
+        audio.oncanplaythrough = () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => finish(true), 15000);
+            activeLetterAudio = audio;
+            audio.play().catch(e => finish(false, e));
+        };
+        audio.load();
+    });
+}
+
+function letterAudioEntry(lang, letter) {
+    const table = LETTER_AUDIO[lang === 'ur' ? 'ur' : 'ar'];
+    return (table && table[letter]) || null;
+}
+
+// Some harakat recordings are named for a sound two letters share — Arabic ت and ط
+// are both "taa", ح and ه both "haa" — because only one set of each was ever made.
+// Playing one for both would teach a letter the wrong pronunciation, which is worse
+// than silence when pronunciation is the whole lesson. The owner, who speaks both
+// languages, listened to the ambiguous files and assigned them here; an entry below
+// always wins. Values carry their own language prefix because two letters borrow the
+// other language's recording: Arabic ت uses the Urdu "tay", and Urdu ہ (choti hey)
+// uses the Arabic "haa" — no ur_choti_hey harakat set was ever recorded.
+const HARAKAT_OVERRIDES = {
+    ar: { 'ت': 'ur_tay', 'ط': 'ar_taa', 'ح': 'ar_haa' },
+    ur: { 'ت': 'ur_tay', 'ہ': 'ar_haa' }
+};
+
+// A stem the owner assigned belongs to those letters only. Arabic ه also resolves to
+// "ar_haa" by name, so without this it would quietly inherit ح's recording.
+const _ownedHarakatStems = {};
+['ar', 'ur'].forEach(L => {
+    Object.keys(HARAKAT_OVERRIDES[L]).forEach(ch => { _ownedHarakatStems[HARAKAT_OVERRIDES[L][ch]] = true; });
+});
+
+// For everything not assigned by hand, a stem is trusted only when exactly one letter
+// claims it. Counted by distinct letter-file name, not by character: the same letter
+// appears under two codepoints (Arabic ك/ي and Urdu ک/ی) and rightly shares one file.
+const _harakatStemClaims = {};
+['ar', 'ur'].forEach(L => {
+    const table = (typeof LETTER_AUDIO !== 'undefined' && LETTER_AUDIO[L]) || {};
+    Object.keys(table).forEach(ch => {
+        if (HARAKAT_OVERRIDES[L][ch]) return;
+        const stem = table[ch][1];
+        if (!stem) return;
+        const key = L + '_' + stem;
+        (_harakatStemClaims[key] = _harakatStemClaims[key] || {})[table[ch][0] || ''] = true;
+    });
+});
+
+// Returns a full "lang_stem" (e.g. "ar_taa"), or null when no recording can be
+// attributed to this letter with confidence. Callers then fall back to the letter's
+// own recording, which is always correct — just not the harakat.
+function harakatStemFor(lang, letter) {
+    const L = lang === 'ur' ? 'ur' : 'ar';
+    if (HARAKAT_OVERRIDES[L][letter]) return HARAKAT_OVERRIDES[L][letter];
+    const entry = letterAudioEntry(lang, letter);
+    if (!entry || !entry[1]) return null;
+    const key = L + '_' + entry[1];
+    if (_ownedHarakatStems[key]) return null;
+    if (Object.keys(_harakatStemClaims[key] || {}).length > 1) return null;
+    return key;
+}
+
+function letterAudioSources(lang, letter) {
+    const entry = letterAudioEntry(lang, letter);
+    if (!entry) return [];
+    const L = lang === 'ur' ? 'ur' : 'ar';
+    const harakatStem = harakatStemFor(lang, letter);
+    const sources = [];
+    if (entry[0]) sources.push('audio/letters/' + L + '_' + entry[0] + '_letter.ogg');
+    if (harakatStem) sources.push('audio/harakat/' + harakatStem + '_fatha.mp3');
+    return sources;
+}
+
+function hasSpeechVoice(lang) {
+    if (typeof speechSynthesis === 'undefined') return false;
+    let voices = [];
+    try { voices = speechSynthesis.getVoices() || []; } catch (e) { return false; }
+    const prefix = lang === 'ur' ? 'ur' : 'ar';
+    return voices.some(v => v.lang && v.lang.toLowerCase().indexOf(prefix) === 0);
+}
+
+function canHearLetter(lang, letter) {
+    return letterAudioSources(lang, letter).length > 0 || hasSpeechVoice(lang);
+}
+
+function canHearHarakat(lang, letter, harakat) {
+    if (harakatStemFor(lang, letter)) return true;
+    const entry = letterAudioEntry(lang, letter);
+    if (entry && entry[0]) return true;
+    return hasSpeechVoice(lang);
+}
+
+async function playLetterSound(lang, letter) {
+    stopLetterAudio();
+    const sources = letterAudioSources(lang, letter);
+    for (let i = 0; i < sources.length; i++) {
+        try { await playAudioFile(sources[i]); return; } catch (e) {}
+    }
+    try {
+        if (lang === 'ur') await speakUrdu(letter);
+        else await speakArabic(letter);
+    } catch (e) {}
+}
+
+// Resolves true when the recording played, false when there is none, so callers chain a fallback.
+function playHarakat(stem, harakat) {
+    stopLetterAudio();
+    return playAudioFile('audio/harakat/' + stem + '_' + harakat + '.mp3')
+        .then(() => true, () => false);
+}
+
+async function playHarakatSound(lang, letter, harakat) {
+    const stem = harakatStemFor(lang, letter);
+    if (stem && harakat) {
+        const played = await playHarakat(stem, harakat);
+        if (played) return;
+    }
+    // Letters with no harakat recording (ں ھ ے) show the bare glyph anyway, so its name is the right sound.
+    await playLetterSound(lang, letter);
+}
+
+// Qaida check questions carry {lang, letter, harakat} when a recording can voice them,
+// and only a transliterated `sound` when the item is a word.
+function playQaidaPrompt(q) {
+    if (!q) return Promise.resolve();
+    if (q.letter && q.harakat) return playHarakatSound(q.lang, q.letter, q.harakat);
+    if (q.letter) return playLetterSound(q.lang, q.letter);
+    stopLetterAudio();
+    if (!q.sound) return Promise.resolve();
+    const spoken = q.lang === 'ur' ? speakUrdu(q.sound) : speakArabic(q.sound);
+    return spoken.catch(() => {});
+}
+
+function canHearQaidaPrompt(q) {
+    if (!q) return false;
+    if (q.letter && q.harakat) return canHearHarakat(q.lang, q.letter, q.harakat);
+    if (q.letter) return canHearLetter(q.lang, q.letter);
+    return hasSpeechVoice(q.lang);
+}
+
+// A check asks "which one sounds like this?". An item we can neither play nor show a
+// read-aloud prompt for is unanswerable — and a blind guess still counts toward mastery.
+function qaidaPromptable(q) {
+    if (canHearQaidaPrompt(q)) return true;
+    return !!q.sound && q.sound !== q.display;
+}
+
+// Chrome populates the voice list asynchronously; ask early so the first render knows.
+if (typeof speechSynthesis !== 'undefined') {
+    try { speechSynthesis.getVoices(); } catch (e) {}
 }
 
 function speak(text) {

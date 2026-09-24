@@ -35,8 +35,9 @@ The owner's explicit instruction: **Opus is the manager/lead/orchestrator. The o
 | Role | Model | Does |
 |---|---|---|
 | **Lead / orchestrator** | **Opus 5** | Plans, decomposes, delegates, reviews worker output, makes architecture and correctness calls, talks to the owner, decides what ships. |
-| **Worker** | **Sonnet** | Codebase research, bug audits, multi-file implementation, content generation, test writing. The bulk of the labor. |
+| **Worker** | **Sonnet** | **The default.** Codebase research, bug audits, multi-file implementation, content generation, test writing. The bulk of the labor. |
 | **Worker** | **Haiku** | Cheap mechanical passes — find/replace at scale, formatting, simple repetitive edits. |
+| **Worker** | **Opus** | Only where it clearly earns it: subtle correctness, cross-cutting refactors, work where a wrong answer is expensive. Not a default — the owner watches usage and does not want limits hit. |
 
 Rules of engagement:
 - Delegate via the `Agent` tool with an explicit `model` override. Prompts must be **self-contained** — a worker starts cold with no session history, so include paths, context, and the *why*.

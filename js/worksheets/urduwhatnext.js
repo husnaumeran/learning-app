@@ -1,7 +1,7 @@
 // ============ URDU WHAT COMES NEXT (Smart Sequencing + Spaced Repetition) ============
 async function showUrduWhatNext() {
     const letters = URDU_LETTERS.slice(0, Math.max(4, getContentLevel('urdu_reading')));
-    const questionCount = getFocusNumber('urdu_what_next');
+    const questionCount = getQuestionCount('urdu_what_next');
     
     // 1. Fetch previous wrong answers for spaced repetition
     let wrongSequences = [];

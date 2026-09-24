@@ -10,16 +10,29 @@ The goal is **one engine, one place levels are stored, and separate rules for sk
 
 ## The owner's decisions
 
+**Revised 2026-09-23** after the owner tested v1. The revision is below; v1's rule (practice evidence alone unlocked a level) is superseded.
+
 | Question | Decision |
 |---|---|
 | What counts as knowing it | **First-try** accuracy (attempt 1 of each question). Skips count as wrong. |
 | The bar | **80%** |
-| Evidence before moving up | The **last 15** first-try answers at the level, spread across **at least 3 different days** |
-| Qaida (nothing was scored) | **5 days of practice at the level, plus a 10-question hear-it-tap-it check at 80%** |
+| What unlocks a level | **The daily mini-test**, passed on **3 different days**. Practice alone never unlocks anything. |
+| The daily mini-test | 5–6 questions on recently practiced material. **No hints, no retries**, and deliberately *not* the practice format — it must test understanding, not repetition. |
 | Which practice counts | **Every session** — daily and weekend |
-| Weekend challenge | Must **also re-test earlier material** as the child moves forward, to check retention |
-| Levels going down | **Never automatically.** A skill with weak retention gets more practice and a flag for the parent instead. |
+| Weekend challenge | A different job: **retention and consolidation**. Harder and cumulative — current *and* older material, fewer clues, mixed formats, presented differently from practice. |
+| Levels going down | **The badge never moves.** Repeated weak weekends lower the *practice* level only — see "Two levels" below. |
 | Moving levels to the server | **Never lower a level a child has reached**, anywhere |
+
+### Two levels, not one
+
+This is the load-bearing distinction, and the reason no parent "demote" button is needed.
+
+- **`unlocked_level`** — the highest level ever earned. A permanent achievement. **It never decreases**, by any automatic rule.
+- **`current_level`** — the working level: what the app actually serves today. Normally equal to `unlocked_level`. It steps **down** on a *pattern* of weak weekends and climbs back as the child recovers, and it never exceeds `unlocked_level`.
+
+So a child can hold level 8 while practising level 6 material, and neither the child nor the parent loses the record of what they achieved. This is what fixes the real case that prompted it: a profile sitting at the top Numbers Urdu level while answering 20% correctly now gets pulled back to prerequisite material automatically.
+
+**One weak weekend is never enough.** A tired or distracted 4-year-old has bad days. Only repeated weak weekends move the working level.
 
 Why these, from production data (3 profiles, 1,538 session-skill results): only 30% of sessions give a skill 5+ questions, so a per-session minimum starves the engine, and pooling answers across sessions fixes that. Retries are just 8% of answers, so first-try costs nothing today. First-try accuracy averages 83%, which makes 80% achievable but meaningful.
 
@@ -40,18 +53,22 @@ The thresholds live in the `skills` table (`mastery_questions`, `mastery_days`, 
 
 ## The rules, precisely
 
-**`mastery` — level L is mastered when**, over the child's most recent 15 answers at skill S, level L, that are first attempts (`attempt_count = 1`), not passive, and not review or check questions:
-- there are at least 15 of them, **and**
-- at least 80% are correct, **and**
-- they fall on at least 3 distinct local calendar days (the parent's timezone, default `America/Chicago`).
+**A test day.** A daily mini-test is a group of `purpose:'check'` answers recorded for one skill at one level inside one session. It is a **qualifying day** when it holds at least `mastery_questions` (5) first-try answers and at least `mastery_accuracy` (80%) of them are correct. Skips count as wrong. Several tests on the same local day still count as **one** day — the best one — so a level cannot be farmed by retaking.
 
-**`qaida` — level L is mastered when:**
-- the child has activity at level L on at least 5 distinct local days (practice counts), **and**
-- their most recent 10 first-try **check** answers at level L are at least 80% correct.
+**Unlocking, for `mastery` and `qaida` alike.** Level L is mastered once the child has **`mastery_days` (3) qualifying days at level L**. Practice answers never unlock anything; they decide what the test may cover and feed the strength and weakness signals.
 
-**On mastery:** if L < `max_level`, set `unlocked_level` to L+1. If L = `max_level`, set `mastery_state = 'mastered'`. **At most one level per evaluation.** Evidence is always evaluated at the child's current `unlocked_level`.
+**On mastery:** if L < `max_level`, `unlocked_level` becomes L+1 and `current_level` follows it. If L = `max_level`, `mastery_state` becomes `'mastered'`. At most one level per evaluation, always evaluated at the child's `current_level`.
 
-**Retention:** an earlier level L needs review when the child's most recent up-to-10 *review* answers at L number at least 5 and fall below the skill's bar. This never lowers a level. It raises the skill's queue priority, focuses the next weekend's review on that level, and shows the parent a flag.
+**Failing a test costs nothing but time.** No streak reset, no step back. The level simply isn't unlocked yet, and the weak material gets more practice.
+
+**Choosing the day's test.** One skill per day, drawn from those practised recently: prefer the skill with the fewest qualifying days at its current level, breaking ties by least recently tested. Questions come from the weekend challenge's generators (`makeAssessmentQs`), which already present material differently from the practice worksheets. That difference is the point — a test that repeats the practice format measures recall of a layout, not understanding.
+
+**Weekend retention.** After a weekend challenge, each skill's weekend answers at its working level are scored:
+- **Strong** (at least the bar): `weak_weekend_streak` resets to 0, and `current_level` climbs one step back toward `unlocked_level` if it had been lowered.
+- **Weak** (below the bar over at least `mastery_questions` answers): `weak_weekend_streak` increments and the level is flagged for review.
+- **Two weak weekends in a row:** `current_level` drops by one (floor 1), the streak resets, and the child practises prerequisite material. **`unlocked_level` is never touched.**
+
+**Levels needing review** — earlier levels whose recent review answers fall below the bar — raise the skill's queue priority, focus the next weekend's review, and show as a flag on the parent dashboard.
 
 ---
 
@@ -59,7 +76,10 @@ The thresholds live in the `skills` table (`mastery_questions`, `mastery_days`, 
 
 ### Tables
 
-- **`child_skill_progress.unlocked_level`** is the single source of truth for `mastery` and `qaida` levels. The migration backfills every child × leveled skill to the highest level known anywhere: `greatest(existing unlocked_level, child_skill_settings.content_level)`, capped at `max_level`.
+- **`child_skill_progress.unlocked_level`** — the permanent achievement. Written only by the engine on mastery or by a parent override, and **never lowered**. Backfilled to the highest level known anywhere: `greatest(existing unlocked_level, child_skill_settings.content_level)`, capped at `max_level`.
+- **`child_skill_progress.current_level`** — the **working level**, what the app actually serves. Starts equal to `unlocked_level`, steps down on repeated weak weekends, climbs back on strong ones, and never exceeds `unlocked_level`. This column already existed but nothing read it.
+- **`child_skill_progress.weak_weekend_streak`** (new) — consecutive weak weekends for this skill. Two in a row lower `current_level` by one, then the streak resets.
+- **How many questions a worksheet serves** comes from `getQuestionCount` alone. Eight worksheets used to size their content from the *difficulty* number instead, which is why 38% of worksheet runs served a single question. `child_skill_settings` rows now exist for every child × skill so nothing silently falls back to 1.
 - **`responses.is_passive`** (new, not null). Set **automatically by a trigger** when `correct_answer = 'seen'`, which is what `recordPassiveResponse` sends. **Clients never pass it.** History is backfilled (all `'seen'` rows, all `numbers_all` rows, and only the memory-game `find_pairs` rows — those whose `question_data` has `total_pairs`; weekend-challenge `find_pairs` rows are real answers).
 - `child_skill_progress.sessions_at_80_plus` and `current_level` are legacy. Nothing reads them and the engine stops writing `sessions_at_80_plus`.
 
@@ -90,12 +110,12 @@ Changed meaning: `attempted` counts distinct questions (first attempts), `accura
 | Column | Meaning |
 |---|---|
 | `skill_id`, `mastery_type`, `max_level` | from `skills` |
-| `unlocked_level`, `mastery_state` | mastery/qaida only, else null |
-| `questions_needed`, `days_needed`, `accuracy_needed` | the thresholds |
-| `window_questions`, `window_correct`, `window_days` | mastery: evidence so far at `unlocked_level` |
-| `practice_days` | qaida: distinct active days at `unlocked_level` |
-| `check_questions`, `check_correct` | qaida: latest check answers at `unlocked_level` |
-| `check_ready` | qaida: `practice_days >= days_needed` |
+| `unlocked_level`, `current_level`, `mastery_state` | mastery/qaida only, else null |
+| `questions_needed`, `days_needed`, `accuracy_needed` | the thresholds: 5 questions per test, 3 qualifying days, 80% |
+| `qualifying_days` | qualifying test days so far at `current_level` — "2 of 3 test days" |
+| `last_test_questions`, `last_test_correct` | the most recent test at `current_level`, for "you got 5 of 6" |
+| `practice_days` | distinct days with any activity at `current_level` |
+| `weak_weekend_streak` | consecutive weak weekends; 2 lowers the working level |
 | `levels_needing_review` | int[], mastery/qaida: earlier levels below the bar on review |
 | `review_questions`, `review_correct` | any type: the last up-to-10 review answers |
 
@@ -113,8 +133,10 @@ Implemented by the core worker in `js/helpers.js` / `js/auth.js`. Every other fi
 CONFIG.skillProgress                    // { [skill_id]: row from get_skill_progress }, loaded at login
 async refreshSkillProgress()            // reload CONFIG.skillProgress; if the RPC fails, log and keep going
 getSkillProgress(skillId)               // -> row | null
-getContentLevel(skillId)                // mastery/qaida: Math.max(progress unlocked_level || 1, settings content_level || 1)
-                                        // everything else: unchanged
+getContentLevel(skillId)                // the WORKING level to serve right now (current_level). Non-leveled skills: unchanged
+getUnlockedLevel(skillId)               // the highest level ever earned — for the picker's achievement display only
+buildDailyTest(skillId, level, count)   // -> question objects for the mini-test, tagged purpose:'check'
+                                        // uses makeAssessmentQs where a generator exists; Qaida supplies its own
 async raiseSkillLevel(skillId, level)   // -> resulting level; refreshes progress
 async evaluateSkillMastery(skillId)     // -> RPC result; refreshes progress
 recordPassiveResponse(skillId, questionData, itemIndex = null, level = null)   // `level` param is NEW
@@ -145,15 +167,16 @@ Only call it for values > 1. Known limitation: these keys were never per-child, 
 | **Qaida** | `js/worksheets/arabicqaida.js`, `js/worksheets/urduqaida.js` | Record every practiced item with `recordPassiveResponse(..., level)`. Gate on `getContentLevel`; remove localStorage day-counting and `qaida_unlocked` gating; parent override → `raiseSkillLevel`. Show "3 of 5 days". When `check_ready`, offer the check: 10 hear-it-tap-it questions from that level's content (sound via `speakArabic` / `speakUrdu`, 4 written choices), each recorded with `purpose: 'check'` and the level. Afterwards call `evaluateSkillMastery` and celebrate on unlock, or show the score encouragingly. |
 | **Weekend** | `js/assessment.js` | Pass the level for `mastery` questions. Remove the VA/FM `content_level` upsert block. Re-test earlier material: `floor(n/3)` of each skill's `n` questions (at least 1 when earlier material exists) become review, prioritizing `levels_needing_review`. Mastery/qaida review at earlier levels; adaptive review at a lower difficulty in `[floor, difficulty-1]`. Tag them `purpose: 'review'` and shuffle them in. After finalize: keep `adjustFocusNumbers(data.slices)`, then refresh + celebrate. Results screen shows current and review scores separately. |
 
-**Complete `DOMAINS`** (31 skills — every `SKILL_MAP` skill except the removed phantom):
-- `quantitative`: addition, subtraction, counting, match_numbers, more_less, bigger_smaller, what_comes_next_numbers, numbers_english, numbers_all, trace_numbers, connect_dots
-- `nonverbal`: figure_matrices, color_patterns, color_patterns_l2, which_doesnt_belong, find_pairs
-- `verbal`: verbal_analogies
-- `literacy`: two_letter_words, three_letter_words, trace_upper, trace_lower
-- `urdu`: urdu_what_next, urdu_qaida, numbers_urdu, urdu_reading, urdu_2letter, urdu_trace, urdu_videos
-- `arabic`: arabic_qaida, numbers_arabic, arabic_trace
+**The shape of a session**
 
-Practice skills belong in domains: tracing *is* writing practice. Scoring matters for accuracy, not for the daily schedule.
+1. **Practice** — the adaptive queue of worksheets, as today. Hints and retries. Unlocks nothing.
+2. **The daily mini-test** — one skill, 5–6 questions, no hints, no retries, a different presentation from the practice. This is the only thing that unlocks levels.
+3. **A book** — closes the day (`baby_university`).
+4. **The "done for today" screen** — deliberately a wall. Nothing worth reaching is behind it now that books are in the flow.
+
+**Domains come from the database, not the client.** `skills.domain` already holds one of six values for every skill, enforced by a check constraint, and `helpers.js` already loads the skills table for `base_weight`. **Delete the hardcoded `DOMAINS` map in `menu.js` and read `SKILLS[skillId].domain`.** The hardcoded copy had already drifted — the database puts `connect_dots` in nonverbal and `trace_numbers` in literacy, the client map had both under quantitative. Reading the table means a new skill gets its domain for free, and there is one place to change it.
+
+Practice-only skills still belong in domains: tracing *is* writing practice. Whether a skill is scored matters for accuracy insights, not for the daily schedule.
 
 ## Implementation notes (as built)
 

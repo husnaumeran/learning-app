@@ -1,6 +1,6 @@
 // ============ NUMBERS URDU ============
 function showNumbersUrdu() {
-    const QUESTIONS = Math.max(3, getFocusNumber('numbers_urdu'));
+    const QUESTIONS = getQuestionCount('numbers_urdu');
     const LEVEL_NAMES = ['Learn','Hear & Tap','What Comes Next','More Than','Less Than'];
     const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 
@@ -13,8 +13,11 @@ function showNumbersUrdu() {
     function randNum() { 
         const max = getLearnedNumberMax();
         return Math.floor(Math.random() * max) + 1; }
+    // How high the numbers go — a difficulty, not a question count. Kept
+    // separate so changing how many questions a sitting has never silently
+    // widens or narrows the range of numbers the child sees.
     function getLearnedNumberMax() {
-        return Math.max(QUESTIONS, getFocusNumber('numbers_urdu'));
+        return Math.max(3, getFocusNumber('numbers_urdu'));
     }
     function nearNums(n, count) {
         const max = getLearnedNumberMax();
@@ -222,18 +225,31 @@ function showNumbersUrdu() {
         renderGame();
     }
 
+    let revealed = false;
+
     function renderPicker() {
         const maxLevel = Math.max(1, getContentLevel('numbers_urdu'));
+        let unlockedLevel = maxLevel;
+        try { if (typeof getUnlockedLevel === 'function') unlockedLevel = Math.max(getUnlockedLevel('numbers_urdu') || maxLevel, maxLevel); } catch (e) {}
+        let guided = false;
+        try { guided = typeof CONFIG !== 'undefined' && CONFIG.guidedLaunch === true; } catch (e) {}
         let progressHtml = '';
         try { progressHtml = (typeof levelProgressHTML === 'function') ? (levelProgressHTML('numbers_urdu') || '') : ''; } catch (e) {}
         let html = '<button class="back" onclick="showMenu()">← Back</button>';
         html += '<div class="card"><div class="title">🔢 اردو Urdu — Numbers</div>';
+        if (guided && !revealed) {
+            html += '<div onmousedown="this.holdTimer=setTimeout(()=>{this._held=true;nuReveal()},3000)" onmouseup="clearTimeout(this.holdTimer);if(!this._held){nuStartAll()}this._held=false" ontouchstart="this.holdTimer=setTimeout(()=>{this._held=true;nuReveal()},3000)" ontouchend="clearTimeout(this.holdTimer);if(!this._held){nuStartAll()}this._held=false" style="background:#FF6600;color:white;padding:28px 14px;border-radius:14px;text-align:center;cursor:pointer;font-size:22px;font-weight:bold">🌟 Practice All</div>';
+            html += '<div style="text-align:center;color:#999;font-size:12px;margin-top:8px">Hold 3s to see all levels</div>';
+            html += '</div>';
+            document.getElementById('app').innerHTML = html;
+            return;
+        }
         if (maxLevel > 1) {
             html += '<div onclick="nuStartAll()" style="background:#FF6600;color:white;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:10px;font-size:18px;font-weight:bold">🌟 Practice All (L1-L' + maxLevel + ')</div>';
         }
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0">';
         for (let l = 1; l <= 5; l++) {
-            const unlocked = l <= maxLevel;
+            const unlocked = l <= unlockedLevel;
             const bg = !unlocked ? '#666' : (l === maxLevel ? '#22c55e' : '#0099FF');
             html += '<div onclick="'+(unlocked?'startNULevel('+l+')':'')+'" style="background:'+bg+';color:white;padding:15px;border-radius:12px;text-align:center;cursor:'+(unlocked?'pointer':'not-allowed')+';opacity:'+(unlocked?1:0.5)+'">';
             html += '<div style="font-size:22px;font-weight:bold">L'+l+'</div>';
@@ -246,6 +262,7 @@ function showNumbersUrdu() {
     }
 
     window.startNULevel = startLevel;
+    window.nuReveal = () => { revealed = true; renderPicker(); };
 
     function renderGame() {
         if (problemLevels[current]){

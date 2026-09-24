@@ -1,7 +1,20 @@
 // ============ AUTH & PROFILE MANAGEMENT ============
 
+let isPasswordRecovery = window.location.hash.includes('type=recovery');
+
+sb.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        isPasswordRecovery = true;
+        showResetPasswordScreen();
+    }
+});
+
 // Entry point — called on app load instead of showMenu()
 async function checkAuth() {
+    if (isPasswordRecovery) {
+        showResetPasswordScreen();
+        return;
+    }
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
         await loadParentAndChildren(session.user);
@@ -50,6 +63,14 @@ function showAuthScreen() {
                     font-size:1.1rem;cursor:pointer">
                     ${isSignUp ? 'Create Account 🚀' : 'Sign In 🎯'}
                 </button>
+                ${!isSignUp ? `
+                <button onclick="showForgotPassword()"
+                    style="width:100%;padding:12px;border:none;background:transparent;
+                    color:#4169E1;font-family:Nunito;font-weight:700;font-size:0.95rem;
+                    cursor:pointer;margin-top:6px">
+                    Forgot password?
+                </button>
+                ` : ''}
             </div>
         `;
     }
@@ -94,6 +115,126 @@ function showAuthScreen() {
     };
 
     render();
+}
+
+function showForgotPassword() {
+    const app = document.getElementById('app');
+
+    function renderForm() {
+        app.innerHTML = `
+            <h1 style="text-align:center;margin-top:40px">🔑 Reset Password</h1>
+            <p style="text-align:center;color:#666;font-size:1rem;max-width:320px;margin:10px auto">
+                Enter your email and we'll send you a link to choose a new password.
+            </p>
+            <div style="max-width:320px;margin:30px auto;padding:20px">
+                <input id="forgot-email" type="email" placeholder="Email"
+                    style="width:100%;padding:14px;border-radius:12px;border:2px solid #ddd;
+                    font-family:Nunito;font-size:1rem;margin-bottom:10px;box-sizing:border-box">
+                <div id="forgot-error" style="color:#e74c3c;text-align:center;margin:10px 0;font-size:0.9rem"></div>
+                <button onclick="handleForgotPassword()"
+                    style="width:100%;padding:16px;border-radius:16px;border:none;
+                    background:#22c55e;color:white;font-family:Nunito;font-weight:800;
+                    font-size:1.1rem;cursor:pointer">
+                    Send Reset Link 📧
+                </button>
+                <button onclick="showAuthScreen()"
+                    style="width:100%;padding:12px;border:none;background:transparent;
+                    color:#4169E1;font-family:Nunito;font-weight:700;font-size:0.95rem;
+                    cursor:pointer;margin-top:10px">
+                    Back to Sign In
+                </button>
+            </div>
+        `;
+    }
+
+    function renderSent() {
+        app.innerHTML = `
+            <h1 style="text-align:center;margin-top:40px">📬 Check Your Email</h1>
+            <p style="text-align:center;color:#666;font-size:1.05rem;max-width:320px;margin:10px auto">
+                If that email has an account, a reset link is on its way.
+            </p>
+            <div style="max-width:320px;margin:30px auto;padding:20px">
+                <button onclick="showAuthScreen()"
+                    style="width:100%;padding:16px;border-radius:16px;border:none;
+                    background:#22c55e;color:white;font-family:Nunito;font-weight:800;
+                    font-size:1.1rem;cursor:pointer">
+                    Back to Sign In
+                </button>
+            </div>
+        `;
+    }
+
+    window.handleForgotPassword = async function() {
+        const email = document.getElementById('forgot-email').value.trim();
+        const errorEl = document.getElementById('forgot-error');
+        errorEl.textContent = '';
+
+        if (!email) {
+            errorEl.textContent = 'Please enter your email';
+            return;
+        }
+
+        const redirectTo = window.location.origin + window.location.pathname;
+        await sb.auth.resetPasswordForEmail(email, { redirectTo });
+        renderSent();
+    };
+
+    renderForm();
+}
+
+function showResetPasswordScreen() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h1 style="text-align:center;margin-top:40px">🔑 Choose a New Password</h1>
+        <p style="text-align:center;color:#666;font-size:1rem;max-width:320px;margin:10px auto">
+            Enter a new password for your account.
+        </p>
+        <div style="max-width:320px;margin:30px auto;padding:20px">
+            <input id="reset-password" type="password" placeholder="New Password"
+                style="width:100%;padding:14px;border-radius:12px;border:2px solid #ddd;
+                font-family:Nunito;font-size:1rem;margin-bottom:10px;box-sizing:border-box">
+            <input id="reset-password-confirm" type="password" placeholder="Confirm New Password"
+                style="width:100%;padding:14px;border-radius:12px;border:2px solid #ddd;
+                font-family:Nunito;font-size:1rem;margin-bottom:10px;box-sizing:border-box">
+            <div id="reset-error" style="color:#e74c3c;text-align:center;margin:10px 0;font-size:0.9rem"></div>
+            <button onclick="handlePasswordReset()"
+                style="width:100%;padding:16px;border-radius:16px;border:none;
+                background:#22c55e;color:white;font-family:Nunito;font-weight:800;
+                font-size:1.1rem;cursor:pointer">
+                Save New Password 🔒
+            </button>
+        </div>
+    `;
+
+    window.handlePasswordReset = async function() {
+        const password = document.getElementById('reset-password').value;
+        const confirmPassword = document.getElementById('reset-password-confirm').value;
+        const errorEl = document.getElementById('reset-error');
+        errorEl.style.color = '#e74c3c';
+        errorEl.textContent = '';
+
+        if (password.length < 8) {
+            errorEl.textContent = 'Password must be at least 8 characters';
+            return;
+        }
+        if (password !== confirmPassword) {
+            errorEl.textContent = 'Passwords do not match';
+            return;
+        }
+
+        const { error } = await sb.auth.updateUser({ password });
+        if (error) {
+            errorEl.textContent = error.message;
+            return;
+        }
+
+        isPasswordRecovery = false;
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+
+        errorEl.style.color = '#22c55e';
+        errorEl.textContent = "Password updated! Taking you in...";
+        setTimeout(checkAuth, 1200);
+    };
 }
 
 async function upsertParent(userId, displayName) {
