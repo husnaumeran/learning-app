@@ -183,7 +183,7 @@ Practice-only skills still belong in domains: tracing *is* writing practice. Whe
 Details settled during the build that the sections above don't spell out:
 
 - **Weekend review count:** `reviewCount = earlierMaterialExists ? min(max(1, floor(n/3)), n-1) : 0`. A single-question skill keeps its one question on current material.
-- **No review for `which_doesnt_belong`, `color_patterns`, `color_patterns_l2`.** They have no level or difficulty to step back to, so a "review" question would be identical to a current one.
+- **No review for `which_doesnt_belong`.** It has no level or difficulty to step back to, so a "review" question would be identical to a current one. This applied to `color_patterns` and `color_patterns_l2` too until 2026-09-24, when the two merged into one six-level skill (`sql/migrations/20260923_04_merge_color_patterns.sql`) — `color_patterns` now has levels to review against and takes part in the weekend challenge.
 - **Qaida check choices never sound like the answer.** Many letters share a transliteration — 18 Arabic and 15 Urdu harakat sounds belong to two or more letters (د/ض are both "da"; س ص ث; ز ذ ض ظ) — and a letter's connected forms share its name. Without this rule a question can have two right-sounding answers. Verified: 0 ambiguous questions across 120 generated.
 - **Arabic level 3 (Connections) checks connected forms** (initial/medial/final), not isolated letters, so it tests what that level teaches.
 - **The check does not call `completeWorksheet`.** It's launched from the level picker, not the daily queue, and calling it would advance the queue pointer.

@@ -666,109 +666,156 @@ function generateMoreLessProblems(difficulty, count) {
     return problems.sort(() => Math.random() - 0.5);
 }
 
-function generateColorPatternsL2(focusNum) {
-    const c = Object.keys(CONFIG.colors);
-    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
-    const pick2 = () => { const s = shuffle([...c]); return [s[0], s[1]]; };
-    const pick3 = () => { const s = shuffle([...c]); return [s[0], s[1], s[2]]; };
-    const problems = [];
+// ============ COLOR PATTERNS (levels 1-6) ============
+// One generator replaces the old fixed-difficulty generateColorPatterns /
+// generateColorPatternsL2 pair. `level` and `count` are independent arguments —
+// neither is ever derived from the other (that conflation was the L2 bug: a
+// difficulty of 1 produced exactly one question).
+//
+// Ladder (pattern complexity, then answer scaffolding):
+//   L1 colours only, 2 distinct elements (AB/AAB), 4 choices, answer at the end.
+//   L2 colours only, 3 distinct elements (ABC/ABB/AABB), 4 choices, at the end.
+//   L3 any element type, templates up to AABB, 4 choices, at the end.
+//   L4 any element type, hardest templates (ABBC, 7-element sequences), 4 choices.
+//   L5 colours only, all templates, no multiple choice — open palette, at the end.
+//   L6 colours only, all templates, open palette, blank in the MIDDLE.
+//
+// Every sequence is built by repeating a short "motif" (e.g. ABB = [0,1,1]) out
+// to a target length, so the next element is always motif[length % motif.length]
+// — correct by construction, nothing to rejection-sample for the sequence itself.
+// Distractors are sliced deterministically from (this pattern's other elements)
+// + (the rest of the pool): with <=3 distinct elements ever needed and every
+// element pool (4 colours, 9 numbers, 23 letters, 10 emoji per category) having
+// at least 4 entries, that slice always yields 3 wrong answers with no retry.
+// The only loop below is a bounded dedup pass across problems in one worksheet,
+// capped by `guard` — it can never spin unbounded, unlike the bug that has
+// already frozen this app's browser tab twice from unbounded rejection sampling.
+const COLOR_PATTERN_MOTIFS = {
+    AB:   [0, 1],
+    AAB:  [0, 0, 1],
+    ABC:  [0, 1, 2],
+    ABB:  [0, 1, 1],
+    AABB: [0, 0, 1, 1],
+    ABBC: [0, 1, 1, 2],
+};
 
-    // ABB patterns
-    let [a, b] = pick2();
-    problems.push({seq: [a,b,b,a,b,b,a], ans: b, type: 'next', label: 'ABB'});
-    [a, b] = pick2();
-    problems.push({seq: [a,b,b,a,b,b], ans: a, type: 'next', label: 'ABB'});
+function generateColorPatternProblems(level, count) {
+    level = Math.min(6, Math.max(1, parseInt(level, 10) || 1));
+    count = Math.max(1, parseInt(count, 10) || 1);
 
-    // AABB patterns
-    [a, b] = pick2();
-    problems.push({seq: [a,a,b,b,a,a,b], ans: b, type: 'next', label: 'AABB'});
-
-    // ABBC patterns
-    let [x, y, z] = pick3();
-    problems.push({seq: [x,y,y,z,x,y,y], ans: z, type: 'next', label: 'ABBC'});
-
-    // Fill-the-blank versions
-    [a, b] = pick2();
-    problems.push({seq: [a,b,b,null,b,b,a], ans: a, type: 'blank', label: 'ABB'});
-    [a, b] = pick2();
-    problems.push({seq: [a,a,b,b,null,a,b,b], ans: a, type: 'blank', label: 'AABB'});
-    [x, y, z] = pick3();
-    problems.push({seq: [x,y,y,z,x,null,y,z], ans: y, type: 'blank', label: 'ABBC'});
-
-    return shuffle(problems).slice(0, focusNum || 1);
-}
-
-function generateColorPatterns(focusNum) {
-    const n = focusNum || 1;
     const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-
-    // Pattern templates: indices into element array, answer is always last needed
-    const templates = [
-        {seq:[0,1,0,1,0], ans:1},
-        {seq:[0,0,1,0,0], ans:1},
-        {seq:[0,1,2,0,1], ans:2},
-        {seq:[0,1,0,1,0,1], ans:0},
-        {seq:[0,1,1,0,1,1], ans:0},
-        {seq:[0,0,1,1,0,0], ans:1},
-        {seq:[0,1,1,0,0,1], ans:1},
-        {seq:[0,1,0,2,0,1,0], ans:2},
-        {seq:[0,1,2,0,1,2], ans:0},
-        {seq:[0,0,1,0,0,1,0], ans:0},
-        {seq:[1,0,1,0,1], ans:0},
-        {seq:[0,1,2,1,0,1], ans:2},
-    ];
 
     const colorKeys = Object.keys(CONFIG.colors);
     const emojiCats = Object.keys(CONFIG.categories);
     const letters = 'ABCDEFGHJKLMNPRSTUVWXYZ'.split('');
     const nums = [1,2,3,4,5,6,7,8,9];
-    const types = ['color','emoji','number','letter'];
 
-    function makeElems(type, count) {
-        switch(type) {
-            case 'color': return shuffle([...colorKeys]).slice(0, count);
-            case 'emoji': { const cat=pick(emojiCats); const items=CONFIG.categories[cat]; return items.length>=count ? shuffle([...items]).slice(0,count) : null; }
-            case 'number': return shuffle([...nums]).slice(0, count);
-            case 'letter': return shuffle([...letters]).slice(0, count);
+    function poolFor(elemType) {
+        switch (elemType) {
+            case 'emoji':  return CONFIG.categories[pick(emojiCats)];
+            case 'number': return nums;
+            case 'letter': return letters;
+            default:       return colorKeys; // 'color'
         }
     }
 
-    function makeChoices(ans, type, elems) {
-        let pool;
-        switch(type) {
-            case 'color': pool=colorKeys; break;
-            case 'emoji': { pool=[]; for(const cat of emojiCats) pool.push(...CONFIG.categories[cat]); break; }
-            case 'number': pool=nums; break;
-            case 'letter': pool=letters; break;
+    // Which motif/length/element-type this level draws from.
+    function pickShape() {
+        if (level === 1) {
+            const motifName = pick(['AB', 'AAB']);
+            return { elemType: 'color', motifName, length: motifName === 'AB' ? pick([4, 5]) : 5 };
         }
-        // Priority: other elements from pattern, then from pool
-        const patternOthers = elems.filter(e => e !== ans);
-        const rest = shuffle(pool.filter(e => e !== ans && !elems.includes(e)));
-        const allWrong = [...new Set([...patternOthers, ...rest])];
-        const wrong = allWrong.slice(0, 3);
-        return shuffle([ans, ...wrong]);
+        if (level === 2) {
+            return { elemType: 'color', motifName: pick(['ABC', 'ABB', 'AABB']), length: pick([5, 6]) };
+        }
+        if (level === 3) {
+            return {
+                elemType: pick(['color', 'emoji', 'number', 'letter']),
+                motifName: pick(['AB', 'AAB', 'ABC', 'ABB', 'AABB']),
+                length: pick([4, 5, 6])
+            };
+        }
+        if (level === 4) {
+            const elemType = pick(['color', 'emoji', 'number', 'letter']);
+            if (Math.random() < 0.5) return { elemType, motifName: 'ABBC', length: pick([6, 7]) };
+            return { elemType, motifName: pick(['AB', 'AAB', 'ABC', 'ABB', 'AABB']), length: 7 };
+        }
+        const allMotifs = ['AB', 'AAB', 'ABC', 'ABB', 'AABB', 'ABBC'];
+        if (level === 5) return { elemType: 'color', motifName: pick(allMotifs), length: pick([4, 5, 6, 7]) };
+        return { elemType: 'color', motifName: pick(allMotifs), length: pick([5, 6, 7]) }; // level 6
+    }
+
+    function buildProblem() {
+        const { elemType, motifName, length } = pickShape();
+        const motif = COLOR_PATTERN_MOTIFS[motifName];
+        const distinctNeeded = Math.max(...motif) + 1;
+        const pool = poolFor(elemType);
+        if (!pool || pool.length < distinctNeeded) return null;
+
+        const distinctVals = shuffle(pool).slice(0, distinctNeeded);
+        const motifSeq = [];
+        for (let i = 0; i < length; i++) motifSeq.push(motif[i % motif.length]);
+
+        const isBlankMiddle = level === 6;
+        let seq, ans;
+        if (isBlankMiddle) {
+            const lo = 1, hi = length - 2; // never the first or last position
+            const candidates = [];
+            for (let i = lo; i <= hi; i++) candidates.push(i);
+            // Prefer a blank whose value still appears elsewhere in the sequence,
+            // so the child has a visible anchor for it — otherwise a short run
+            // (e.g. AAB's lone B) can hide the only copy of a symbol and leave
+            // nothing on screen to reason from. Falls back to any interior spot
+            // in the rare case no candidate has a duplicate (still correct, just
+            // less scaffolded); either way this is a bounded filter, not a loop.
+            const anchored = candidates.filter(i => motifSeq.some((v, j) => j !== i && v === motifSeq[i]));
+            const pool2 = anchored.length ? anchored : candidates;
+            const blankIdx = pool2[Math.floor(Math.random() * pool2.length)];
+            ans = distinctVals[motifSeq[blankIdx]];
+            seq = motifSeq.map((symIdx, i) => i === blankIdx ? null : distinctVals[symIdx]);
+        } else {
+            ans = distinctVals[motif[length % motif.length]];
+            seq = motifSeq.map(symIdx => distinctVals[symIdx]);
+        }
+
+        const type = isBlankMiddle ? 'blank' : 'next';
+        const needsChoices = level <= 4;
+        let choices = null;
+        if (needsChoices) {
+            const patternOthers = distinctVals.filter(v => v !== ans);
+            const rest = shuffle(pool.filter(v => !distinctVals.includes(v)));
+            const wrong = [...new Set([...patternOthers, ...rest])].slice(0, 3);
+            if (wrong.length < 3) return null; // defensive: pick a different shape, never loop for this
+            choices = shuffle([ans, ...wrong]);
+        }
+
+        return { seq, ans, type, elemType, choices };
     }
 
     const problems = [];
     const used = new Set();
-    let attempts = 0;
+    let guard = 0;
+    const maxGuard = Math.max(count * 40, 400);
 
-    while (problems.length < n && attempts < 200) {
-        const type = pick(types);
-        const tmpl = pick(templates);
-        const maxIdx = Math.max(...tmpl.seq, tmpl.ans);
-        const elems = makeElems(type, maxIdx + 1);
-        if (!elems) { attempts++; continue; }
-
-        const seq = tmpl.seq.map(i => elems[i]);
-        const ans = elems[tmpl.ans];
-        const key = type + ':' + seq.join(',');
-        if (used.has(key)) { attempts++; continue; }
+    while (problems.length < count && guard < maxGuard) {
+        guard++;
+        const p = buildProblem();
+        if (!p) continue;
+        const key = p.elemType + '|' + p.type + '|' + p.seq.map(v => v === null ? '_' : v).join(',');
+        const remaining = count - problems.length;
+        if (used.has(key) && guard < maxGuard - remaining) continue; // still room to look for a fresh one
         used.add(key);
-
-        problems.push({seq, ans, type, choices: makeChoices(ans, type, elems)});
-        attempts++;
+        problems.push(p);
+    }
+    // Safety net in case buildProblem() ever can't satisfy the current CONFIG
+    // (it always can today — see comment above) — pad rather than under-return.
+    while (problems.length < count) {
+        problems.push({
+            seq: [colorKeys[0], colorKeys[1], colorKeys[0], colorKeys[1]],
+            ans: colorKeys[0], type: 'next', elemType: 'color',
+            choices: shuffle(colorKeys.slice(0, 4))
+        });
     }
 
     return shuffle(problems);

@@ -83,7 +83,7 @@ async function showMenu() {
             ['showTraceNumbers','Trace 123 ✏️','Trace Numbers']
         ]},
         {title:' Thinking', color:'#0099FF', items:[
-            ['showColors','Color Patterns 🎨','Color Patterns'],['showColorsL2','Color Patterns L2 🎨','Color Patterns L2'],
+            ['showColors','Color Patterns 🎨','Color Patterns'],
             ['showDoesntBelong','Doesn\'t Belong 🤔','Doesn\'t Belong'],
             ['showJora','Find Pairs 🧩','Find Pairs'],['showConnectDots','Connect Dots ✍️','Connect Dots'],
             ['showFigureMatrices','Figure Matrices 🧩','Figure Matrices'],
@@ -93,10 +93,12 @@ async function showMenu() {
             ['showUrduReading','Urdu Reading 📖','Urdu Reading'],['showUrduTrace','Urdu Trace ✏️','Urdu Trace'],
             ['showUrdu2Letter','Urdu 2-Letter 📚','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next ➡️','Urdu What Next'],
             ['showUrduVideos','Urdu Videos 📺','Urdu Videos'],['showUrduQaida','Urdu Qaida 📖','Urdu Qaida'],
+            ['showUrduJoining','Urdu Joining 🔗','Urdu Joining'],
             ['showNumbersUrdu','Urdu Numbers 🔊','Numbers Urdu']
         ]},
         {title:'📖 Arabic Qaida', color:'#22c55e', items:[
             ['showArabicQaida','Arabic Qaida 📖','Arabic Qaida'],
+            ['showArabicJoining','Arabic Joining 🔗','Arabic Joining'],
             ['showArabicTrace','Arabic Trace ✏️','Arabic Trace'],
             ['showNumbersArabic','Arabic Numbers 🔊','Numbers Arabic']
         ]},
@@ -635,7 +637,6 @@ const SKILL_MAP = {
     numbers_english:         ['showNumbersEnglish', 'Numbers English'],
     // Challenge — Nonverbal
     figure_matrices:         ['showFigureMatrices', 'Figure Matrices'],
-    color_patterns_l2:       ['showColorsL2', 'Color Patterns L2'],
     // Challenge — Verbal
     verbal_analogies:        ['showVerbalAnalogies', 'Verbal Analogies'],
     // Challenge — Literacy
@@ -643,12 +644,14 @@ const SKILL_MAP = {
     three_letter_words:      ['showThreeLetter', '3-Letter Words'],
     // Challenge — Urdu
     urdu_reading:            ['showUrduReading', 'Urdu Reading'],
+    urdu_joining:            ['showUrduJoining', 'Urdu Joining'],
     urdu_2letter:            ['showUrdu2Letter', 'Urdu 2-Letter Words'],
     urdu_what_next:          ['showUrduWhatNext', 'Urdu What Next'],
     urdu_qaida:              ['showUrduQaida', 'Urdu Qaida'],
     numbers_urdu:            ['showNumbersUrdu', 'Numbers Urdu'],
     // Challenge — Arabic
     arabic_qaida:            ['showArabicQaida', 'Arabic Qaida'],
+    arabic_joining:          ['showArabicJoining', 'Arabic Joining'],
     numbers_arabic:          ['showNumbersArabic', 'Numbers Arabic'],
     numbers_all:             ['showNumbersAll', 'Numbers All'],
     // Fun

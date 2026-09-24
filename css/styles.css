@@ -95,3 +95,68 @@ h1 { text-align: center; color: white; font-size: clamp(22px, 5vw, 32px); }
     .keypad { gap: 4px; }
     .ansbox { width: 38px; height: 38px; line-height: 38px; }
 }
+
+/* === SMOOTHNESS ===
+   Additive layer only: no existing rule above is changed, no colours,
+   type or layout are touched. This gives the elements that already
+   exist a physical response and stops every screen from snapping in.
+   Navigation here is an innerHTML swap, so a screen change is otherwise
+   an instant hard cut. */
+
+/* Apple's standard curve: leaves quickly, settles gently, never bounces.
+   --press overshoots slightly on release so a control feels sprung. */
+:root {
+    --ease-out: cubic-bezier(.32, .72, 0, 1);
+    --press: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* The biggest single win on a tablet: kill the grey tap flash and the
+   300ms double-tap-zoom delay, so a press registers the instant it lands. */
+.btn, .back, .key, .pal, .ansbox, .drop, .circle, .prob {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Touch-down shrinks, release springs back. Press is near-instant;
+   the spring is only on the way out, which is what reads as "physical". */
+.btn, .back, .key, .pal, .ansbox {
+    transition: transform .32s var(--press), filter .18s var(--ease-out), box-shadow .24s var(--ease-out);
+}
+.btn:active, .back:active { transform: scale(.97); transition-duration: .08s; }
+.key:active, .pal:active   { transform: scale(.9);  transition-duration: .07s; filter: brightness(.92); }
+.ansbox:active             { transform: scale(.94); transition-duration: .07s; }
+
+/* State changes fade instead of jumping. */
+.problem { transition: background .3s var(--ease-out), opacity .3s var(--ease-out); }
+.drop    { transition: border-color .3s var(--ease-out), transform .32s var(--press); }
+.drop.correct { transform: scale(1.06); }
+.circle  { transition: transform .32s var(--press); }
+
+/* Every screen is a fresh innerHTML, so this runs on each navigation and
+   turns the hard cut into a settle. Deliberately short — it is felt, not watched. */
+@keyframes appear { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+.card { animation: appear .28s var(--ease-out) both; }
+.celeb { animation: appear .34s var(--press) both; }
+
+/* The popup is toggled by JS setting display, so the animation plays
+   the moment it is shown. It rises from the edge it sits on. */
+@keyframes sheet-up { from { transform: translate(-50%, 18px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
+.popup   { animation: sheet-up .34s var(--ease-out) both; }
+.overlay { animation: fade-in .24s var(--ease-out) both; }
+
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+html { scroll-behavior: smooth; }
+
+/* Honour the system setting. Nothing above is load-bearing — every
+   animation here is feedback about something the screen already shows. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

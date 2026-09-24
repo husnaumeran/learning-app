@@ -12,7 +12,6 @@ const ASSESSMENT_SKILLS = {
     what_comes_next_numbers:  { type: 'text',   enabled: true },
     find_pairs:               { type: 'Visual', enabled: true },
     color_patterns:           { type: 'text',   enabled: true },
-    color_patterns_l2:        { type: 'text',   enabled: true },
     verbal_analogies:         { type: 'text',   enabled: true },
     figure_matrices:          { type: 'visual', enabled: true },
     numbers_english:          { type: 'audio',  enabled: true },
@@ -535,43 +534,38 @@ function makeAssessmentQs(skillId, count, overrides) {
             break;
         }
         case 'color_patterns': {
-            const probs = generateColorPatterns(count).slice(0, count);
+            // Merged skill (was color_patterns + color_patterns_l2) — six levels,
+            // see generateColorPatternProblems in helpers.js. Levels 5-6 are an
+            // open palette in practice (p.choices is null); the weekend challenge
+            // has no palette UI, so synthesize 4 fixed choices from the color set.
+            const lvl = Math.min(Math.max(1, (overrides && overrides.level != null) ? overrides.level : getContentLevel('color_patterns')), 6);
+            const probs = generateColorPatternProblems(lvl, count);
             for (const p of probs) {
-                const seqDisplay = p.seq.map(s => typeof s === 'string' && CONFIG.colors[s]
-                    ? '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:' + CONFIG.colors[s] + ';vertical-align:middle"></span>'
-                    : '<span>' + s + '</span>'
-                ).join(' ');
-                const ansDisplay = typeof p.ans === 'string' && CONFIG.colors[p.ans] ? p.ans : String(p.ans);
+                const dot = (hex, dashed) => '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;'
+                    + (dashed ? 'border:3px dashed #888;' : 'background:' + hex + ';') + 'vertical-align:middle;margin:0 2px"></span>';
+                const seqDisplay = p.seq.map(s => {
+                    if (s === null) return dot(null, true);
+                    if (p.elemType === 'color' && CONFIG.colors[s]) return dot(CONFIG.colors[s], false);
+                    return '<span style="font-size:22px;vertical-align:middle;margin:0 2px">' + s + '</span>';
+                }).join(' ') + (p.type === 'next' ? ' <span style="font-size:28px;font-weight:bold">?</span>' : '');
+
+                let choices;
+                if (p.choices) {
+                    choices = p.choices.map(String);
+                } else {
+                    const colorKeys = Object.keys(CONFIG.colors);
+                    const wrong = colorKeys.filter(c => c !== p.ans).sort(() => Math.random() - 0.5).slice(0, 3);
+                    choices = [p.ans, ...wrong].sort(() => Math.random() - 0.5);
+                }
+
                 qs.push({
                     skill_id: 'color_patterns',
-                    prompt_html: seqDisplay + ' <span style="font-size:28px;font-weight:bold">?</span>',
-                    prompt: 'What comes next?',
-                    choices: p.choices.map(String),
-                    correct: String(p.ans),
-                    color_choices: p.type === 'color',
-                    qdata: {type:'color_patterns', pattern_type:p.type, sequence:p.seq, correct_answer:p.ans}
-                });
-            }
-            break;
-        }
-        case 'color_patterns_l2': {
-            const probs = generateColorPatternsL2(count).slice(0, count);
-            for (const p of probs) {
-                const colorKeys = Object.keys(CONFIG.colors);
-                const seqDisplay = p.seq.map(s => {
-                    if (s === null) return '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;border:3px dashed #888;vertical-align:middle"></span>';
-                    return '<span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:' + CONFIG.colors[s] + ';vertical-align:middle"></span>';
-                }).join(' ');
-                const wrong = colorKeys.filter(c => c !== p.ans).sort(() => Math.random() - 0.5).slice(0, 3);
-                const choices = [p.ans, ...wrong].sort(() => Math.random() - 0.5);
-                qs.push({
-                    skill_id: 'color_patterns_l2',
                     prompt_html: seqDisplay,
-                    prompt: p.type === 'blank' ? 'Fill the blank!' : 'What comes next?',
+                    prompt: p.type === 'blank' ? 'What fills the blank?' : 'What comes next?',
                     choices: choices,
-                    correct: p.ans,
-                    color_choices: true,
-                    qdata: {type:'color_patterns_l2', pattern_label:p.label, sequence:p.seq, correct_answer:p.ans}
+                    correct: String(p.ans),
+                    color_choices: p.elemType === 'color',
+                    qdata: {type:'color_patterns', pattern_type:p.type, elem_type:p.elemType, sequence:p.seq, correct_answer:p.ans, level:lvl}
                 });
             }
             break;
