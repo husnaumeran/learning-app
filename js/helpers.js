@@ -1220,6 +1220,14 @@ function resolveSkillId(type) {
     if (type.startsWith('Numbers English')) return 'numbers_english';
     if (type.startsWith('Numbers Urdu')) return 'numbers_urdu';
     if (type.startsWith('Numbers All')) return 'numbers_all';
+    // A worksheet whose completeWorksheet name matches its SKILL_MAP display name
+    // resolves here. The menu already needs that match to see the work as done, so
+    // a new skill works without a second registration. Joining and Quran were each
+    // about to insert their display name as a skill id, which the
+    // worksheet_completions foreign key rejects, silently losing the completion.
+    if (typeof SKILL_MAP !== 'undefined') {
+        for (const id in SKILL_MAP) if (SKILL_MAP[id][1] === type) return id;
+    }
     // If type is already a skill_id (e.g. 'numbers_urdu')
     return type;
 }

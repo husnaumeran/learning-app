@@ -27,7 +27,10 @@ function showAddition() {
             return pairs;
         }
         const numFocusTarget = Math.max(1, Math.ceil(n / 3));
-        const blankCycle = ['sum', 'sum', 'a', 'sum', 'b'];
+        // "4 + ? = 5" asks a child to run addition backwards. Owner, 2026-10-07: too
+        // hard while plain addition is still being mastered, so the missing addend
+        // only appears once the child is working with sums of 10 or more.
+        const blankCycle = focus >= 10 ? ['sum', 'sum', 'a', 'sum', 'b'] : ['sum'];
         const built = [];
 
         for (let i = 0; i < n; i++) {

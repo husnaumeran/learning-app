@@ -1,16 +1,7 @@
 // ============ 3-LETTER WORDS ============
+// Thin wrapper — see js/worksheets/wordreading.js (the engine) and
+// docs/LETTERS_TO_WORDS.md "Rung 3 — Words: the rebuild contract".
 function showThreeLetter() {
-    const words = [...CONFIG.threeLetterWords].sort(() => Math.random()-0.5).slice(0, getQuestionCount('three_letter_words'));
-    let current = 0;
-
-    function render() {
-        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Read the Word!</div>';
-        html += '<div class="bigword">'+words[current]+'</div>';
-        html += '<button class="btn green" onclick="nextWord3()">Next →</button>';
-        html += '<div class="score">'+(current+1)+' / '+words.length+'</div></div>';
-        document.getElementById('app').innerHTML = html;
-    }
-
-    window.nextWord3 = () => { currentAnswers.push({q: words[current], answer: words[current], correct: true}); current++; if (current >= words.length) { completeWorksheet('3-Letter Words', words.length, words.length); return; } render(); };
-    render();
+    showWordReading(WORD_READING_SPECS.three_letter_words);
 }
+window.showThreeLetter = showThreeLetter;

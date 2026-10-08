@@ -116,13 +116,16 @@ function joiningAnySoundable(lang, letters) {
 
 // ============ ITEM BUILDERS ============
 
-function joiningBuildL1Items(lang, table, count) {
+// onlyLetters (optional): restrict the letters asked about to these — the practice
+// worksheet passes the letters it just taught. Distractors still come from the table.
+function joiningBuildL1Items(lang, table, count, onlyLetters) {
     const items = [];
-    const fields = ['alone', 'initial', 'medial', 'final'];
-    const shuffledTable = joiningShuffle(table);
+    const fields = joiningShuffle(['alone', 'initial', 'medial', 'final']);
+    const shuffledTable = (onlyLetters && onlyLetters.length) ? onlyLetters : joiningShuffle(table);
     for (let i = 0; i < count; i++) {
         const letterObj = shuffledTable[i % shuffledTable.length];
-        const field = fields[Math.floor(Math.random() * fields.length)];
+        const field = onlyLetters ? fields[Math.floor(i / shuffledTable.length) % fields.length]
+                                  : fields[Math.floor(Math.random() * fields.length)];
         const familyMates = joiningFamilyMates(lang, letterObj.letter)
             .map(ch => table.find(l => l.letter === ch))
             .filter(Boolean);
@@ -260,11 +263,30 @@ function showLangJoining(lang) {
     const level = Math.min(4, Math.max(1, getContentLevel(skillId) || 1));
     const total = Math.max(3, getQuestionCount(skillId));
 
+    // Practice asks only about what this session taught (owner, 2026-10-07: the
+    // teaching card showed one letter and the questions were about others). Level 1
+    // teaches two letters and asks for their shapes; levels 2-4 teach up to three
+    // combinations and ask about exactly those. The daily test still samples the
+    // whole table — that is the check, this is the lesson.
+    const TEACH_MAX = 3;
     let items = [];
-    if (level === 1) items = joiningBuildL1Items(lang, table, total);
-    else if (level === 2) items = joiningBuildL2Items(lang, table, total);
-    else if (level === 3) items = joiningBuildL3Items(lang, table, total);
-    else items = joiningBuildL4Items(lang, table, total);
+    let teachList = [];
+    if (level === 1) {
+        const joiners = joiningShuffle(table.filter(l => l.joins));
+        const focus = (joiners.length >= 2 ? joiners : joiningShuffle(table)).slice(0, 2);
+        teachList = focus.map(l => [l]);
+        items = joiningBuildL1Items(lang, table, total, focus);
+    } else {
+        let built = [];
+        if (level === 2) built = joiningBuildL2Items(lang, table, TEACH_MAX * 3);
+        else if (level === 3) built = joiningBuildL3Items(lang, table, TEACH_MAX * 3);
+        else built = joiningBuildL4Items(lang, table, TEACH_MAX * 3);
+        const base = built.slice(0, TEACH_MAX);
+        teachList = base.map(it => it.letters);
+        for (let i = 0; i < total && base.length; i++) items.push(base[i % base.length]);
+        items = joiningShuffle(items);
+    }
+    let teachIdx = 0;
 
     let current = 0, score = 0, attempt = 1;
     let qStartMs = null;
@@ -288,7 +310,7 @@ function showLangJoining(lang) {
     }
 
     function renderTeachL1() {
-        const letterObj = (table.find(l => l.joins) || table[0]);
+        const letterObj = (teachList[teachIdx] || [table[0]])[0];
         window._joiningTeachLetters = [letterObj];
         const audible = canHearLetter(lang, letterObj.letter);
         let html = cardOpen(' — Level 1: Shapes');
@@ -301,7 +323,7 @@ function showLangJoining(lang) {
             html += '<div style="text-align:center;padding:12px 14px;background:#333;border-radius:10px"><div style="font-size:44px;font-family:serif;color:white">' + joiningShapeOf(letterObj, f.f) + '</div><div style="color:' + meta.color + ';font-size:13px;margin-top:5px">' + f.label + '</div></div>';
         });
         html += '</div>';
-        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:10px" onclick="joiningStartPractice()">Start Practice →</button>';
+        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:10px" onclick="joiningTeachNext()">' + (teachIdx < teachList.length - 1 ? 'Next →' : 'Start Practice →') + '</button>';
         html += '</div>';
         return html;
     }
@@ -313,7 +335,7 @@ function showLangJoining(lang) {
     }
 
     function renderTeachL2() {
-        const letters = joiningPickTeachLetters(2);
+        const letters = teachList[teachIdx] || joiningPickTeachLetters(2);
         window._joiningTeachLetters = letters;
         let html = cardOpen(' — Level 2: Join Two');
         html += '<div style="text-align:center;color:#666;font-size:15px;margin-bottom:8px">Apart</div>';
@@ -321,13 +343,13 @@ function showLangJoining(lang) {
         html += renderTeachAudioRow(letters);
         html += '<div style="text-align:center;color:#666;font-size:15px;margin:14px 0 8px">Joined</div>';
         html += '<div id="joiningTeachMain" style="text-align:center;font-size:72px;margin:10px;font-family:serif;direction:rtl;' + (joiningAnySoundable(lang, letters) ? 'cursor:pointer' : '') + '">' + joiningJoinedHTML(letters) + '</div>';
-        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:14px" onclick="joiningStartPractice()">Start Practice →</button>';
+        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:14px" onclick="joiningTeachNext()">' + (teachIdx < teachList.length - 1 ? 'Next →' : 'Start Practice →') + '</button>';
         html += '</div>';
         return html;
     }
 
     function renderTeachL3() {
-        const letters = joiningPickTeachLetters(3);
+        const letters = teachList[teachIdx] || joiningPickTeachLetters(3);
         window._joiningTeachLetters = letters;
         let html = cardOpen(' — Level 3: Join Three');
         html += '<div style="text-align:center;color:#666;font-size:15px;margin-bottom:8px">Apart</div>';
@@ -335,13 +357,13 @@ function showLangJoining(lang) {
         html += renderTeachAudioRow(letters);
         html += '<div style="text-align:center;color:#666;font-size:15px;margin:14px 0 8px">Joined</div>';
         html += '<div id="joiningTeachMain" style="text-align:center;font-size:64px;margin:10px;font-family:serif;direction:rtl;' + (joiningAnySoundable(lang, letters) ? 'cursor:pointer' : '') + '">' + joiningJoinedHTML(letters) + '</div>';
-        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:14px" onclick="joiningStartPractice()">Start Practice →</button>';
+        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:14px" onclick="joiningTeachNext()">' + (teachIdx < teachList.length - 1 ? 'Next →' : 'Start Practice →') + '</button>';
         html += '</div>';
         return html;
     }
 
     function renderTeachL4() {
-        const letters = joiningPickTeachLetters(3);
+        const letters = teachList[teachIdx] || joiningPickTeachLetters(3);
         window._joiningTeachLetters = letters;
         let html = cardOpen(' — Level 4: Break Apart');
         html += '<div style="text-align:center;color:#666;font-size:15px;margin-bottom:8px">Joined</div>';
@@ -349,7 +371,7 @@ function showLangJoining(lang) {
         html += renderTeachAudioRow(letters);
         html += '<div style="text-align:center;color:#666;font-size:15px;margin:14px 0 8px">Separate letters</div>';
         html += '<div style="text-align:center;margin:10px;direction:rtl">' + joiningSeparateHTML(letters, 56) + '</div>';
-        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:14px" onclick="joiningStartPractice()">Start Practice →</button>';
+        html += '<button class="btn green" style="font-size:20px;padding:14px 28px;margin-top:14px" onclick="joiningTeachNext()">' + (teachIdx < teachList.length - 1 ? 'Next →' : 'Start Practice →') + '</button>';
         html += '</div>';
         return html;
     }
@@ -378,6 +400,16 @@ function showLangJoining(lang) {
         // they've looked at the shape.
         if (joiningAnySoundable(lang, letters)) play();
     }
+
+    window.joiningTeachNext = () => {
+        if (teachIdx < teachList.length - 1) {
+            recordPassiveResponse(skillId, { type: 'joining_teach', lang, level, letters: (window._joiningTeachLetters || []).map(l => l.letter) }, teachIdx, level);
+            teachIdx++;
+            renderTeach();
+            return;
+        }
+        window.joiningStartPractice();
+    };
 
     window.joiningStartPractice = () => {
         recordPassiveResponse(skillId, { type: 'joining_teach', lang, level, letters: (window._joiningTeachLetters || []).map(l => l.letter) }, 0, level);

@@ -99,6 +99,7 @@ async function showMenu() {
         {title:'📖 Arabic Qaida', color:'#22c55e', items:[
             ['showArabicQaida','Arabic Qaida 📖','Arabic Qaida'],
             ['showArabicJoining','Arabic Joining 🔗','Arabic Joining'],
+            ['showQuran','Quran 📖','Quran'],
             ['showArabicTrace','Arabic Trace ✏️','Arabic Trace'],
             ['showNumbersArabic','Arabic Numbers 🔊','Numbers Arabic']
         ]},
@@ -247,6 +248,9 @@ function nextWorksheet() {
         startDailyTestStep();
         return;
     }
+    // Book break: once per day, at a random point in the middle of the session
+    // rather than always at the end (owner, 2026-10-07).
+    if (takeBookBreak()) return;
     const item = worksheetQueue[queueIndex];
     if (!item) { console.error('Queue item missing at index', queueIndex); showMenu(); return; }
     const [fn, type] = item;
@@ -419,8 +423,33 @@ async function finishDailySession() {
     launchClosingBook();
 }
 
+function bookBreakState() {
+    try { return JSON.parse(localStorage.getItem('book_break_' + getToday()) || 'null'); } catch (e) { return null; }
+}
+
+function takeBookBreak() {
+    if (typeof showBabyUniversity !== 'function' || worksheetQueue.length < 2 || queueIndex < 1) return false;
+    let st = bookBreakState();
+    if (!st) {
+        // somewhere strictly inside the session: after worksheet 1 .. before the last
+        st = { at: 1 + Math.floor(Math.random() * (worksheetQueue.length - 1)), done: false };
+    }
+    if (st.done || queueIndex < st.at) {
+        try { localStorage.setItem('book_break_' + getToday(), JSON.stringify(st)); } catch (e) {}
+        return false;
+    }
+    st.done = true;
+    try { localStorage.setItem('book_break_' + getToday(), JSON.stringify(st)); } catch (e) {}
+    CONFIG.guidedLaunch = true;
+    CONFIG.bookBreak = true;
+    try { showBabyUniversity(); return true; } catch (e) { console.error('showBabyUniversity failed:', e); CONFIG.bookBreak = false; return false; }
+}
+
 function launchClosingBook() {
     CONFIG.guidedLaunch = true;
+    CONFIG.bookBreak = false;
+    const st = bookBreakState();
+    if (st && st.done) { showMenu(); return; }   // today's book already happened mid-session
     if (typeof showBabyUniversity === 'function') {
         try { showBabyUniversity(); return; } catch (e) { console.error('showBabyUniversity failed:', e); }
     }
@@ -658,6 +687,7 @@ const SKILL_MAP = {
     // Challenge — Arabic
     arabic_qaida:            ['showArabicQaida', 'Arabic Qaida'],
     arabic_joining:          ['showArabicJoining', 'Arabic Joining'],
+    quran_memorize:          ['showQuran', 'Quran'],
     numbers_arabic:          ['showNumbersArabic', 'Numbers Arabic'],
     numbers_all:             ['showNumbersAll', 'Numbers All'],
     // Fun
@@ -686,6 +716,73 @@ const FUN_SKILLS = [
     'color_patterns','connect_dots','find_pairs','which_doesnt_belong',
     'trace_upper','trace_lower','trace_numbers','urdu_trace', 'arabic_trace','urdu_videos'
 ];
+
+// The same lesson in two languages. Only one of each pair runs per day — done back
+// to back the children said "we just did this" (owner, 2026-10-07).
+const TWIN_SKILLS = [['urdu_joining', 'arabic_joining']];
+const LANGUAGE_DOMAINS = ['literacy', 'urdu', 'arabic'];
+
+// Final shaping, after priorities have chosen the day's skills. Mutates in place.
+//  1. Twins: keep the higher-priority twin, replace the other with the next best skill.
+//  2. Math share: three language domains each get a guaranteed slot but math is one
+//     domain, so it was crowded out. At least a third of the day is quantitative.
+//  3. Order: spread domains so no subject (and no two languages) sit back to back.
+function shapeQueue(queue, queueDomains, scored, skillDomain, usedFns) {
+    const prio = {}; scored.forEach(s => { prio[s.skillId] = s.priority; });
+    const inQueue = id => queue.findIndex(q => q[2] === id);
+    const twinBlocked = id => TWIN_SKILLS.some(pair => pair.includes(id) && pair.some(o => o !== id && inQueue(o) >= 0));
+    const putAt = (i, s) => {
+        queue[i] = [s.entry[0], s.entry[1], s.skillId];
+        queueDomains[i] = skillDomain[s.skillId] || 'none';
+        usedFns.add(s.entry[0]);
+    };
+
+    TWIN_SKILLS.forEach(pair => {
+        const present = pair.filter(id => inQueue(id) >= 0).sort((a, b) => (prio[b] || 0) - (prio[a] || 0));
+        present.slice(1).forEach(id => {
+            const i = inQueue(id);
+            const repl = scored.find(s => !usedFns.has(s.entry[0]) && !pair.includes(s.skillId));
+            if (repl) putAt(i, repl);
+            else { queue.splice(i, 1); queueDomains.splice(i, 1); }
+        });
+    });
+
+    const wantMath = Math.ceil(queue.length / 3);
+    for (let guard = 0; guard < queue.length; guard++) {
+        if (queueDomains.filter(d => d === 'quantitative').length >= wantMath) break;
+        const math = scored.find(s => !usedFns.has(s.entry[0]) && !twinBlocked(s.skillId) && skillDomain[s.skillId] === 'quantitative');
+        if (!math) break;
+        // give up the lowest-priority slot from whichever language domain has more than one
+        const counts = {}; queueDomains.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
+        let victim = -1;
+        queue.forEach((q, i) => {
+            const d = queueDomains[i];
+            if (!LANGUAGE_DOMAINS.includes(d) || counts[d] < 2) return;
+            if (victim < 0 || (prio[q[2]] || 0) < (prio[queue[victim][2]] || 0)) victim = i;
+        });
+        if (victim < 0) queue.forEach((q, i) => {
+            if (!LANGUAGE_DOMAINS.includes(queueDomains[i])) return;
+            if (victim < 0 || (prio[q[2]] || 0) < (prio[queue[victim][2]] || 0)) victim = i;
+        });
+        if (victim < 0) break;
+        putAt(victim, math);
+    }
+
+    // Greedy spread: each next slot takes the remaining item least like the previous one.
+    const kind = d => LANGUAGE_DOMAINS.includes(d) ? 'language' : d;
+    const pool = queue.map((q, i) => ({ q, d: queueDomains[i] }));
+    const out = [];
+    for (let n = pool.length; n > 0; n--) {
+        const prev = out[out.length - 1];
+        let best = 0, bestScore = -1;
+        pool.forEach((it, i) => {
+            const score = !prev ? 2 : (it.d === prev.d ? 0 : (kind(it.d) === kind(prev.d) ? 1 : 2));
+            if (score > bestScore) { best = i; bestScore = score; }
+        });
+        out.push(pool.splice(best, 1)[0]);
+    }
+    out.forEach((it, i) => { queue[i] = it.q; queueDomains[i] = it.d; });
+}
 
 async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
     const today = getToday();
@@ -787,6 +884,8 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
         usedFns.add(item.entry[0]);
         queueDomains.push(skillDomain[item.skillId] || 'none');
     }
+
+    shapeQueue(queue, queueDomains, scored, skillDomain, usedFns);
 
     console.log('Priority queue:', scored.slice(0, maxItems).map(s =>
         s.skillId + '=' + s.priority + ' (bw=' + s.baseWeight + ' ru=' + s.reviewUrgency + ' ws=' + s.weaknessSignal + ' cb=' + s.cogatBoost + ' ns=' + s.newSkillBonus + ' rb=' + s.reviewNeedBoost + ' op=' + s.overusePenalty + ')'

@@ -77,7 +77,9 @@ function openBook(bookId) {
         document.getElementById('app').innerHTML =
             '<div class="card"><div class="title">Great job! 🎉</div>' +
             '<div style="text-align:center;margin:20px;font-size:20px">You read ' + book.title + '!</div>' +
-            '<button class="btn green" onclick="showBabyUniversity()">More Books</button>' +
+            (CONFIG.bookBreak
+                ? '<button class="btn green" onclick="CONFIG.bookBreak=false;nextWorksheet()">Continue →</button>'
+                : '<button class="btn green" onclick="showBabyUniversity()">More Books</button>') +
             '<div style="margin-top:10px"><button class="btn" onclick="showMenu()">← Menu</button></div></div>';
     };
 

@@ -19,6 +19,16 @@ const ASSESSMENT_SKILLS = {
     numbers_arabic:           { type: 'audio',  enabled: true },
     urdu_qaida:               { type: 'audio',  enabled: false },
     arabic_qaida:             { type: 'audio',  enabled: false },
+    // Rung 3 (docs/LETTERS_TO_WORDS.md) — "hear it" and "read it, find the
+    // picture" only; "read to me" isn't multiple choice and stays in practice.
+    two_letter_words:         { type: 'text',   enabled: true },
+    three_letter_words:       { type: 'text',   enabled: true },
+    urdu_2letter:             { type: 'text',   enabled: true },
+    // Rung 2 (js/worksheets/joining.js) — without these, mastery's level-unlock
+    // (which only fires from purpose:'check' answers) had no way to reach
+    // either skill and both were stuck at level 1 forever.
+    urdu_joining:             { type: 'text',   enabled: true },
+    arabic_joining:           { type: 'text',   enabled: true },
 };
 
 // Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
@@ -266,6 +276,164 @@ function makeFMAssessmentQs(count, levelOverride) {
         attempts++;
     }
     return qs;
+}
+
+// ============ WORD READING (rung 3) ASSESSMENT HELPER ============
+// docs/LETTERS_TO_WORDS.md "Daily test and weekend": only "Hear it, find it"
+// and "Read it, find the picture" — "Read to me" isn't multiple choice and
+// stays in practice. Reuses js/worksheets/wordreading.js's own bounded
+// distractor pickers (wrPickWordDistractors / wrPickEmojiDistractors) rather
+// than reimplementing them, and WORD_LISTS/WORD_READING_SPECS for the word
+// data — both defined in files the lead is wiring in alongside this one; see
+// the typeof guard at each call site in makeAssessmentQs.
+function makeWordReadingAssessmentQs(skillId, count, overrides) {
+    const spec = WORD_READING_SPECS[skillId];
+    const level = Math.min(spec.levelCount, Math.max(1, (overrides && overrides.level != null) ? overrides.level : getContentLevel(skillId)));
+    const levelWords = spec.levelWords(level);
+    if (!levelWords.length) return [];
+
+    const identityFn = spec.lang === 'ur' ? (e => e.sound) : (e => e.word);
+    const vowelIdx = spec.vowelIndex(level);
+    const textPool = levelWords.map(e => e.word);
+    const emojiPool = spec.allWords().filter(e => e.emoji);
+    const audioOk = spec.lang === 'ur' ? hasSpeechVoice('ur') : true;
+
+    // Cycle through the level's words (shuffled) so a request for more
+    // questions than there are words still returns `count` — same cycling
+    // idiom wordreading.js itself uses to build a session's word list.
+    const shuffledLevel = [...levelWords].sort(() => Math.random() - 0.5);
+    const qs = [];
+    for (let i = 0; i < count; i++) {
+        const entry = shuffledLevel[i % shuffledLevel.length];
+
+        let pictureDistractors = null;
+        if (entry.emoji) {
+            const d = wrPickEmojiDistractors(entry, emojiPool, 3, identityFn);
+            if (d.length === 3) pictureDistractors = d;
+        }
+        const formats = [];
+        if (audioOk) formats.push('hear_it');
+        if (pictureDistractors) formats.push('read_picture');
+        if (!formats.length) continue; // nothing answerable for this word right now — skip it, never loop
+
+        const format = formats[Math.floor(Math.random() * formats.length)];
+
+        if (format === 'hear_it') {
+            const distractors = wrPickWordDistractors(entry.word, textPool, 3, vowelIdx);
+            const options = [entry.word, ...distractors].sort(() => Math.random() - 0.5);
+            const q = {
+                skill_id: skillId,
+                prompt: 'Listen, then find the word',
+                choices: options,
+                correct: entry.word,
+                // Urdu-SCRIPT word, not the romanised `sound` field — this only
+                // ever plays when a real Urdu voice is installed (audioOk gates
+                // on hasSpeechVoice('ur')), and that voice reads Urdu script
+                // correctly but can only guess at Latin letters (lead review).
+                sound: entry.word,
+                lang: spec.lang,
+                level: level,
+                qdata: { type: 'word_check', format: 'hear_it', word: entry.word, level: level }
+            };
+            if (spec.lang === 'ur') {
+                q.choice_labels = options.map(o => '<span style="font-size:32px;font-weight:bold;direction:rtl;font-family:serif">' + o + '</span>');
+            }
+            qs.push(q);
+        } else {
+            const options = [entry, ...pictureDistractors].sort(() => Math.random() - 0.5).map(e => safeEmoji(e.emoji));
+            const dirStyle = spec.lang === 'ur' ? 'direction:rtl;font-family:serif;' : '';
+            qs.push({
+                skill_id: skillId,
+                prompt: 'Find the picture',
+                prompt_html: '<span style="font-size:64px;font-weight:bold;' + dirStyle + '">' + entry.word + '</span>',
+                choices: options,
+                emoji_choices: true,
+                correct: safeEmoji(entry.emoji),
+                level: level,
+                qdata: { type: 'word_check', format: 'read_picture', word: entry.word, level: level }
+            });
+        }
+    }
+    return qs;
+}
+
+// ============ JOINING (rung 2) ASSESSMENT HELPER ============
+// Multiple-choice wrapper around joining.js's own bounded item builders
+// (joiningBuildL1Items..L4Items) — never reimplements the item/distractor
+// logic there, just renders whatever they return. See
+// docs/LETTERS_TO_WORDS.md and js/worksheets/joining.js.
+//
+// Rendering rule (Arabic-script shaping): letters written next to each other
+// in plain text JOIN, so "separate" here is a single space between each
+// letter's character — enough to break the shaping — and "joined" is plain
+// concatenation with no spaces. Never build a display string from
+// initial/medial/final; those carry a tatweel and are only valid for L1's
+// single-shape prompt (letter[field], or letter.letter when field is
+// 'alone' — the one place this function does use them).
+function makeJoiningAssessmentQs(skillId, lang, table, count, levelOverride) {
+    const level = Math.min(4, Math.max(1, levelOverride != null ? levelOverride : getContentLevel(skillId)));
+    let items;
+    if (level === 1) items = joiningBuildL1Items(lang, table, count);
+    else if (level === 2) items = joiningBuildL2Items(lang, table, count);
+    else if (level === 3) items = joiningBuildL3Items(lang, table, count);
+    else items = joiningBuildL4Items(lang, table, count);
+
+    const sep = arr => arr.map(l => l.letter).join(' ');
+    const joined = arr => arr.map(l => l.letter).join('');
+    const wrap = (text, size) => '<span style="font-size:' + size + 'px;font-family:serif;direction:rtl">' + text + '</span>';
+
+    return items.map(item => {
+        let promptRaw, promptSize, correctKey, distractorKeys, optSize;
+        if (item.type === 'l1') {
+            promptRaw = item.field === 'alone' ? item.letter.letter : item.letter[item.field];
+            promptSize = 80;
+            correctKey = item.letter.letter;
+            distractorKeys = item.distractors.map(d => d.letter);
+            optSize = 48;
+        } else if (item.type === 'l4') {
+            promptRaw = joined(item.letters);
+            promptSize = item.letters.length === 2 ? 60 : 52;
+            correctKey = sep(item.letters);
+            distractorKeys = item.distractors.map(sep);
+            optSize = item.letters.length === 2 ? 36 : 30;
+        } else { // l2, l3
+            promptRaw = sep(item.letters);
+            // Prompt is the focal content and stays the larger size, matching
+            // joining.js's own renderQuestionL2L3 (size for the separate-letters
+            // prompt, size-8 for the joined options) — an earlier draft had
+            // these backwards.
+            promptSize = item.letters.length === 2 ? 60 : 52;
+            correctKey = joined(item.letters);
+            distractorKeys = item.distractors.map(joined);
+            optSize = item.letters.length === 2 ? 52 : 44;
+        }
+
+        const instruction = item.type === 'l1' ? 'Which letter is this?'
+            : item.type === 'l4' ? 'Which separate letters make this?'
+            : 'Which one is these letters joined together?';
+
+        const optionKeys = [correctKey, ...distractorKeys].sort(() => Math.random() - 0.5);
+
+        // Joining has no recorded/TTS audio for whole shapes/words in the
+        // check — do not set q.sound (per the addendum: it would try to
+        // speak raw glyphs with no meaningful pronunciation).
+        return {
+            skill_id: skillId,
+            prompt: instruction,
+            prompt_html: '<div style="direction:rtl">' + wrap(promptRaw, promptSize) + '</div>',
+            choices: optionKeys,
+            choice_labels: optionKeys.map(k => wrap(k, optSize)),
+            correct: correctKey,
+            level: level,
+            qdata: {
+                type: 'joining_q',
+                subtype: item.type,
+                lang: lang,
+                level: level,
+                letters: item.type === 'l1' ? [item.letter.letter] : item.letters.map(l => l.letter)
+            }
+        };
+    });
 }
 
 // ============ QUESTION GENERATORS ============
@@ -651,6 +819,25 @@ function makeAssessmentQs(skillId, count, overrides) {
             }
             break;
         }
+        case 'two_letter_words':
+        case 'three_letter_words':
+        case 'urdu_2letter': {
+            // word_lists.js / wordreading.js are wired in alongside this file
+            // but may not have landed yet — degrade to no questions for this
+            // skill rather than throwing (buildDailyTest catches anyway, but
+            // startWeekendChallenge's per-skill call does not).
+            if (typeof WORD_READING_SPECS === 'undefined') break;
+            qs.push(...makeWordReadingAssessmentQs(skillId, count, overrides));
+            break;
+        }
+        case 'urdu_joining': {
+            qs.push(...makeJoiningAssessmentQs('urdu_joining', 'ur', URDU_LETTERS, count, overrides && overrides.level));
+            break;
+        }
+        case 'arabic_joining': {
+            qs.push(...makeJoiningAssessmentQs('arabic_joining', 'ar', ARABIC_LETTERS, count, overrides && overrides.level));
+            break;
+        }
     }
 
     return qs;
@@ -749,8 +936,10 @@ function runAssessment(questions, indexOffset) {
         html += '<div style="background:#333;border-radius:10px;height:8px;margin:10px 0">';
         html += '<div style="background:#FFD700;border-radius:10px;height:8px;width:' + (current / questions.length * 100) + '%"></div></div>';
 
-        // Audio prompt (numbers hear-it skills)
-        if (q.audio) {
+        // Audio prompt — q.audio (numbers hear-it skills, plays a recording
+        // by number) or q.sound+q.lang (word-reading "hear it", speaks text
+        // via speak()/speakUrdu()); assessPlayAudio() branches on which is set.
+        if (q.audio || q.sound) {
             html += '<div style="text-align:center;margin:15px 0"><button onclick="assessPlayAudio()" style="font-size:60px;background:none;border:none;cursor:pointer;padding:15px">🔊</button></div>';
         }
 
@@ -786,16 +975,22 @@ function runAssessment(questions, indexOffset) {
 
         document.getElementById('app').innerHTML = html;
         questionStartMs = Date.now();
-        if (q.audio) setTimeout(() => window.assessPlayAudio(), 400);
+        if (q.audio || q.sound) setTimeout(() => window.assessPlayAudio(), 400);
     }
 
     window.assessPlayAudio = function() {
         const q = questions[current];
-        if (!q || !q.audio) return;
-        new Audio('audio/numbers/' + q.audio.prefix + '_' + q.audio.n + '.mp3').play().catch(() => {
-            const fallback = q.audio.prefix === 'ur' ? speakUrdu : q.audio.prefix === 'ar' ? speakArabic : speak;
-            fallback(String(q.audio.n));
-        });
+        if (!q) return;
+        if (q.audio) {
+            new Audio('audio/numbers/' + q.audio.prefix + '_' + q.audio.n + '.mp3').play().catch(() => {
+                const fallback = q.audio.prefix === 'ur' ? speakUrdu : q.audio.prefix === 'ar' ? speakArabic : speak;
+                fallback(String(q.audio.n));
+            });
+        } else if (q.sound) {
+            // Word-reading "hear it" — no recording, straight to TTS.
+            const fn = q.lang === 'ur' ? speakUrdu : q.lang === 'ar' ? speakArabic : speak;
+            fn(q.sound);
+        }
     };
 
     window.assessPick = (i) => {
