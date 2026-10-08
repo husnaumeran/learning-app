@@ -1,5 +1,5 @@
 -- Tiny Thinkers — production database schema (public)
--- Generated 2026-09-14 by sql/dump_schema.sql. Do not hand-edit:
+-- Generated 2026-09-25 by sql/dump_schema.sql. Do not hand-edit:
 -- change the database through sql/migrations/, then regenerate this file.
 
 -- =====================================================================
@@ -27,7 +27,8 @@ create table public.child_skill_progress (
   sessions_at_80_plus integer default 0 not null,
   mastery_state text default 'learning'::text not null,
   last_mastery_check_at timestamp with time zone,
-  updated_at timestamp with time zone default now() not null
+  updated_at timestamp with time zone default now() not null,
+  weak_weekend_streak integer default 0 not null
 );
 
 create table public.child_skill_settings (
@@ -119,7 +120,8 @@ create table public.responses (
   response_time_ms integer,
   client_event_id text,
   client_created_at timestamp with time zone,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  is_passive boolean default false not null
 );
 
 create table public.review_queue (
@@ -186,7 +188,11 @@ create table public.skills (
   is_active boolean default true not null,
   sort_order integer default 0 not null,
   created_at timestamp with time zone default now() not null,
-  base_weight integer default 2
+  base_weight integer default 2,
+  mastery_type text default 'adaptive'::text not null,
+  mastery_questions integer default 15 not null,
+  mastery_days integer default 3 not null,
+  mastery_accuracy numeric(3,2) default 0.80 not null
 );
 
 create table public.worksheet_completions (
@@ -295,6 +301,10 @@ alter table public.skills add constraint skills_category_check CHECK ((category 
 
 alter table public.skills add constraint skills_domain_check CHECK ((domain = ANY (ARRAY['verbal'::text, 'quantitative'::text, 'nonverbal'::text, 'literacy'::text, 'urdu'::text, 'arabic'::text])));
 
+alter table public.skills add constraint skills_mastery_thresholds_check CHECK (((mastery_questions >= 1) AND (mastery_days >= 1) AND (mastery_accuracy > (0)::numeric) AND (mastery_accuracy <= (1)::numeric)));
+
+alter table public.skills add constraint skills_mastery_type_check CHECK ((mastery_type = ANY (ARRAY['mastery'::text, 'qaida'::text, 'practice'::text, 'adaptive'::text])));
+
 alter table public.child_skill_progress add constraint child_skill_progress_child_id_fkey FOREIGN KEY (child_id) REFERENCES children(id) ON DELETE CASCADE;
 
 alter table public.child_skill_progress add constraint child_skill_progress_skill_id_fkey FOREIGN KEY (skill_id) REFERENCES skills(id);
@@ -389,32 +399,170 @@ CREATE INDEX idx_wc_session ON public.worksheet_completions USING btree (session
 -- FUNCTIONS
 -- =====================================================================
 
+CREATE OR REPLACE FUNCTION public.evaluate_skill_mastery(p_child_id uuid, p_skill_id text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_type      text;
+  v_max       integer;
+  v_current   integer;
+  v_unlocked  integer;
+  v_state     text;
+  v_did_unlock boolean := false;
+begin
+  if auth.uid() is null or public.parent_of_child(p_child_id) is distinct from auth.uid() then
+    raise exception 'Unauthorized: caller does not own child %', p_child_id;
+  end if;
+
+  select mastery_type, max_level into v_type, v_max from skills where id = p_skill_id;
+
+  if v_type is null or v_type not in ('mastery', 'qaida') or v_max is null then
+    return jsonb_build_object('skill_id', p_skill_id, 'unlocked_level', null, 'current_level', null,
+                              'level_unlocked', false, 'mastery_state', null);
+  end if;
+
+  insert into child_skill_progress (child_id, skill_id)
+  values (p_child_id, p_skill_id)
+  on conflict (child_id, skill_id) do nothing;
+
+  select greatest(current_level, 1), unlocked_level, mastery_state
+    into v_current, v_unlocked, v_state
+  from child_skill_progress
+  where child_id = p_child_id and skill_id = p_skill_id
+  for update;
+
+  if public.is_level_mastered(p_child_id, p_skill_id, v_current) then
+    if v_current < v_unlocked then
+      v_current := v_current + 1;              -- recovering ground already earned
+    elsif v_current < v_max then
+      v_current := v_current + 1;
+      v_unlocked := v_current;
+      v_did_unlock := true;
+      v_state := 'learning';
+    else
+      v_state := 'mastered';
+    end if;
+  end if;
+
+  update child_skill_progress
+  set current_level = least(v_current, v_unlocked),
+      unlocked_level = v_unlocked,
+      mastery_state = v_state,
+      last_mastery_check_at = now()
+  where child_id = p_child_id and skill_id = p_skill_id;
+
+  return jsonb_build_object('skill_id', p_skill_id, 'unlocked_level', v_unlocked,
+                            'current_level', least(v_current, v_unlocked),
+                            'level_unlocked', v_did_unlock, 'mastery_state', v_state);
+end
+$function$;
+
+CREATE OR REPLACE FUNCTION public.evaluate_weekend_retention(p_child_id uuid, p_skill_id text, p_session_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_need_q   integer;
+  v_need_acc numeric;
+  v_max      integer;
+  v_type     text;
+  v_q        integer;
+  v_c        integer;
+  v_current  integer;
+  v_unlocked integer;
+  v_streak   integer;
+  v_outcome  text := 'no_signal';
+begin
+  if auth.uid() is null or public.parent_of_child(p_child_id) is distinct from auth.uid() then
+    raise exception 'Unauthorized: caller does not own child %', p_child_id;
+  end if;
+
+  select mastery_type, max_level, mastery_questions, mastery_accuracy
+    into v_type, v_max, v_need_q, v_need_acc
+  from skills where id = p_skill_id;
+
+  if v_type is null or v_type not in ('mastery', 'qaida') or v_max is null then
+    return jsonb_build_object('skill_id', p_skill_id, 'outcome', 'not_leveled');
+  end if;
+
+  select count(*), count(*) filter (where is_correct)
+    into v_q, v_c
+  from responses
+  where session_id = p_session_id
+    and child_id = p_child_id
+    and skill_id = p_skill_id
+    and attempt_count = 1
+    and not is_passive;
+
+  if coalesce(v_q, 0) < v_need_q then
+    return jsonb_build_object('skill_id', p_skill_id, 'outcome', v_outcome, 'questions', coalesce(v_q, 0));
+  end if;
+
+  select greatest(current_level, 1), unlocked_level, weak_weekend_streak
+    into v_current, v_unlocked, v_streak
+  from child_skill_progress
+  where child_id = p_child_id and skill_id = p_skill_id
+  for update;
+
+  if v_current is null then
+    return jsonb_build_object('skill_id', p_skill_id, 'outcome', 'no_progress_row');
+  end if;
+
+  if v_c::numeric / v_q >= v_need_acc then
+    v_streak := 0;
+    if v_current < v_unlocked then
+      v_current := v_current + 1;
+      v_outcome := 'recovered';
+    else
+      v_outcome := 'strong';
+    end if;
+  else
+    v_streak := v_streak + 1;
+    if v_streak >= 2 then
+      v_current := greatest(1, v_current - 1);
+      v_streak := 0;
+      v_outcome := 'stepped_back';
+    else
+      v_outcome := 'weak';
+    end if;
+  end if;
+
+  update child_skill_progress
+  set current_level = least(v_current, v_unlocked),
+      weak_weekend_streak = v_streak,
+      last_mastery_check_at = now()
+  where child_id = p_child_id and skill_id = p_skill_id;
+
+  return jsonb_build_object('skill_id', p_skill_id, 'outcome', v_outcome,
+                            'questions', v_q, 'correct', v_c,
+                            'current_level', least(v_current, v_unlocked),
+                            'unlocked_level', v_unlocked, 'weak_weekend_streak', v_streak);
+end
+$function$;
+
 CREATE OR REPLACE FUNCTION public.finalize_session(p_session_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$declare
+AS $function$
+declare
   v_child_id        uuid;
   v_parent_id       uuid;
   v_session_status  text;
+  v_session_type    text;
+  v_skill_id        text;
+  v_eval            jsonb;
+  v_levels_unlocked jsonb := '{}'::jsonb;
+  v_retention       jsonb := '[]'::jsonb;
   v_slice           record;
-  v_attempted       int;
-  v_correct         int;
-  v_accuracy        numeric;
-  v_qualifies       boolean;
-  v_csp_id          uuid;
-  v_old_sessions_80 int;
-  v_old_unlocked    int;
-  v_max_level       int;
-  v_new_unlocked    int;
-  v_unlocked        boolean;
-  v_category        text;
-  v_result          jsonb := '[]'::jsonb;
-  v_slice_result    jsonb;
+  v_slices          jsonb := '[]'::jsonb;
 begin
-  -- 1. Validate session exists and caller owns it
-  select s.child_id, s.status into v_child_id, v_session_status
+  select s.child_id, s.status, s.session_type
+    into v_child_id, v_session_status, v_session_type
     from sessions s where s.id = p_session_id
     for update;
 
@@ -423,121 +571,79 @@ begin
   end if;
 
   select parent_id into v_parent_id from children where id = v_child_id;
-  if v_parent_id <> auth.uid() then
+  if auth.uid() is null or v_parent_id is distinct from auth.uid() then
     raise exception 'Unauthorized: caller does not own child for session %', p_session_id;
   end if;
 
   if v_session_status <> 'in_progress' then
     return jsonb_build_object(
-      'session_id', p_session_id,
-      'status',     v_session_status,
+      'session_id',        p_session_id,
+      'status',            v_session_status,
       'already_finalized', true,
-      'slices',     '[]'::jsonb
+      'slices',            '[]'::jsonb,
+      'levels_unlocked',   '{}'::jsonb,
+      'retention',         '[]'::jsonb
     );
   end if;
 
-  -- 2. Mark session completed
-  update sessions set
-    status   = 'completed',
-    ended_at = now()
-  where id = p_session_id;
+  update sessions set status = 'completed', ended_at = now() where id = p_session_id;
 
-  -- 3. Evaluate each (skill_id, level) slice — ALL skills now
-  for v_slice in
-    select
-      r.skill_id,
-      r.level,
-      sk.category,
-      count(*)                              as attempted,
-      count(*) filter (where r.is_correct)  as correct
+  -- Unlocking, from the daily mini-test taken in this session
+  for v_skill_id in
+    select distinct r.skill_id
     from responses r
     join skills sk on sk.id = r.skill_id
     where r.session_id = p_session_id
+      and sk.mastery_type in ('mastery', 'qaida')
+  loop
+    v_eval := public.evaluate_skill_mastery(v_child_id, v_skill_id);
+    if (v_eval->>'level_unlocked')::boolean then
+      v_levels_unlocked := v_levels_unlocked
+        || jsonb_build_object(v_skill_id, (v_eval->>'unlocked_level')::integer);
+    end if;
+
+    if v_session_type = 'weekend_assessment' then
+      v_retention := v_retention
+        || public.evaluate_weekend_retention(v_child_id, v_skill_id, p_session_id);
+    end if;
+  end loop;
+
+  -- Per (skill, level) summary: first attempts, excluding practice-only
+  -- activity and review, so difficulty tuning never sees easy questions
+  for v_slice in
+    select r.skill_id, r.level, sk.category,
+      count(*) as questions,
+      count(*) filter (where r.is_correct) as correct
+    from responses r
+    join skills sk on sk.id = r.skill_id
+    where r.session_id = p_session_id
+      and r.attempt_count = 1
+      and not r.is_passive
+      and coalesce(r.question_data->>'purpose', '') <> 'review'
     group by r.skill_id, r.level, sk.category
   loop
-    v_attempted := v_slice.attempted;
-    v_correct   := v_slice.correct;
-    v_accuracy  := v_correct::numeric / v_attempted;
-    v_category  := v_slice.category;
-
-    v_qualifies := (v_attempted >= 5 and v_accuracy >= 0.80);
-    v_unlocked  := false;
-
-    -- Only do progression logic for challenge skills
-    if v_category = 'challenge' then
-      select max_level into v_max_level
-        from skills where id = v_slice.skill_id;
-
-      select id, sessions_at_80_plus, unlocked_level
-        into v_csp_id, v_old_sessions_80, v_old_unlocked
-        from child_skill_progress
-        where child_id = v_child_id
-          and skill_id = v_slice.skill_id
-        for update;
-
-      if v_csp_id is not null then
-        if v_qualifies then
-          v_old_sessions_80 := v_old_sessions_80 + 1;
-        else
-          v_old_sessions_80 := 0;
-        end if;
-
-        v_new_unlocked := v_old_unlocked;
-
-        if v_max_level is not null and v_old_sessions_80 >= 3 then
-          if v_old_unlocked < v_max_level then
-            v_new_unlocked := least(v_old_unlocked + 1, v_max_level);
-            v_unlocked := true;
-          end if;
-          v_old_sessions_80 := 0;
-        end if;
-
-        update child_skill_progress set
-          sessions_at_80_plus   = v_old_sessions_80,
-          unlocked_level        = v_new_unlocked,
-          mastery_state         = case
-                                    when v_max_level is not null and v_new_unlocked >= v_max_level
-                                      then 'mastered'
-                                    else 'learning'
-                                  end,
-          last_mastery_check_at = now()
-        where id = v_csp_id;
-      else
-        insert into child_skill_progress (
-          child_id, skill_id, current_level, unlocked_level,
-          sessions_at_80_plus, mastery_state, last_mastery_check_at
-        ) values (
-          v_child_id, v_slice.skill_id,
-          coalesce(v_slice.level, 1),
-          coalesce(v_slice.level, 1),
-          case when v_qualifies then 1 else 0 end,
-          'learning',
-          now()
-        );
-
-      end if;
-    end if;  -- end challenge-only block
-
-    v_slice_result := jsonb_build_object(
+    v_slices := v_slices || jsonb_build_object(
       'skill_id',       v_slice.skill_id,
       'level',          v_slice.level,
-      'category',       v_category,
-      'attempted',      v_attempted,
-      'correct',        v_correct,
-      'accuracy',       round(v_accuracy, 2),
-      'qualifies',      v_qualifies,
-      'level_unlocked', v_unlocked
+      'category',       v_slice.category,
+      'attempted',      v_slice.questions,
+      'correct',        v_slice.correct,
+      'accuracy',       round(v_slice.correct::numeric / v_slice.questions, 2),
+      'qualifies',      v_slice.questions >= 5
+                        and v_slice.correct::numeric / v_slice.questions >= 0.80,
+      'level_unlocked', v_levels_unlocked ? v_slice.skill_id
     );
-
-    v_result := v_result || v_slice_result;
   end loop;
 
   return jsonb_build_object(
-    'session_id', p_session_id,
-    'status',     'completed',
-    'slices',     v_result
+    'session_id',      p_session_id,
+    'status',          'completed',
+    'slices',          v_slices,
+    'levels_unlocked', v_levels_unlocked,
+    'retention',       v_retention
   );
-end;$function$;
+end;
+$function$;
 
 CREATE OR REPLACE FUNCTION public.get_daily_status(p_child_id uuid)
  RETURNS jsonb
@@ -554,7 +660,7 @@ declare
 begin
   -- Validate ownership
   select parent_id into v_parent_id from children where id = p_child_id;
-  if v_parent_id <> auth.uid() then
+  if auth.uid() is null or v_parent_id is distinct from auth.uid() then
     raise exception 'Unauthorized';
   end if;
 
@@ -581,6 +687,143 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.get_skill_progress(p_child_id uuid)
+ RETURNS TABLE(skill_id text, mastery_type text, max_level integer, unlocked_level integer, current_level integer, mastery_state text, questions_needed integer, days_needed integer, accuracy_needed numeric, qualifying_days integer, last_test_questions integer, last_test_correct integer, practice_days integer, weak_weekend_streak integer, levels_needing_review integer[], review_questions integer, review_correct integer)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  select
+    sk.id,
+    sk.mastery_type,
+    sk.max_level,
+    case when sk.mastery_type in ('mastery', 'qaida') then coalesce(csp.unlocked_level, 1) end,
+    case when sk.mastery_type in ('mastery', 'qaida')
+         then least(coalesce(csp.current_level, 1), coalesce(csp.unlocked_level, 1)) end,
+    case when sk.mastery_type in ('mastery', 'qaida') then coalesce(csp.mastery_state, 'learning') end,
+    sk.mastery_questions,
+    sk.mastery_days,
+    sk.mastery_accuracy,
+    ev.qualifying_days,
+    ev.last_test_questions,
+    ev.last_test_correct,
+    ev.practice_days,
+    coalesce(csp.weak_weekend_streak, 0),
+    case when sk.mastery_type in ('mastery', 'qaida')
+         then public.levels_needing_review(p_child_id, sk.id,
+                least(coalesce(csp.current_level, 1), coalesce(csp.unlocked_level, 1))) end,
+    rv.questions,
+    rv.correct
+  from skills sk
+  left join child_skill_progress csp
+    on csp.child_id = p_child_id and csp.skill_id = sk.id
+  left join lateral public.mastery_evidence(p_child_id, sk.id,
+      least(coalesce(csp.current_level, 1), coalesce(csp.unlocked_level, 1))) ev
+    on sk.mastery_type in ('mastery', 'qaida')
+  left join lateral (
+    select count(*)::integer as questions,
+           (count(*) filter (where x.is_correct))::integer as correct
+    from (
+      select r.is_correct
+      from responses r
+      where r.child_id = p_child_id
+        and r.skill_id = sk.id
+        and r.attempt_count = 1
+        and not r.is_passive
+        and r.question_data->>'purpose' = 'review'
+      order by r.created_at desc
+      limit 10
+    ) x
+  ) rv on true
+  order by sk.id
+$function$;
+
+CREATE OR REPLACE FUNCTION public.is_level_mastered(p_child_id uuid, p_skill_id text, p_level integer)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  select coalesce(
+    sk.mastery_type in ('mastery', 'qaida') and ev.qualifying_days >= sk.mastery_days,
+    false)
+  from skills sk
+  cross join lateral public.mastery_evidence(p_child_id, sk.id, p_level) ev
+  where sk.id = p_skill_id
+$function$;
+
+CREATE OR REPLACE FUNCTION public.levels_needing_review(p_child_id uuid, p_skill_id text, p_below_level integer)
+ RETURNS integer[]
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  select coalesce(array_agg(t.level order by t.level), '{}'::integer[])
+  from (
+    select ranked.level
+    from (
+      select r.level, r.is_correct,
+             row_number() over (partition by r.level order by r.created_at desc) as rn
+      from responses r
+      where r.child_id = p_child_id
+        and r.skill_id = p_skill_id
+        and r.level < p_below_level
+        and r.attempt_count = 1
+        and not r.is_passive
+        and r.question_data->>'purpose' = 'review'
+    ) ranked
+    where ranked.rn <= 10
+    group by ranked.level
+    having count(*) >= 5
+       and (count(*) filter (where ranked.is_correct))::numeric / count(*)
+           < (select sk.mastery_accuracy from skills sk where sk.id = p_skill_id)
+  ) t
+$function$;
+
+CREATE OR REPLACE FUNCTION public.mastery_evidence(p_child_id uuid, p_skill_id text, p_level integer)
+ RETURNS TABLE(qualifying_days integer, last_test_questions integer, last_test_correct integer, practice_days integer)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  with params as (
+    select sk.mastery_questions as need_q, sk.mastery_accuracy as need_acc,
+      coalesce(
+        (select p.timezone from children c join parents p on p.id = c.parent_id where c.id = p_child_id),
+        'America/Chicago'
+      ) as tz
+    from skills sk
+    where sk.id = p_skill_id
+  ),
+  tests as (
+    select r.session_id,
+      (r.created_at at time zone params.tz)::date as local_day,
+      max(r.created_at) as ended_at,
+      count(*) as questions,
+      count(*) filter (where r.is_correct) as correct
+    from responses r
+    cross join params
+    where r.child_id = p_child_id
+      and r.skill_id = p_skill_id
+      and r.level = p_level
+      and r.attempt_count = 1
+      and not r.is_passive
+      and r.question_data->>'purpose' = 'check'
+    group by r.session_id, 2
+  )
+  select
+    (select count(distinct t.local_day)::integer
+       from tests t, params
+       where t.questions >= params.need_q
+         and t.correct::numeric / nullif(t.questions, 0) >= params.need_acc),
+    (select t.questions::integer from tests t order by t.ended_at desc limit 1),
+    (select t.correct::integer from tests t order by t.ended_at desc limit 1),
+    (select count(distinct (r.created_at at time zone params.tz)::date)::integer
+       from responses r
+       cross join params
+       where r.child_id = p_child_id and r.skill_id = p_skill_id and r.level = p_level)
+$function$;
+
 CREATE OR REPLACE FUNCTION public.parent_of_child(child_uuid uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -588,6 +831,37 @@ CREATE OR REPLACE FUNCTION public.parent_of_child(child_uuid uuid)
  SET search_path TO 'public'
 AS $function$
   select parent_id from children where id = child_uuid;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.raise_skill_level(p_child_id uuid, p_skill_id text, p_level integer)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_type  text;
+  v_max   integer;
+  v_level integer;
+begin
+  if auth.uid() is null or public.parent_of_child(p_child_id) is distinct from auth.uid() then
+    raise exception 'Unauthorized: caller does not own child %', p_child_id;
+  end if;
+
+  select mastery_type, max_level into v_type, v_max from skills where id = p_skill_id;
+
+  if v_type is null or v_type not in ('mastery', 'qaida') or v_max is null or p_level is null then
+    return null;
+  end if;
+
+  insert into child_skill_progress (child_id, skill_id, unlocked_level, current_level)
+  values (p_child_id, p_skill_id, greatest(1, least(p_level, v_max)), greatest(1, least(p_level, v_max)))
+  on conflict (child_id, skill_id) do update
+    set unlocked_level = greatest(child_skill_progress.unlocked_level, excluded.unlocked_level),
+        current_level  = greatest(child_skill_progress.current_level, excluded.current_level)
+  returning unlocked_level into v_level;
+
+  return v_level;
+end
 $function$;
 
 CREATE OR REPLACE FUNCTION public.record_response(p_session_id uuid, p_child_id uuid, p_skill_id text, p_question_data jsonb, p_correct_answer text, p_level integer DEFAULT NULL::integer, p_question_id text DEFAULT NULL::text, p_question_version integer DEFAULT NULL::integer, p_choice_data jsonb DEFAULT NULL::jsonb, p_first_answer text DEFAULT NULL::text, p_final_answer text DEFAULT NULL::text, p_attempt_count integer DEFAULT 1, p_is_correct boolean DEFAULT false, p_is_first_try boolean DEFAULT false, p_is_skipped boolean DEFAULT false, p_response_time_ms integer DEFAULT NULL::integer, p_client_event_id text DEFAULT NULL::text, p_client_created_at timestamp with time zone DEFAULT NULL::timestamp with time zone)
@@ -616,9 +890,9 @@ begin
   -- 1. Validate ownership
   select child_id into v_session_child from sessions where id = p_session_id;
   if v_session_child is null then raise exception 'Session % not found', p_session_id; end if;
-  if v_session_child <> p_child_id then raise exception 'Session % does not belong to child %', p_session_id, p_child_id; end if;
+  if v_session_child is distinct from p_child_id then raise exception 'Session % does not belong to child %', p_session_id, p_child_id; end if;
   select parent_id into v_parent_id from children where id = p_child_id;
-  if v_parent_id <> auth.uid() then raise exception 'Unauthorized: caller does not own child %', p_child_id; end if;
+  if auth.uid() is null or v_parent_id is distinct from auth.uid() then raise exception 'Unauthorized: caller does not own child %', p_child_id; end if;
 
   -- 2. Insert response
   insert into responses (
@@ -728,9 +1002,23 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.set_response_is_passive()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin
+  new.is_passive := new.correct_answer = 'seen'
+                 or new.skill_id = 'numbers_all'
+                 or (new.skill_id = 'find_pairs' and new.question_data ? 'total_pairs');
+  return new;
+end
+$function$;
+
 CREATE OR REPLACE FUNCTION public.update_updated_at()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET search_path TO 'public'
 AS $function$
 begin
   new.updated_at = now();
@@ -741,6 +1029,7 @@ $function$;
 CREATE OR REPLACE FUNCTION public.validate_response_session_child()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET search_path TO 'public'
 AS $function$
 declare
   session_child_id uuid;
@@ -774,6 +1063,8 @@ CREATE TRIGGER trg_children_updated BEFORE UPDATE ON public.children FOR EACH RO
 CREATE TRIGGER trg_parents_updated BEFORE UPDATE ON public.parents FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER trg_qbank_updated BEFORE UPDATE ON public.question_bank FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trg_set_response_is_passive BEFORE INSERT ON public.responses FOR EACH ROW EXECUTE FUNCTION set_response_is_passive();
 
 CREATE TRIGGER trg_validate_response_session_child BEFORE INSERT OR UPDATE ON public.responses FOR EACH ROW EXECUTE FUNCTION validate_response_session_child();
 
@@ -869,16 +1160,40 @@ create policy wc_own on public.worksheet_completions for all to public
 -- FUNCTION PRIVILEGES
 -- =====================================================================
 
+-- evaluate_skill_mastery(uuid,text)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
+-- evaluate_weekend_retention(uuid,text,uuid)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
 -- finalize_session(uuid)
---   acl: {=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 
 -- get_daily_status(uuid)
---   acl: {=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
+-- get_skill_progress(uuid)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
+-- is_level_mastered(uuid,text,integer)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
+-- levels_needing_review(uuid,text,integer)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
+-- mastery_evidence(uuid,text,integer)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 
 -- parent_of_child(uuid)
 --   acl: {=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 
+-- raise_skill_level(uuid,text,integer)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
 -- record_response(uuid,uuid,text,jsonb,text,integer,text,integer,jsonb,text,text,integer,boolean,boolean,boolean,integer,text,timestamp with time zone)
+--   acl: {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+
+-- set_response_is_passive()
 --   acl: {=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 
 -- update_updated_at()
