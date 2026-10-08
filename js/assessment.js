@@ -29,6 +29,8 @@ const ASSESSMENT_SKILLS = {
     // either skill and both were stuck at level 1 forever.
     urdu_joining:             { type: 'text',   enabled: true },
     arabic_joining:           { type: 'text',   enabled: true },
+    // js/worksheets/multiplication.js - needs a check path or it never leaves level 1.
+    multiplication:           { type: 'text',   enabled: true },
 };
 
 // Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
@@ -836,6 +838,30 @@ function makeAssessmentQs(skillId, count, overrides) {
         }
         case 'arabic_joining': {
             qs.push(...makeJoiningAssessmentQs('arabic_joining', 'ar', ARABIC_LETTERS, count, overrides && overrides.level));
+            break;
+        }
+        case 'multiplication': {
+            // Multiple choice "a x b = ?" via multiplication.js's bounded builder.
+            // Table levels are picture-free; level 1 puts the groups in the text.
+            // review:false so a level's check is about that level alone.
+            if (typeof multBuildItems === 'undefined') break;
+            const lvl = multClampLevel((overrides && overrides.level != null) ? overrides.level : getContentLevel('multiplication'));
+            for (const it of multBuildItems(lvl, count, { review: false })) {
+                const isGroups = it.kind === 'groups';
+                qs.push({
+                    skill_id: 'multiplication',
+                    prompt: isGroups ? it.a + ' ' + it.container.word + ', ' + it.b + ' ' + it.food + ' on each. How many ' + it.food + ' in all?' : it.a + ' × ' + it.b + ' = ?',
+                    prompt_html: isGroups
+                        ? '<div style="text-align:center;font-size:22px;line-height:1.5">' + it.a + ' ' + it.container.word + ', ' + it.b + ' ' + it.food + ' on each.<br>'
+                            + Array.from({ length: it.a }, () => '<span style="display:inline-block;margin:4px 6px;padding:4px 8px;border:2px dashed #FF6B35;border-radius:10px">' + it.container.emoji + it.food.repeat(it.b) + '</span>').join('')
+                            + '<br>How many ' + it.food + ' in all?</div>'
+                        : '<div style="text-align:center;font-size:56px">' + it.a + ' × ' + it.b + ' = ?</div>',
+                    choices: it.options.map(String),
+                    correct: String(it.product),
+                    level: lvl,
+                    qdata: { type: 'multiplication_q', subtype: it.kind, level: lvl, a: it.a, b: it.b, product: it.product, table: it.tableLevel ? MULT_TABLE_BY_LEVEL[it.tableLevel] : null, review: false }
+                });
+            }
             break;
         }
     }

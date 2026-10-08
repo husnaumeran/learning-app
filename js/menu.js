@@ -71,7 +71,7 @@ async function showMenu() {
 
     const sections = [
         {title:'🔢 Math', color:'#FF6B35', items:[
-            ['showAddition','Addition ➕','Addition'],['showSubtraction','Subtraction ➖','Subtraction'],
+            ['showAddition','Addition ➕','Addition'],['showSubtraction','Subtraction ➖','Subtraction'],['showMultiplication','Multiplication ✖️','Multiplication'],
             ['showCounting','Counting 🔢','Counting'],['showMatchNumbers','Match Numbers 🎯','Match Numbers'],
             ['showMoreLess','More / Less ⚖️','More/Less'],['showBiggerSmaller','Bigger / Smaller 📏','Bigger/Smaller'],
             ['showWhatNext','What Next ➡️','What Comes Next'],
@@ -664,6 +664,7 @@ const SKILL_MAP = {
     // Challenge — Quantitative
     addition:                ['showAddition', 'Addition'],
     subtraction:             ['showSubtraction', 'Subtraction'],
+    multiplication:          ['showMultiplication', 'Multiplication'],
     counting:                ['showCounting', 'Counting'],
     match_numbers:           ['showMatchNumbers', 'Match Numbers'],
     more_less:               ['showMoreLess', 'More/Less'],
