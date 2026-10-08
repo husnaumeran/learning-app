@@ -721,7 +721,14 @@ const FUN_SKILLS = [
 
 // The same lesson in two languages. Only one of each pair runs per day — done back
 // to back the children said "we just did this" (owner, 2026-10-07).
-const TWIN_SKILLS = [['urdu_joining', 'arabic_joining']];
+const TWIN_SKILLS = [['urdu_joining', 'arabic_joining'], ['addition', 'subtraction']];
+
+// Kept out of the daily queue for now (still reachable from the worksheet grid).
+// Subtraction, owner 2026-10-08: introducing it knocked out addition — the child could
+// no longer tell + from -. It stays paused while addition is rebuilt and the signs are
+// taught as meaning; remove it from this list to bring it back. When it returns, the
+// twin rule above keeps it off the same day as addition.
+const PAUSED_SKILLS = ['subtraction'];
 const LANGUAGE_DOMAINS = ['literacy', 'urdu', 'arabic'];
 
 // Final shaping, after priorities have chosen the day's skills. Mutates in place.
@@ -830,6 +837,7 @@ async function buildAdaptiveQueue(childId, maxItems, doneTypes) {
     const scored = allSkillIds.map(skillId => {
         const entry = SKILL_MAP[skillId];
         if (!entry) return null;
+        if (PAUSED_SKILLS.includes(skillId)) return null;
         if (doneTypes.includes(entry[1])) return null; // already done today
 
         const s = skillStats[skillId] || { totalAttempts: 0, correctCount: 0, lastPracticed: null, timesToday: 0 };
