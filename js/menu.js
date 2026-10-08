@@ -320,9 +320,14 @@ function runDailyTest(skillId, level, questions, onDone) {
     const runId = Date.now();
     let current = 0, score = 0, qStartMs = null;
 
+    // Voice by the question's own language, not by the skill. Keyed on the skill,
+    // every non-Qaida question fell through to the Arabic voice — an English word
+    // read in Arabic is worse than silence. Qaida questions carry q.lang already,
+    // and the fallback keeps them exactly as before if one ever doesn't.
     function speakQuestion(q) {
         if (!q.sound) return;
-        const fn = skillId === 'urdu_qaida' ? window.speakUrdu : window.speakArabic;
+        const lang = q.lang || (skillId === 'urdu_qaida' ? 'ur' : 'ar');
+        const fn = lang === 'en' ? window.speak : lang === 'ur' ? window.speakUrdu : window.speakArabic;
         if (typeof fn === 'function') { try { fn(q.sound); } catch (e) {} }
     }
 
