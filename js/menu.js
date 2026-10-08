@@ -78,7 +78,7 @@ async function showMenu() {
             ['showNumbersEnglish','Numbers 🔊','Numbers English']
         ]},
         {title:'📖 English', color:'#00CC66', items:[
-            ['showTwoLetter','2-Letter Words 📖','2-Letter Words'],['showThreeLetter','3-Letter Words 📚','3-Letter Words'],
+            ['showPhonicsVideo','ABC Phonics Song 🎵','ABC Phonics Song'],['showTwoLetter','2-Letter Words 📖','2-Letter Words'],['showThreeLetter','3-Letter Words 📚','3-Letter Words'],
             ['showTraceABC','Trace ABC ✏️','Trace ABC'],['showTraceLower','Trace abc ✏️','Trace abc'],
             ['showTraceNumbers','Trace 123 ✏️','Trace Numbers']
         ]},
