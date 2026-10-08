@@ -55,9 +55,54 @@ function showAddition() {
         return built;
     }
 
+    // ---- Operation signalling: green + a "joining" picture + the spoken word ----
+    // The child must read the SIGN, not just see two numbers, so the operation has one
+    // colour, one picture and one spoken word everywhere on this screen.
+    const OP = {
+        color: '#22c55e', dark: '#15803d', tint: '#f0fdf4', word: 'ADD', sign: '+', say: 'Add',
+        pic: '🟢🟢 ➡️⬅️ 🟢'   // two groups moving together
+    };
+    const unlocked = {};   // question index -> true once the child has tapped the sign
+    let alive = true;      // false once the child leaves this screen
+
+    function stopSay() {
+        if (typeof speechSynthesis !== 'undefined') { try { speechSynthesis.cancel(); } catch (e) {} }
+    }
+    function say(text) {
+        if (typeof speak === 'function') { try { speak(text); } catch (e) {} }
+    }
+    function opSpeech(p) {
+        if (p.blank === 'a') return 'Add. What and ' + p.b + ' make ' + p.sum + '.';
+        if (p.blank === 'b') return 'Add. ' + p.a + ' and what make ' + p.sum + '.';
+        return 'Add. ' + p.a + ' and ' + p.b + '.';
+    }
+    window.stopAddSession = () => { alive = false; stopSay(); showMenu(); };
+    window.replayAddOp = () => { if (!alive) return; stopSay(); say(opSpeech(problems[current])); };
+    window.tapAddSign = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!alive) return;
+        stopSay();
+        if (!unlocked[current]) {
+            unlocked[current] = true;
+            questionStartMs = Date.now();   // the response timer starts when the keypad unlocks
+            const pad = document.getElementById('padBox');
+            if (pad) {
+                pad.style.opacity = '1'; pad.style.pointerEvents = '';
+                pad.querySelectorAll('button').forEach(b => { b.disabled = false; });
+            }
+            const pr = document.getElementById('signPrompt'); if (pr) pr.style.display = 'none';
+            const bd = document.getElementById('signBadge'); if (bd) bd.style.animation = 'none';
+            say(OP.say + '!');
+        } else {
+            say(opSpeech(problems[current]));
+        }
+    };
+
     function render() {
         const p = problems[current];
-        let html = '<button class="back" onclick="showMenu()">← Back</button><div class="card"><div class="title">Ways to Make '+focusNumber+'! ➕</div>';
+        const open = !!unlocked[current];
+        let html = '<style>@keyframes opPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(34,197,94,.6)}50%{transform:scale(1.12);box-shadow:0 0 0 14px rgba(34,197,94,0)}}</style>';
+        html += '<button class="back" onclick="stopAddSession()">← Back</button><div class="card"><div class="title" style="color:'+OP.dark+'">Ways to Make '+focusNumber+'! ➕</div>';
 
         // Progress dots
         html += '<div style="text-align:center;margin:10px 0">';
@@ -67,34 +112,51 @@ function showAddition() {
         });
         html += '</div>';
 
-        const boxHtml = '<span class="answer-box" id="ansBox">'+(answers[current]!=null ? answers[current] : '?')+'</span>';
+        const boxHtml = '<span class="answer-box" id="ansBox" style="font-size:44px;color:#333">'+(answers[current]!=null ? answers[current] : '?')+'</span>';
+        const num = v => '<span style="font-size:48px;color:#333">'+v+'</span>';
 
-        if (p.mode === 'visual') {
-            html += '<div style="text-align:center;font-size:36px;margin:10px;color:#333">';
-            html += p.a+' <span style="color:#FF6B35">+</span> '+p.b+' <span style="color:#FF6B35">=</span> <span style="color:#FF6B35">?</span></div>';
-            html += '<div style="text-align:center;font-size:32px;line-height:1.8;margin:15px 5px">';
-            for (let i = 0; i < p.a; i++) html += '<span>'+p.emoji+'</span> ';
-            html += '<span style="font-size:28px;color:#FF6B35;margin:0 8px">+</span>';
-            for (let i = 0; i < p.b; i++) html += '<span>'+p.emoji+'</span> ';
+        // Coloured band around the whole problem area
+        html += '<div style="border:4px solid '+OP.color+';background:'+OP.tint+';border-radius:18px;padding:10px;margin:8px 0">';
+        html += '<div style="text-align:center;font-size:26px;font-weight:bold;color:'+OP.dark+';letter-spacing:2px">'+OP.pic+' &nbsp;'+OP.word+'</div>';
+
+        // Equation row: the sign is a big round badge, far larger than the digits
+        html += '<div onclick="replayAddOp()" style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin:12px 0;cursor:pointer">';
+        html += (p.blank==='a' ? boxHtml : num(p.a));
+        html += '<button id="signBadge" onclick="tapAddSign(event)" aria-label="Plus sign. Tap to hear it." style="width:96px;height:96px;border-radius:50%;border:none;background:'+OP.color+';color:white;font-size:80px;font-weight:bold;line-height:90px;padding:0;cursor:pointer;'+(open ? '' : 'animation:opPulse 1.2s ease-in-out infinite;')+'">'+OP.sign+'</button>';
+        html += (p.blank==='b' ? boxHtml : num(p.b));
+        html += '<span style="font-size:44px;color:#333">=</span>';
+        html += (p.blank==='sum' ? boxHtml : num(p.sum));
+        html += '</div>';
+
+        // Picture whenever the numbers are small enough to draw
+        if (p.sum <= 12) {
+            const group = n => { let g = '<span style="display:inline-block;padding:4px 10px;border:2px solid '+OP.color+';border-radius:14px;background:white;margin:2px">'; for (let i = 0; i < n; i++) g += '<span>'+p.emoji+'</span> '; return g + '</span>'; };
+            const unknown = '<span style="display:inline-block;padding:4px 18px;border:2px dashed '+OP.dark+';border-radius:14px;color:'+OP.dark+';background:white;margin:2px">?</span>';
+            html += '<div style="text-align:center;font-size:32px;line-height:1.8;margin:5px">';
+            html += (p.blank==='a' ? unknown : group(p.a));
+            html += '<span style="font-size:28px;color:'+OP.dark+';margin:0 8px">+</span>';
+            html += (p.blank==='b' ? unknown : group(p.b));
             html += '</div>';
-            html += '<div style="text-align:center;font-size:22px;color:white;margin:5px">How many in all?</div>';
-            html += '<div style="text-align:center;font-size:48px;margin:5px;color:#333">'+boxHtml+'</div>';
-        } else {
-            html += '<div style="text-align:center;font-size:48px;margin:20px;color:#333">';
-            html += (p.blank==='a' ? boxHtml : p.a)+' <span style="color:#FF6B35">+</span> '+(p.blank==='b' ? boxHtml : p.b)+' <span style="color:#FF6B35">=</span> '+(p.blank==='sum' ? boxHtml : p.sum);
-            html += '</div>';
+            if (p.blank === 'sum') html += '<div style="text-align:center;font-size:22px;color:'+OP.dark+';margin:5px">How many in all?</div>';
         }
 
-        html += '</div><div class="keypad">';
-        for (let n = 0; n <= 9; n++) html += '<button class="key" onclick="pressKey('+n+')">'+n+'</button>';
-        html += '<button class="key red" onclick="clearKey()">⌫</button><button class="key green" onclick="checkKey()">✓</button></div>';
+        html += '<div id="signPrompt" style="text-align:center;font-size:24px;font-weight:bold;color:'+OP.dark+';margin-top:8px;'+(open ? 'display:none' : '')+'">👆 Tap the sign first!</div>';
+        html += '</div></div>';
+
+        // Keypad stays locked until the sign is tapped (and stays unlocked on a retry)
+        html += '<div class="keypad" id="padBox" style="'+(open ? '' : 'opacity:.3;pointer-events:none')+'">';
+        const dis = open ? '' : ' disabled';
+        for (let n = 0; n <= 9; n++) html += '<button class="key"'+dis+' onclick="pressKey('+n+')">'+n+'</button>';
+        html += '<button class="key red"'+dis+' onclick="clearKey()">⌫</button><button class="key green"'+dis+' onclick="checkKey()">✓</button></div>';
         html += '<div class="score">⭐ '+score+' / '+problems.length+'</div>';
+        stopSay();
         document.getElementById('app').innerHTML = html;
-        questionStartMs = Date.now();
+        questionStartMs = open ? Date.now() : null;
+        say(opSpeech(p));
     }
 
     window.pressKey = (n) => {
-        if (solved.has(current)) return;
+        if (solved.has(current) || !unlocked[current]) return;
         const box = document.getElementById('ansBox');
         const base = (box.textContent === '?' ? '' : box.textContent);
         if (base.length >= MAX_DIGITS) return;
@@ -103,7 +165,7 @@ function showAddition() {
         box.textContent = next;
     };
     window.clearKey = () => {
-        if (solved.has(current)) return;
+        if (solved.has(current) || !unlocked[current]) return;
         const box = document.getElementById('ansBox');
         const base = (box.textContent === '?' ? '' : box.textContent);
         const next = base.slice(0, -1);
@@ -112,7 +174,7 @@ function showAddition() {
     };
     window.checkKey = () => {
         const ans = document.getElementById('ansBox').textContent;
-        if (ans === '?' || ans === '' || solved.has(current)) return;
+        if (ans === '?' || ans === '' || solved.has(current) || !unlocked[current]) return;
         const responseTimeMs = Date.now() - questionStartMs;
         attemptCounts[current] = (attemptCounts[current] || 0) + 1;
         const p = problems[current];
@@ -124,17 +186,21 @@ function showAddition() {
 
         recordResponse('addition', {type:'addition', a:p.a, b:p.b, sum:p.sum, blank:p.blank}, String(correctVal), ansNum, correct, attemptCounts[current]===1, attemptCounts[current], responseTimeMs, current);
 
+        stopSay();
+        // A wrong answer points the child back at the sign (showFeedback speaks it).
+        const pointBack = (!correct && typeof speak === 'function') ? 'Look at the sign — add!' : undefined;
         showFeedback(correct, () => {
+            if (!alive) return;
             if (correct) {
                 solved.add(current);
                 score++;
-                if (score === problems.length) { completeWorksheet('Addition', score, problems.length); return; }
+                if (score === problems.length) { alive = false; stopSay(); completeWorksheet('Addition', score, problems.length); return; }
                 for (let i = 0; i < problems.length; i++) if (!solved.has(i)) { current = i; break; }
                 render();
             } else {
-                render();
+                render();   // same question: keypad stays unlocked, operation is spoken again
             }
-        });
+        }, pointBack);
     };
     render();
 }
