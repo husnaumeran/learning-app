@@ -676,6 +676,7 @@ const SKILL_MAP = {
     // Challenge — Verbal
     verbal_analogies:        ['showVerbalAnalogies', 'Verbal Analogies'],
     // Challenge — Literacy
+    phonics_video:           ['showPhonicsVideo', 'ABC Phonics Song'],
     two_letter_words:        ['showTwoLetter', '2-Letter Words'],
     three_letter_words:      ['showThreeLetter', '3-Letter Words'],
     // Challenge — Urdu
