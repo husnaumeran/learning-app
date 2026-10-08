@@ -71,7 +71,7 @@ async function showMenu() {
 
     const sections = [
         {title:'🔢 Math', color:'#FF6B35', items:[
-            ['showAddition','Addition ➕','Addition'],['showSubtraction','Subtraction ➖','Subtraction'],['showMultiplication','Multiplication ✖️','Multiplication'],
+            ['showAddition','Addition ➕','Addition'],['showSubtraction','Subtraction ➖','Subtraction'],['showMultiplication','Multiplication ✖️','Multiplication'],['showWhichSign','Which Sign? ➕➖','Which Sign?'],['showMeasurement','Measurement 📏','Measurement'],
             ['showCounting','Counting 🔢','Counting'],['showMatchNumbers','Match Numbers 🎯','Match Numbers'],
             ['showMoreLess','More / Less ⚖️','More/Less'],['showBiggerSmaller','Bigger / Smaller 📏','Bigger/Smaller'],
             ['showWhatNext','What Next ➡️','What Comes Next'],
@@ -664,6 +664,8 @@ const SKILL_MAP = {
     // Challenge — Quantitative
     addition:                ['showAddition', 'Addition'],
     subtraction:             ['showSubtraction', 'Subtraction'],
+    which_sign:              ['showWhichSign', 'Which Sign?'],
+    measurement:             ['showMeasurement', 'Measurement'],
     multiplication:          ['showMultiplication', 'Multiplication'],
     counting:                ['showCounting', 'Counting'],
     match_numbers:           ['showMatchNumbers', 'Match Numbers'],
@@ -730,7 +732,9 @@ const TWIN_SKILLS = [['urdu_joining', 'arabic_joining'], ['addition', 'subtracti
 // taught as meaning; remove it from this list to bring it back. When it returns, the
 // twin rule above keeps it off the same day as addition.
 // Multiplication, owner 2026-10-08: paused too — "let's solidify addition first".
-const PAUSED_SKILLS = ['subtraction', 'multiplication'];
+// Which Sign? and Measurement, owner 2026-10-08: built to be opened by hand from the
+// grid; not in the daily flow until the basics are solid.
+const PAUSED_SKILLS = ['subtraction', 'multiplication', 'which_sign', 'measurement'];
 const LANGUAGE_DOMAINS = ['literacy', 'urdu', 'arabic'];
 
 // Final shaping, after priorities have chosen the day's skills. Mutates in place.
