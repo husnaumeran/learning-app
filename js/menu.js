@@ -91,7 +91,7 @@ async function showMenu() {
         ]},
         {title:'اردو Urdu', color:'#FFD700', items:[
             ['showUrduReading','Urdu Reading 📖','Urdu Reading'],['showUrduTrace','Urdu Trace ✏️','Urdu Trace'],
-            ['showUrdu2Letter','Urdu 2-Letter 📚','Urdu 2-Letter Words'],['showUrduWhatNext','Urdu What Next ➡️','Urdu What Next'],
+            ['showUrdu2Letter','Urdu 2-Letter 📚','Urdu 2-Letter Words'],['showUrduTricky','Urdu Tricky Words 🧩','Urdu Tricky Words'],['showUrduWhatNext','Urdu What Next ➡️','Urdu What Next'],
             ['showUrduVideos','Urdu Videos 📺','Urdu Videos'],['showUrduQaida','Urdu Qaida 📖','Urdu Qaida'],
             ['showUrduJoining','Urdu Joining 🔗','Urdu Joining'],
             ['showNumbersUrdu','Urdu Numbers 🔊','Numbers Urdu']
@@ -683,6 +683,7 @@ const SKILL_MAP = {
     urdu_reading:            ['showUrduReading', 'Urdu Reading'],
     urdu_joining:            ['showUrduJoining', 'Urdu Joining'],
     urdu_2letter:            ['showUrdu2Letter', 'Urdu 2-Letter Words'],
+    urdu_tricky_words:       ['showUrduTricky', 'Urdu Tricky Words'],
     urdu_what_next:          ['showUrduWhatNext', 'Urdu What Next'],
     urdu_qaida:              ['showUrduQaida', 'Urdu Qaida'],
     numbers_urdu:            ['showNumbersUrdu', 'Numbers Urdu'],
@@ -728,7 +729,8 @@ const TWIN_SKILLS = [['urdu_joining', 'arabic_joining'], ['addition', 'subtracti
 // no longer tell + from -. It stays paused while addition is rebuilt and the signs are
 // taught as meaning; remove it from this list to bring it back. When it returns, the
 // twin rule above keeps it off the same day as addition.
-const PAUSED_SKILLS = ['subtraction'];
+// Multiplication, owner 2026-10-08: paused too — "let's solidify addition first".
+const PAUSED_SKILLS = ['subtraction', 'multiplication'];
 const LANGUAGE_DOMAINS = ['literacy', 'urdu', 'arabic'];
 
 // Final shaping, after priorities have chosen the day's skills. Mutates in place.

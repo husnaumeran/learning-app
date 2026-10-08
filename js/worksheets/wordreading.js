@@ -181,6 +181,20 @@ const WORD_READING_SPECS = {
             const d = WORD_LISTS.urdu_2letter;
             return d.zabar.concat(d.zerPesh, d.unmarked);
         }
+    },
+    // Practice-only: one level holding every pattern. Without an Urdu voice the
+    // only honest checks are "read to me" and the few picture words, so it has no
+    // multiple-choice test and no levels to unlock.
+    urdu_tricky_words: {
+        skillId: 'urdu_tricky_words',
+        type: 'Urdu Tricky Words',
+        lang: 'ur',
+        heading: 'اردو Urdu — Tricky Words!',
+        color: '#FFD700',
+        levelCount: 1,
+        vowelIndex: () => null,
+        levelWords: () => WORD_LISTS.urdu_tricky_words.words,
+        allWords: () => WORD_LISTS.urdu_tricky_words.words.concat(WORD_READING_SPECS.urdu_2letter.allWords())
     }
 };
 

@@ -124,7 +124,6 @@ const URDU_WORDS = [
     {word:'تُم', sound:'tum', meaning:'you (plural)'},
     {word:'دَم', sound:'dam', meaning:'breath'},
     {word:'رَب', sound:'rab', meaning:'lord'},
-    {word:'بَچ', sound:'bach', meaning:'child'},
     {word:'گَر', sound:'gar', meaning:'but'},
     {word:'شَد', sound:'shad', meaning:'became'},
     {word:'کَم', sound:'kam', meaning:'less'},
@@ -134,7 +133,7 @@ const URDU_WORDS = [
     {word:'سَد', sound:'sad', meaning:'century'},
     {word:'ہَر', sound:'har', meaning:'every'},
     {word:'یَر', sound:'yar', meaning:'friend'},
-    {word:'بِل', sound:'bil', meaning:'cat'},
+    {word:'بِل', sound:'bil', meaning:'hole'},
     {word:'تِل', sound:'til', meaning:'sesame'},
     {word:'پَک', sound:'pak', meaning:'pure'},
     {word:'جَگ', sound:'jag', meaning:'world'},
@@ -142,8 +141,7 @@ const URDU_WORDS = [
     {word:'دَن', sound:'dan', meaning:'day'},
     {word:'کِر', sound:'kir', meaning:'ray'},
     {word:'مَت', sound:'mat', meaning:'opinion'},
-    {word:'رَت', sound:'rat', meaning:'night'},
-    {word:'تَر', sound:'tar', meaning:'swim'},
+    {word:'تَر', sound:'tar', meaning:'wet'},
     {word:'بَد', sound:'bad', meaning:'after'}
 ];
 

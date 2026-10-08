@@ -112,7 +112,6 @@ const WORD_LISTS = {
             { word: 'ہَم', sound: 'hum', meaning: 'we' },
             { word: 'دَم', sound: 'dam', meaning: 'breath' },
             { word: 'رَب', sound: 'rab', meaning: 'lord' },
-            { word: 'بَچ', sound: 'bach', meaning: 'child' },
             { word: 'گَر', sound: 'gar', meaning: 'but' },
             { word: 'شَد', sound: 'shad', meaning: 'became' },
             { word: 'کَم', sound: 'kam', meaning: 'less' },
@@ -127,8 +126,7 @@ const WORD_LISTS = {
             { word: 'سَم', sound: 'sam', meaning: 'poison' },
             { word: 'دَن', sound: 'dan', meaning: 'day' },
             { word: 'مَت', sound: 'mat', meaning: 'opinion' },
-            { word: 'رَت', sound: 'rat', meaning: 'night' },
-            { word: 'تَر', sound: 'tar', meaning: 'swim' },
+            { word: 'تَر', sound: 'tar', meaning: 'wet' },
             { word: 'بَد', sound: 'bad', meaning: 'after' }
         ],
         zerPesh: [
@@ -138,7 +136,7 @@ const WORD_LISTS = {
             { word: 'تُو', sound: 'tu', meaning: 'you' },
             { word: 'مِل', sound: 'mil', meaning: 'meet' },
             { word: 'تُم', sound: 'tum', meaning: 'you (plural)' },
-            { word: 'بِل', sound: 'bil', meaning: 'cat' },
+            { word: 'بِل', sound: 'bil', meaning: 'hole' },
             { word: 'تِل', sound: 'til', meaning: 'sesame' },
             { word: 'کِر', sound: 'kir', meaning: 'ray' }
         ],
@@ -146,6 +144,41 @@ const WORD_LISTS = {
         unmarked: [
             { word: 'دو', sound: 'do', meaning: 'two', emoji: '2️⃣' },
             { word: 'جو', sound: 'jo', meaning: 'who' }
+        ]
+    },
+    // Urdu words that cannot be sounded out letter by letter (owner asked for this
+    // list, 2026-10-08). Grouped by the spelling pattern that makes them tricky, so
+    // the pattern is what gets learned. Only خود and خواب were confirmed against a
+    // dictionary (Rekhta, "waw ma'dula"); the rest are standard spellings the owner
+    // is to proof. No harakat: this is how the words appear in print.
+    urdu_tricky_words: {
+        words: [
+            // the و is written but not said
+            { word: 'خود', sound: 'khud', meaning: 'self' },
+            { word: 'خواب', sound: 'khaab', meaning: 'dream' },
+            { word: 'خوش', sound: 'khush', meaning: 'happy' },
+            { word: 'خوشی', sound: 'khushi', meaning: 'happiness' },
+            // said differently from the spelling
+            { word: 'نہیں', sound: 'nahin', meaning: 'no' },
+            { word: 'میں', sound: 'main', meaning: 'I' },
+            { word: 'ہیں', sound: 'hain', meaning: 'are' },
+            { word: 'یہ', sound: 'ye', meaning: 'this' },
+            { word: 'وہ', sound: 'wo', meaning: 'that' },
+            { word: 'اور', sound: 'aur', meaning: 'and' },
+            { word: 'کیا', sound: 'kya', meaning: 'what' },
+            { word: 'یہاں', sound: 'yahan', meaning: 'here' },
+            { word: 'وہاں', sound: 'wahan', meaning: 'there' },
+            { word: 'کہاں', sound: 'kahan', meaning: 'where' },
+            // ھ makes one sound with the letter before it
+            { word: 'دودھ', sound: 'doodh', meaning: 'milk', emoji: '🥛' },
+            { word: 'ہاتھ', sound: 'haath', meaning: 'hand', emoji: '✋' },
+            { word: 'پھول', sound: 'phool', meaning: 'flower', emoji: '🌸' },
+            { word: 'بھائی', sound: 'bhai', meaning: 'brother' },
+            { word: 'ساتھ', sound: 'saath', meaning: 'with' },
+            { word: 'چھوٹا', sound: 'chhota', meaning: 'small' },
+            // Arabic endings
+            { word: 'فوراً', sound: 'fauran', meaning: 'at once' },
+            { word: 'بالکل', sound: 'bilkul', meaning: 'completely' }
         ]
     }
 };
