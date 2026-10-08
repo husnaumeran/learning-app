@@ -286,7 +286,8 @@ async function pickDailyTestSkill() {
     const practiced = [...new Set(worksheetQueue.slice(0, queueIndex).map(item => item[2]).filter(Boolean))];
     const eligible = practiced.filter(id => {
         const p = getSkillProgress(id);
-        return p && (p.mastery_type === 'mastery' || p.mastery_type === 'qaida') && p.mastery_state !== 'mastered';
+        return p && (p.mastery_type === 'mastery' || p.mastery_type === 'qaida') && p.mastery_state !== 'mastered'
+            && canBuildDailyTest(id);
     });
     if (!eligible.length) return null;
     if (eligible.length === 1) return eligible[0];

@@ -201,6 +201,18 @@ function getSkillProgress(skillId) {
 // so the test never repeats the practice worksheet's own layout. Returns []
 // (never throws) when no generator is available, so the caller can just skip
 // the test — see docs/MASTERY.md "The rules, precisely".
+// Mirrors the routing in buildDailyTest below — keep the two in step. The daily
+// picker uses this so it never chooses a skill that can't produce questions: the
+// runner would end the session quietly and that day's check would never happen.
+// (Joining shipped as a mastery skill with no generator and was stuck at level 1.)
+function canBuildDailyTest(skillId) {
+    const progress = getSkillProgress(skillId);
+    const isQaida = (progress && progress.mastery_type === 'qaida') || skillId === 'arabic_qaida' || skillId === 'urdu_qaida';
+    if (isQaida) return typeof window.qaidaCheckQuestions === 'function';
+    return typeof makeAssessmentQs === 'function' && typeof ASSESSMENT_SKILLS !== 'undefined' &&
+           !!(ASSESSMENT_SKILLS[skillId] && ASSESSMENT_SKILLS[skillId].enabled);
+}
+
 function buildDailyTest(skillId, level, count) {
     const n = count || 6;
     let qs = [];
