@@ -30,7 +30,7 @@ const ASSESSMENT_SKILLS = {
     urdu_joining:             { type: 'text',   enabled: true },
     arabic_joining:           { type: 'text',   enabled: true },
     // js/worksheets/multiplication.js - needs a check path or it never leaves level 1.
-    multiplication:           { type: 'text',   enabled: true },
+    multiplication:           { type: 'text',   enabled: false },
 };
 
 // Verbal analogy pairs for assessment (duplicated from worksheet since they're scoped inside showVerbalAnalogies)
